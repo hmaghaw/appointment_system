@@ -77,9 +77,12 @@ def get_daily_availability(business_phone, service_id, target_date):
         available_slots = []
         
         # Convert time objects to datetime objects for the target date
-        open_time = hours['open_time']
-        close_time = hours['close_time']
-        
+        open_time = (datetime.min + hours['open_time']).time()
+        close_time = (datetime.min + hours['close_time']).time()
+
+        (datetime.min + hours['open_time']).time()
+
+
         # If open_time/close_time are time objects, combine with target_date
         if hasattr(open_time, 'time'):
             open_time = open_time.time()

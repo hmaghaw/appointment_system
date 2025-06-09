@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from database import get_db_cursor
+from datetime import datetime, timedelta, time
 
 
 def validate_appointment(business_id, service_id, start_time, end_time):
@@ -39,8 +40,22 @@ def validate_appointment(business_id, service_id, start_time, end_time):
             return False, "Business is closed on this day"
             
         # Convert business hours to datetime for comparison
-        open_time = datetime.combine(start_time.date(), business_hours['open_time'])
-        close_time = datetime.combine(start_time.date(), business_hours['close_time'])
+        def convert_to_time(td):
+            """Convert timedelta to time object"""
+            if isinstance(td, timedelta):
+                # Convert timedelta to seconds and then to time
+                total_seconds = int(td.total_seconds())
+                hours = (total_seconds // 3600) % 24
+                minutes = (total_seconds // 60) % 60
+                seconds = total_seconds % 60
+                return time(hour=hours, minute=minutes, second=seconds)
+            return td  # Already a time object
+            
+        open_time_obj = convert_to_time(business_hours['open_time'])
+        close_time_obj = convert_to_time(business_hours['close_time'])
+        
+        open_time = datetime.combine(start_time.date(), open_time_obj)
+        close_time = datetime.combine(start_time.date(), close_time_obj)
         
         # Check if appointment is within business hours
         if start_time < open_time or end_time > close_time:

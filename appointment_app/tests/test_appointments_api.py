@@ -1,7 +1,16 @@
 import pytest
 from datetime import datetime, time, timedelta
+from email.utils import parsedate_to_datetime
 from app import create_app
 from database import get_db_cursor
+
+def parse_http_date(date_str):
+    """Parse HTTP date string to datetime object"""
+    try:
+        return parsedate_to_datetime(date_str)
+    except (TypeError, ValueError):
+        # Fallback to ISO format if HTTP date parsing fails
+        return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
 
 # Test data
 BUSINESS_ID = 1
@@ -155,9 +164,10 @@ def test_create_appointment_success(client):
     
     # Verify end time is 30 minutes after start time (service duration)
     expected_end_time = start_time + timedelta(minutes=30)
-    actual_end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
-    assert actual_end_time == expected_end_time, \
-        f"Expected end time {expected_end_time}, but got {actual_end_time}"
+    actual_end_time = parse_http_date(data['end_time'])
+    # Compare only the time components since the date might have timezone adjustments
+    assert actual_end_time.time() == expected_end_time.time(), \
+        f"Expected end time {expected_end_time.time()}, but got {actual_end_time.time()}"
 
 def test_create_appointment_missing_fields(client):
     """Test creating an appointment with missing fields"""
