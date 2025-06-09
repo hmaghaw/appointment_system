@@ -23,17 +23,101 @@ def parse_datetime(dt_str):
             continue
     raise ValueError(f"Time data '{dt_str}' does not match any supported format")
 
-@bp.route('/api/appointments', methods=['GET'])
-def get_appointments():
-    """List all appointments"""
+@bp.route('/api/appointments/search', methods=['POST'])
+def search_appointments():
+    """
+    Search for appointments with filtering
+    
+    Request Body (JSON):
+    {
+        "business_id": int,           # Optional: Filter by business ID
+        "business_customer_id": int,  # Optional: Filter by customer ID within the business
+        "start_date": "YYYY-MM-DD",   # Optional: Filter appointments after this date
+        "end_date": "YYYY-MM-DD",     # Optional: Filter appointments before this date
+        "status": "string"            # Optional: Filter by appointment status
+    }
+    """
+    # Get parameters from request body
+    data = request.get_json() or {}
+    
+    # Extract parameters with defaults
+    business_id = data.get('business_id')
+    customer_id = data.get('business_customer_id')
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    status = data.get('status')
+    
+    # Build the base query
+    query = """
+        SELECT a.id, a.business_id, a.business_customer_id, a.service_id, 
+               a.start_time, a.end_time, a.status, a.created_at, a.updated_at,
+               s.name as service_name,
+               CONCAT(c.first_name, ' ', c.last_name) as customer_name
+        FROM appointment a
+        LEFT JOIN service s ON a.service_id = s.id AND a.business_id = s.business_id
+        LEFT JOIN business_customer bc ON a.business_customer_id = bc.id AND a.business_id = bc.business_id
+        LEFT JOIN customer c ON bc.customer_id = c.id
+        WHERE 1=1
+    """
+    params = []
+    
+    # Add filters based on query parameters
+    if business_id is not None:
+        query += " AND a.business_id = %s"
+        params.append(business_id)
+        
+    if customer_id is not None:
+        query += " AND a.business_customer_id = %s"
+        params.append(customer_id)
+        
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            query += " AND a.start_time >= %s"
+            params.append(start_dt)
+        except ValueError:
+            return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
+            
+    if end_date:
+        try:
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            query += " AND a.start_time < %s"
+            params.append(end_dt)
+        except ValueError:
+            return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
+            
+    if status:
+        query += " AND a.status = %s"
+        params.append(status)
+    
+    # Add sorting
+    query += " ORDER BY a.start_time DESC"
+    
     with get_db_cursor() as cursor:
-        cursor.execute("""
-            SELECT id, business_id, business_customer_id, service_id, 
-                   start_time, end_time, status, created_at, updated_at
-            FROM appointment
-            ORDER BY start_time DESC
-        """)
-        appointments = cursor.fetchall()
+        cursor.execute(query, tuple(params) if params else ())
+        columns = [col[0] for col in cursor.description]
+        appointments = []
+        
+        for row in cursor.fetchall():
+            appointment = {}
+            for i, value in enumerate(row):
+                col_name = columns[i]
+                if value is None:
+                    appointment[col_name] = None
+                    continue
+                    
+                if isinstance(value, (datetime, timedelta)):
+                    if isinstance(value, timedelta):
+                        # Convert timedelta to string (HH:MM:SS)
+                        hours, remainder = divmod(value.seconds, 3600)
+                        minutes, seconds = divmod(remainder, 60)
+                        appointment[col_name] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    else:
+                        appointment[col_name] = value.isoformat()
+                else:
+                    appointment[col_name] = row[value]
+            appointments.append(appointment)
+        
         return jsonify(appointments)
 
 @bp.route('/api/appointments', methods=['POST'])

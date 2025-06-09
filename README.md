@@ -1,4 +1,132 @@
-# Appointment Reservation System - Design Document
+# Windsurf Appointment System
+
+A robust appointment scheduling system built with Python, Flask, and MySQL. This system provides RESTful APIs for managing appointments, services, and business hours.
+
+## Features
+
+- **Appointment Management**: Create, view, and manage appointments
+- **Service Management**: Define services with durations and pricing
+- **Business Hours**: Set custom business hours for each day of the week
+- **Availability Checking**: Real-time availability checking based on business hours and existing appointments
+- **Multi-tenant**: Supports multiple businesses with separate data isolation
+- **RESTful API**: Clean, well-documented API endpoints
+
+## Tech Stack
+
+- **Backend**: Python 3.8+
+- **Framework**: Flask
+- **Database**: MySQL 8.0+
+- **API Documentation**: OpenAPI/Swagger
+- **Testing**: pytest
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8 or higher
+- MySQL 8.0 or higher
+- pip (Python package manager)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/windsurf-appointment-system.git
+   cd windsurf-appointment-system
+   ```
+
+2. Create a virtual environment and activate it:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Set up environment variables:
+   Create a `.env` file in the root directory with the following variables:
+   ```
+   FLASK_APP=appointment_app
+   FLASK_ENV=development
+   DB_HOST=localhost
+   DB_USER=your_username
+   DB_PASSWORD=your_password
+   DB_NAME=appointment_system
+   SECRET_KEY=your-secret-key-here
+   ```
+
+5. Initialize the database:
+   ```bash
+   flask init-db
+   ```
+
+6. Run the development server:
+   ```bash
+   flask run
+   ```
+
+## API Documentation
+
+### Authentication
+All API endpoints require authentication using JWT tokens.
+
+### Endpoints
+
+#### Appointments
+
+- `GET /api/appointments` - List all appointments
+- `POST /api/appointments` - Create a new appointment
+
+#### Services
+
+- `GET /api/services` - List all services
+- `POST /api/services` - Create a new service
+
+#### Business Hours
+
+- `GET /api/business-hours` - Get business hours
+- `PUT /api/business-hours` - Update business hours
+
+## Running Tests
+
+To run the test suite:
+
+```bash
+pytest
+```
+
+## Development
+
+### Code Style
+
+This project follows PEP 8 style guidelines. Before committing, please run:
+
+```bash
+black .
+flake8
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Flask for the web framework
+- SQLAlchemy for ORM
+- pytest for testing
+- All contributors who have helped improve this project
 
 ## Table of Contents
 1. [System Overview](#system-overview)
