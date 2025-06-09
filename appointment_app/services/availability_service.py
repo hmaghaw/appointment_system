@@ -4,7 +4,24 @@ from datetime import datetime, time, timedelta
 
 
 def format_time(dt):
-    """Format time in a cross-platform way"""
+    """Format time in a cross-platform way
+    
+    Args:
+        dt: Can be a datetime, time, or timedelta object
+        
+    Returns:
+        str: Formatted time string (e.g., '9:00am')
+    """
+    if isinstance(dt, timedelta):
+        # Convert timedelta to time
+        hours, remainder = divmod(dt.seconds // 60, 60)
+        minutes = remainder % 60
+        dt = time(hour=hours, minute=minutes)
+    
+    # If it's a datetime, get the time part
+    if hasattr(dt, 'time'):
+        dt = dt.time()
+        
     if os.name == 'nt':  # Windows
         return dt.strftime('%#I:%M%p').lower()
     else:  # Unix/Mac
@@ -58,16 +75,16 @@ def get_daily_availability(business_phone, service_id, target_date):
         
         # Generate available slots
         available_slots = []
-        current_time = datetime.combine(target_date, hours['open_time'])
-        close_time = datetime.combine(target_date, hours['close_time'])
+        current_time = datetime.combine(target_date, (datetime.min+hours['open_time']).time())
+        close_time = datetime.combine(target_date, (datetime.min+hours['close_time']).time())
         
         # If no appointments, return full day
         if not appointments:
             return {
                 "date": target_date.isoformat(),
                 "times": [{
-                    "from": format_time(hours['open_time']),
-                    "to": format_time(hours['close_time'])
+                    "from": format_time(hours['open_time'].time() if hasattr(hours['open_time'], 'time') else hours['open_time']),
+                    "to": format_time(hours['close_time'].time() if hasattr(hours['close_time'], 'time') else hours['close_time'])
                 }]
             }
         
@@ -75,8 +92,8 @@ def get_daily_availability(business_phone, service_id, target_date):
         first_appointment = min(appointments, key=lambda x: x['start_time'])
         if current_time < first_appointment['start_time']:
             available_slots.append({
-                "from": format_time(current_time),
-                "to": format_time(first_appointment['start_time'])
+                "from": format_time(current_time.time()),
+                "to": format_time(first_appointment['start_time'].time())
             })
         
         # Check time between appointments
@@ -85,16 +102,16 @@ def get_daily_availability(business_phone, service_id, target_date):
             next_start = appointments[i + 1]['start_time']
             if current_end < next_start:
                 available_slots.append({
-                    "from": format_time(current_end),
-                    "to": format_time(next_start)
+                    "from": format_time(current_end.time()),
+                    "to": format_time(next_start.time())
                 })
         
         # Check time after last appointment
         last_appointment = max(appointments, key=lambda x: x['end_time'])
         if last_appointment['end_time'] < close_time:
             available_slots.append({
-                "from": format_time(last_appointment['end_time']),
-                "to": format_time(close_time)
+                "from": format_time(last_appointment['end_time'].time()),
+                "to": format_time(close_time.time())
             })
         
         return {
