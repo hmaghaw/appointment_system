@@ -79,6 +79,21 @@ All API endpoints require authentication using JWT tokens.
 
 - `GET /api/appointments` - List all appointments
 - `POST /api/appointments` - Create a new appointment
+- `POST /api/appointments/update` - Update an existing appointment
+  ```json
+  {
+    "id": 123,
+    "service_id": 5,
+    "start_time": "2025-06-15T14:00:00",
+    "status": "rescheduled"
+  }
+  ```
+- `POST /api/appointments/cancel` - Cancel an appointment
+  ```json
+  {
+    "id": 123
+  }
+  ```
 
 #### Services
 

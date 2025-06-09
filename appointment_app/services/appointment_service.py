@@ -3,7 +3,7 @@ from database import get_db_cursor
 from datetime import datetime, timedelta, time
 
 
-def validate_appointment(business_id, service_id, start_time, end_time):
+def validate_appointment(business_id, service_id, start_time, end_time, exclude_appointment_id=None):
     """
     Validate an appointment against business rules
     
@@ -12,6 +12,7 @@ def validate_appointment(business_id, service_id, start_time, end_time):
         service_id (int): Service ID
         start_time (datetime): Proposed start time
         end_time (datetime): Proposed end time
+        exclude_appointment_id (int, optional): Appointment ID to exclude from conflict check
         
     Returns:
         tuple: (is_valid, error_message)
@@ -69,21 +70,26 @@ def validate_appointment(business_id, service_id, start_time, end_time):
             return False, f"Appointment duration must be {service['duration_minutes']} minutes"
             
         # Check for overlapping appointments
-        cursor.execute("""
+        query = """
             SELECT id FROM appointment 
             WHERE business_id = %s
             AND status != 'cancelled'
+            AND id != COALESCE(%s, -1)
             AND (
                 (start_time < %s AND end_time > %s) OR  # New appointment starts during existing
                 (start_time < %s AND end_time > %s) OR  # New appointment ends during existing
                 (start_time >= %s AND end_time <= %s)    # New appointment is within existing
             )
-        """, (
+        """
+        params = [
             business_id,
+            exclude_appointment_id,
             start_time, start_time,  # First condition
             end_time, end_time,      # Second condition
             start_time, end_time     # Third condition
-        ))
+        ]
+        
+        cursor.execute(query, params)
         
         if cursor.fetchone():
             return False, "Time slot is already booked"
