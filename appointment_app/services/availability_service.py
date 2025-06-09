@@ -75,8 +75,19 @@ def get_daily_availability(business_phone, service_id, target_date):
         
         # Generate available slots
         available_slots = []
-        current_time = datetime.combine(target_date, (datetime.min+hours['open_time']).time())
-        close_time = datetime.combine(target_date, (datetime.min+hours['close_time']).time())
+        
+        # Convert time objects to datetime objects for the target date
+        open_time = hours['open_time']
+        close_time = hours['close_time']
+        
+        # If open_time/close_time are time objects, combine with target_date
+        if hasattr(open_time, 'time'):
+            open_time = open_time.time()
+        if hasattr(close_time, 'time'):
+            close_time = close_time.time()
+            
+        current_time = datetime.combine(target_date, open_time)
+        close_time = datetime.combine(target_date, close_time)
         
         # If no appointments, return full day
         if not appointments:

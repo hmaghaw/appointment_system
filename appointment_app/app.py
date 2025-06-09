@@ -2,9 +2,19 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
 
-def create_app():
+def create_app(config_dict=None):
+    """Create and configure the Flask application.
+    
+    Args:
+        config_dict (dict, optional): Configuration dictionary to update the app config.
+        If None, uses default configuration from Config class.
+    """
     app = Flask(__name__)
     app.config.from_object(Config)
+    
+    # Update config with provided dictionary if any
+    if config_dict:
+        app.config.update(config_dict)
     
     # Enable CORS
     CORS(app)
