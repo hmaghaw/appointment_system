@@ -350,10 +350,18 @@ def cancel_appointment():
                 SET status = 'canceled', 
                     updated_at = NOW()
                 WHERE id = %s
-                RETURNING *
+            """, (appointment_id,))
+            
+            # Fetch the updated appointment
+            cursor.execute("""
+                SELECT * FROM appointment 
+                WHERE id = %s
             """, (appointment_id,))
             
             canceled_appointment = cursor.fetchone()
+            if not canceled_appointment:
+                return jsonify({"error": "Failed to retrieve canceled appointment"}), 500
+                
             return jsonify({
                 "message": "Appointment canceled successfully",
                 "appointment": canceled_appointment
