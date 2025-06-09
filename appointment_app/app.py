@@ -1,7 +1,5 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from routes.appointments import bp as appointments_bp
-from routes.availability import bp as availability_bp
 from config import Config
 
 def create_app():
@@ -11,12 +9,17 @@ def create_app():
     # Enable CORS
     CORS(app)
     
-    # Register blueprints
+    # Import and register blueprints
+    from routes.appointments import bp as appointments_bp
+    from routes.availability import bp as availability_bp
+    
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
     
-    @app.route('/api/health')
+    # Health check endpoint
+    @app.route('/api/health', methods=['GET'])
     def health_check():
+        """Check if the API is running"""
         return jsonify({"status": "healthy"})
     
     return app

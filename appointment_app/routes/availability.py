@@ -3,15 +3,27 @@ from database import get_db_cursor
 from datetime import datetime, time, timedelta
 import mysql.connector
 
+# Create blueprint
 bp = Blueprint('availability', __name__)
 
-@bp.route('/', methods=['POST'])
-def get_availability():
+@bp.route('/api/availability', methods=['POST'])
+def check_availability():
+    """Check available time slots for a service"""
     data = request.get_json()
-    business_phone = data.get('business_phone')
-    service_id = data.get('service_id')
-    date_str = data.get('date')
+    
+    # Validate required fields
+    required_fields = ['business_phone', 'service_id', 'date']
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    business_phone = data['business_phone']
+    service_id = data['service_id']
+    date_str = data['date']
     view = data.get('view', 'day')
+    
+    # Validate view parameter
+    if view not in ['day', 'week']:
+        return jsonify({"error": "Invalid view parameter. Must be 'day' or 'week'"}), 400
     
     try:
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -23,8 +35,8 @@ def get_availability():
             return get_daily_availability(business_phone, service_id, target_date)
         elif view == 'week':
             return get_weekly_availability(business_phone, service_id, target_date)
-        else:
-            return jsonify({"error": "Invalid view parameter. Use 'day' or 'week'"}), 400
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

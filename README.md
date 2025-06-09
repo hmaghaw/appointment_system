@@ -240,13 +240,141 @@ BUSINESS_HOURS
 
 ## API Documentation
 
+The Appointment System provides a RESTful API for managing appointments and checking availability. The API follows REST conventions and returns JSON responses.
+
 ### Base URL
-`https://api.appointments.example.com/v1`
+```
+http://localhost:5000/api
+```
 
 ### Authentication
-All endpoints require an API key:
+All endpoints require an API key. Include it in the `Authorization` header:
 ```
-Authorization: Bearer <api_key>
+Authorization: Bearer YOUR_API_KEY
+```
+
+### Error Responses
+All error responses follow this format:
+```json
+{
+  "error": "Error message describing the issue"
+}
+```
+
+### Health Check
+
+#### Check API Status
+```
+GET /health
+```
+
+**Response**
+```json
+{
+  "status": "healthy"
+}
+```
+
+### Appointments
+
+#### List All Appointments
+```
+GET /appointments
+```
+
+**Response**
+```json
+[
+  {
+    "id": 1,
+    "business_id": 1,
+    "business_customer_id": 1,
+    "service_id": 1,
+    "start_time": "2025-06-10T10:00:00",
+    "end_time": "2025-06-10T11:00:00",
+    "status": "scheduled",
+    "created_at": "2025-06-09T08:00:00",
+    "updated_at": "2025-06-09T08:00:00"
+  }
+]
+```
+
+#### Create New Appointment
+```
+POST /appointments
+```
+
+**Request Body**
+```json
+{
+  "business_id": 1,
+  "business_customer_id": 1,
+  "service_id": 1,
+  "start_time": "2025-06-10T10:00:00",
+  "end_time": "2025-06-10T11:00:00"
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "id": 1,
+  "business_id": 1,
+  "business_customer_id": 1,
+  "service_id": 1,
+  "start_time": "2025-06-10T10:00:00",
+  "end_time": "2025-06-10T11:00:00",
+  "status": "scheduled",
+  "created_at": "2025-06-09T08:00:00",
+  "updated_at": "2025-06-09T08:00:00"
+}
+```
+
+**Error Responses**
+- `400 Bad Request`: Missing required fields
+- `500 Internal Server Error`: Server error
+
+### Availability
+
+#### Check Availability
+```
+POST /availability
+```
+
+**Request Body**
+```json
+{
+  "business_phone": "+12025551234",
+  "service_id": 1,
+  "date": "2025-06-10",
+  "view": "day"
+}
+```
+
+**Parameters**
+- `business_phone` (string, required): Business phone number in E.164 format
+- `service_id` (integer, required): ID of the service
+- `date` (string, required): Date in YYYY-MM-DD format
+- `view` (string, optional): 'day' or 'week' (default: 'day')
+
+**Response**
+```json
+{
+  "date": "2025-06-10",
+  "times": [
+    "09:00",
+    "09:30",
+    "10:00",
+    "10:30",
+    "11:00"
+  ]
+}
+```
+
+### Swagger UI
+For interactive API documentation and testing, access the Swagger UI at:
+```
+http://localhost:5000/api/docs
 ```
 
 ### 1. Business Management
