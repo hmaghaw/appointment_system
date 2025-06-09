@@ -22,9 +22,11 @@ def create_app(config_dict=None):
     # Import and register blueprints
     from routes.appointments import bp as appointments_bp
     from routes.availability import bp as availability_bp
+    from routes.business import bp as business_bp
     
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
+    app.register_blueprint(business_bp)
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
