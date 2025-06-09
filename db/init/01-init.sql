@@ -1,8 +1,5 @@
--- Create database and user
 CREATE DATABASE IF NOT EXISTS appointment_db;
-CREATE USER IF NOT EXISTS 'app_user'@'%' IDENTIFIED BY 'app_password';
-GRANT ALL PRIVILEGES ON appointment_db.* TO 'app_user'@'%';
-FLUSH PRIVILEGES;
+
 
 USE appointment_db;
 
@@ -14,6 +11,17 @@ CREATE TABLE IF NOT EXISTS business (
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Business Greetings
+CREATE TABLE IF NOT EXISTS business_greetings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
+    greeting_text TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Business Phone Numbers
@@ -112,19 +120,37 @@ CREATE INDEX idx_business_phone ON business_phone(phone_number);
 INSERT INTO business (name, timezone, status) VALUES 
 ('Luxe Hair Studio', 'America/New_York', 'active'),
 ('TechGadgets Inc.', 'America/Los_Angeles', 'active'),
-('Wellness Medical Center', 'America/Chicago', 'active');
+('Wellness Medical Center', 'America/Chicago', 'active'),
+('IdeationMax', 'America/New_York', 'active'),
+('CodeCraft Solutions', 'America/Chicago', 'active'),
+('Digital Innovators', 'America/Los_Angeles', 'active');
 
 -- Set business IDs
 SET @hair_salon_id = 1;
 SET @tech_store_id = 2;
 SET @clinic_id = 3;
+SET @ideationmax_id = 4;
+SET @codecraft_id = 5;
+SET @digital_innovators_id = 6;
+
+-- Insert business greetings
+INSERT INTO business_greetings (business_id, greeting_text, is_active) VALUES
+(@hair_salon_id, 'Welcome to Luxe Hair Studio - Where Style Meets Elegance', TRUE),
+(@tech_store_id, 'Welcome to TechGadgets - Your One-Stop Tech Solution', TRUE),
+(@clinic_id, 'Welcome to Wellness Medical Center - Your Health is Our Priority', TRUE),
+(@ideationmax_id, 'Welcome to IdeationMax. The leading AI Agents development firm', TRUE),
+(@codecraft_id, 'Welcome to CodeCraft Solutions - Building the Future with Clean Code', TRUE),
+(@digital_innovators_id, 'Welcome to Digital Innovators - Transforming Ideas into Reality', TRUE);
 
 -- Insert business phone numbers
 INSERT INTO business_phone (business_id, phone_number, is_primary) VALUES
 (@hair_salon_id, '+12025551234', TRUE),  -- Luxe Hair Studio
 (@hair_salon_id, '+12025554321', FALSE),  -- Secondary number
 (@tech_store_id, '+18185559876', TRUE),   -- TechGadgets
-(@clinic_id, '+17735550123', TRUE);       -- Wellness Medical
+(@clinic_id, '+17735550123', TRUE),       -- Wellness Medical
+(@ideationmax_id, '+12025551034', TRUE),  -- IdeationMax
+(@codecraft_id, '+13125556789', TRUE),    -- CodeCraft Solutions
+(@digital_innovators_id, '+19185554321', TRUE); -- Digital Innovators
 
 -- Insert business hours for all businesses
 -- Luxe Hair Studio hours
@@ -155,7 +181,34 @@ INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_
 (@clinic_id, 3, '08:00:00', '18:00:00', FALSE),
 (@clinic_id, 4, '08:00:00', '18:00:00', FALSE),
 (@clinic_id, 5, '09:00:00', '13:00:00', FALSE),
-(@clinic_id, 6, NULL, NULL, TRUE);
+(@clinic_id, 6, NULL, NULL, TRUE),
+
+-- IdeationMax hours (Weekdays: 9AM-6PM, Weekends: Closed)
+(@ideationmax_id, 0, '09:00:00', '18:00:00', FALSE),
+(@ideationmax_id, 1, '09:00:00', '18:00:00', FALSE),
+(@ideationmax_id, 2, '09:00:00', '18:00:00', FALSE),
+(@ideationmax_id, 3, '09:00:00', '18:00:00', FALSE),
+(@ideationmax_id, 4, '09:00:00', '18:00:00', FALSE),
+(@ideationmax_id, 5, NULL, NULL, TRUE),
+(@ideationmax_id, 6, NULL, NULL, TRUE),
+
+-- CodeCraft Solutions hours (Weekdays: 10AM-7PM, Sat: 10AM-4PM, Sun: Closed)
+(@codecraft_id, 0, '10:00:00', '19:00:00', FALSE),
+(@codecraft_id, 1, '10:00:00', '19:00:00', FALSE),
+(@codecraft_id, 2, '10:00:00', '19:00:00', FALSE),
+(@codecraft_id, 3, '10:00:00', '19:00:00', FALSE),
+(@codecraft_id, 4, '10:00:00', '19:00:00', FALSE),
+(@codecraft_id, 5, '10:00:00', '16:00:00', FALSE),
+(@codecraft_id, 6, NULL, NULL, TRUE),
+
+-- Digital Innovators hours (Weekdays: 8:30AM-5:30PM, Weekends: Closed)
+(@digital_innovators_id, 0, '08:30:00', '17:30:00', FALSE),
+(@digital_innovators_id, 1, '08:30:00', '17:30:00', FALSE),
+(@digital_innovators_id, 2, '08:30:00', '17:30:00', FALSE),
+(@digital_innovators_id, 3, '08:30:00', '17:30:00', FALSE),
+(@digital_innovators_id, 4, '08:30:00', '17:30:00', FALSE),
+(@digital_innovators_id, 5, NULL, NULL, TRUE),
+(@digital_innovators_id, 6, NULL, NULL, TRUE);
 
 -- Insert services for each business
 -- Hair Salon Services
@@ -178,7 +231,27 @@ INSERT INTO service (business_id, name, description, duration_minutes, price, bu
 (@clinic_id, 'General Check-up', 'Routine health examination', 30, 150.00, 5, 10, TRUE),
 (@clinic_id, 'Vaccination', 'Standard vaccination', 20, 75.00, 5, 5, TRUE),
 (@clinic_id, 'Dental Cleaning', 'Teeth cleaning and check-up', 45, 120.00, 5, 10, TRUE),
-(@clinic_id, 'Eye Exam', 'Comprehensive eye examination', 60, 95.00, 5, 10, TRUE);
+(@clinic_id, 'Eye Exam', 'Comprehensive eye examination', 60, 95.00, 5, 10, TRUE),
+(@clinic_id, 'Physical Therapy', 'Therapy session with specialist', 60, 120.00, 10, 15, TRUE),
+(@clinic_id, 'Allergy Testing', 'Comprehensive allergy screening', 90, 250.00, 15, 15, TRUE),
+(@clinic_id, 'Nutrition Counseling', 'Personalized diet planning', 60, 110.00, 10, 10, TRUE),
+
+-- IdeationMax Services
+(@ideationmax_id, 'AI Consultation', 'Initial consultation for AI solutions', 60, 199.00, 15, 15, TRUE),
+(@ideationmax_id, 'Custom AI Agent Development', 'Development of custom AI agent solutions', 240, 999.00, 30, 30, TRUE),
+(@ideationmax_id, 'AI Integration Service', 'Integration of AI into existing systems', 180, 750.00, 20, 20, TRUE),
+(@ideationmax_id, 'Machine Learning Model Training', 'Custom ML model development', 300, 1499.00, 30, 30, TRUE),
+
+-- CodeCraft Solutions Services
+(@codecraft_id, 'Code Review', 'In-depth code review and optimization', 90, 299.00, 15, 15, TRUE),
+(@codecraft_id, 'System Architecture', 'Design and planning of system architecture', 120, 499.00, 20, 20, TRUE),
+(@codecraft_id, 'API Development', 'Custom RESTful API development', 180, 899.00, 30, 30, TRUE),
+(@codecraft_id, 'DevOps Implementation', 'CI/CD pipeline setup', 240, 1499.00, 30, 30, TRUE),
+
+-- Digital Innovators Services
+(@digital_innovators_id, 'Digital Strategy Session', '1-hour strategy consultation', 60, 249.00, 15, 15, TRUE),
+(@digital_innovators_id, 'MVP Development', 'Minimum Viable Product development', 300, 2999.00, 60, 60, TRUE),
+(@digital_innovators_id, 'UI/UX Design', 'User interface and experience design', 120, 599.00, 20, 20, TRUE);
 
 -- Insert sample customers
 INSERT INTO customer (phone_number, first_name, last_name, email) VALUES
@@ -218,73 +291,3 @@ INSERT INTO business_customer (business_id, customer_id, phone_number, first_nam
 (@hair_salon_id, @customer5_id, '+14155555678', 'David', 'Wilson', 'david.w@example.com'),
 (@tech_store_id, @customer5_id, '+14155555678', 'David', 'Wilson', 'david.w@example.com'),
 (@clinic_id, @customer5_id, '+14155555678', 'David', 'Wilson', 'david.w@example.com');
-
--- Insert sample appointments (for the next 7 days)
--- Function to generate random status
-DELIMITER //
-CREATE FUNCTION random_status() RETURNS VARCHAR(20)
-DETERMINISTIC
-BEGIN
-    DECLARE statuses VARCHAR(100) DEFAULT 'scheduled,confirmed,completed,cancelled,no_show';
-    DECLARE pos INT;
-    DECLARE result VARCHAR(20);
-    
-    SET pos = 1 + FLOOR(RAND() * 5);
-    SET result = SUBSTRING_INDEX(SUBSTRING_INDEX(statuses, ',', pos), ',', -1);
-    RETURN result;
-END //
-DELIMITER ;
-
--- Insert appointments for the hair salon
-INSERT INTO appointment (business_id, business_customer_id, service_id, start_time, end_time, status, notes)
-SELECT 
-    @hair_salon_id,
-    bc.id,
-    s.id,
-    DATE_ADD(CURRENT_DATE, INTERVAL FLOOR(RAND() * 7) DAY) + INTERVAL '09:00:00' HOUR_MINUTE + INTERVAL (FLOOR(RAND() * 9) * 60) MINUTE,
-    DATE_ADD(CURRENT_DATE, INTERVAL FLOOR(RAND() * 7) DAY) + INTERVAL '09:00:00' HOUR_MINUTE + INTERVAL ((FLOOR(RAND() * 9) + 1) * 60) MINUTE,
-    random_status(),
-    CASE WHEN RAND() > 0.7 THEN 'Special instructions or notes' ELSE NULL END
-FROM 
-    business_customer bc
-    JOIN service s ON s.business_id = @hair_salon_id
-WHERE 
-    bc.business_id = @hair_salon_id
-LIMIT 15;
-
--- Insert appointments for the tech store
-INSERT INTO appointment (business_id, business_customer_id, service_id, start_time, end_time, status, notes)
-SELECT 
-    @tech_store_id,
-    bc.id,
-    s.id,
-    DATE_ADD(CURRENT_DATE, INTERVAL FLOOR(RAND() * 7) DAY) + INTERVAL '10:00:00' HOUR_MINUTE + INTERVAL (FLOOR(RAND() * 10) * 60) MINUTE,
-    DATE_ADD(CURRENT_DATE, INTERVAL FLOOR(RAND() * 7) DAY) + INTERVAL '10:00:00' HOUR_MINUTE + INTERVAL ((FLOOR(RAND() * 10) + 1) * 60) MINUTE,
-    random_status(),
-    CASE WHEN RAND() > 0.7 THEN 'Device details or special requests' ELSE NULL END
-FROM 
-    business_customer bc
-    JOIN service s ON s.business_id = @tech_store_id
-WHERE 
-    bc.business_id = @tech_store_id
-LIMIT 10;
-
--- Insert appointments for the clinic
-INSERT INTO appointment (business_id, business_customer_id, service_id, start_time, end_time, status, notes)
-SELECT 
-    @clinic_id,
-    bc.id,
-    s.id,
-    DATE_ADD(CURRENT_DATE, INTERVAL FLOOR(RAND() * 7) DAY) + INTERVAL '08:00:00' HOUR_MINUTE + INTERVAL (FLOOR(RAND() * 10) * 60) MINUTE,
-    DATE_ADD(CURRENT_DATE, INTERVAL FLOOR(RAND() * 7) DAY) + INTERVAL '08:00:00' HOUR_MINUTE + INTERVAL ((FLOOR(RAND() * 10) + 1) * 60) MINUTE,
-    random_status(),
-    CASE WHEN RAND() > 0.7 THEN 'Medical notes or special requirements' ELSE NULL END
-FROM 
-    business_customer bc
-    JOIN service s ON s.business_id = @clinic_id
-WHERE 
-    bc.business_id = @clinic_id
-LIMIT 12;
-
--- Drop the temporary function
-DROP FUNCTION IF EXISTS random_status;
