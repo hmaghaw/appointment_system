@@ -224,38 +224,125 @@ def test_create_appointment_outside_business_hours(client):
               for term in ['outside', 'business hours', 'closed', 'open']), \
            f"Unexpected error message: {response_data['error']}"
 
-def test_get_appointments(client):
-    """Test retrieving the list of appointments"""
-    # First, create a test appointment
-    start_time = datetime.combine(TODAY, time(11, 0))  # 11:00 AM today
+def test_search_appointments(client):
+    """Test searching for appointments with filters"""
+    # Create test appointments with different properties
+    now = datetime.now()
+    today = now.date()
+    tomorrow = today + timedelta(days=1)
     
-    # Insert test appointment directly to avoid dependency on create endpoint
+    # Test data: 4 appointments with different properties
+    test_appointments = [
+        # Today's appointment for business 1, customer 1
+        {
+            'business_id': 1,
+            'customer_id': 1,
+            'service_id': 1,
+            'start_time': datetime.combine(today, time(10, 0)),
+            'status': 'scheduled'
+        },
+        # Tomorrow's appointment for business 1, customer 2
+        {
+            'business_id': 1,
+            'customer_id': 2,
+            'service_id': 1,
+            'start_time': datetime.combine(tomorrow, time(11, 0)),
+            'status': 'confirmed'
+        },
+        # Today's appointment for business 2, customer 1
+        {
+            'business_id': 2,
+            'customer_id': 1,
+            'service_id': 2,
+            'start_time': datetime.combine(today, time(14, 0)),
+            'status': 'scheduled'
+        },
+        # Tomorrow's appointment for business 2, customer 2
+        {
+            'business_id': 2,
+            'customer_id': 2,
+            'service_id': 2,
+            'start_time': datetime.combine(tomorrow, time(15, 0)),
+            'status': 'cancelled'
+        }
+    ]
+    
+    # Insert test appointments
     with client.application.app_context():
         with get_db_cursor(commit=True) as cursor:
-            cursor.execute("""
-                INSERT INTO appointment 
-                (business_id, business_customer_id, service_id, start_time, end_time, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (
-                BUSINESS_ID,
-                CUSTOMER_ID,
-                SERVICE_ID,
-                start_time,
-                start_time + timedelta(minutes=30),
-                'scheduled'
-            ))
+            for appt in test_appointments:
+                cursor.execute("""
+                    INSERT INTO appointment 
+                    (business_id, business_customer_id, service_id, start_time, end_time, status)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    appt['business_id'],
+                    appt['customer_id'],
+                    appt['service_id'],
+                    appt['start_time'],
+                    appt['start_time'] + timedelta(minutes=30),
+                    appt['status']
+                ))
     
-    # Now get the list of appointments
-    response = client.get('/api/appointments')
-    
-    assert response.status_code == 200, f"Response: {response.get_json()}"
+    # Test 1: Get all appointments
+    response = client.post('/api/appointments/search', json={})
+    assert response.status_code == 200
     appointments = response.get_json()
-    assert isinstance(appointments, list)
-    assert len(appointments) > 0, "No appointments found in the database"
+    assert len(appointments) == 4
     
-    # Verify the appointment data
-    appointment = appointments[0]
-    assert appointment['business_id'] == BUSINESS_ID
-    assert appointment['service_id'] == SERVICE_ID
-    assert appointment['business_customer_id'] == CUSTOMER_ID
-    assert appointment['status'] == 'scheduled'
+    # Test 2: Filter by business_id
+    response = client.post('/api/appointments/search', json={'business_id': 1})
+    assert response.status_code == 200
+    appointments = response.get_json()
+    assert len(appointments) == 2
+    assert all(a['business_id'] == 1 for a in appointments)
+    
+    # Test 3: Filter by customer_id
+    response = client.post('/api/appointments/search', json={'business_customer_id': 1})
+    assert response.status_code == 200
+    appointments = response.get_json()
+    assert len(appointments) == 2
+    assert all(a['business_customer_id'] == 1 for a in appointments)
+    
+    # Test 4: Filter by date range (today only)
+    response = client.post('/api/appointments/search', json={
+        'start_date': today.isoformat(),
+        'end_date': today.isoformat()
+    })
+    assert response.status_code == 200
+    appointments = response.get_json()
+    assert len(appointments) == 2
+    for appt in appointments:
+        # Handle both ISO format and HTTP date format
+        try:
+            appt_date = datetime.fromisoformat(appt['start_time'].replace('Z', '+00:00')).date()
+        except ValueError:
+            # Handle HTTP date format (e.g., 'Mon, 09 Jun 2025 14:00:00 GMT')
+            appt_date = parsedate_to_datetime(appt['start_time']).date()
+        assert appt_date == today
+    
+    # Test 5: Filter by status
+    response = client.post('/api/appointments/search', json={'status': 'scheduled'})
+    assert response.status_code == 200
+    appointments = response.get_json()
+    assert len(appointments) == 2
+    assert all(a['status'] == 'scheduled' for a in appointments)
+    
+    # Test 6: Combined filters
+    response = client.post('/api/appointments/search', json={
+        'business_id': 1,
+        'start_date': today.isoformat(),
+        'status': 'scheduled'
+    })
+    assert response.status_code == 200
+    appointments = response.get_json()
+    assert len(appointments) == 1
+    appt = appointments[0]
+    assert appt['business_id'] == 1
+    assert appt['status'] == 'scheduled'
+    # Handle both ISO format and HTTP date format
+    try:
+        appt_date = datetime.fromisoformat(appt['start_time'].replace('Z', '+00:00')).date()
+    except ValueError:
+        appt_date = parsedate_to_datetime(appt['start_time']).date()
+    assert appt_date == today
