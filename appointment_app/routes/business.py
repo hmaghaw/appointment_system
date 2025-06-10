@@ -21,7 +21,7 @@ def get_business_greeting():
     query = """
         SELECT bg.*, b.name as business_name
         FROM business_greetings bg
-        JOIN business b ON bg.business_id = b.id
+        JOIN business b ON bg.business_id = b.business_id
         WHERE bg.business_id = %s AND bg.is_active = TRUE
         ORDER BY bg.created_at DESC
         LIMIT 1

@@ -237,15 +237,16 @@ def upsert_customer():
                 # Return the newly created customer info with default values
                 return jsonify({
                     "customer_id": customer_id,
-                    "name": "Guest",
+                    "first_name": "Guest",
+                    "last_name": "",
                     "email": ""
                 }), 201
             else:
                 # Return existing customer info
-                full_name = f"{customer['first_name'] or ''} {customer['last_name'] or ''}".strip()
                 return jsonify({
                     "customer_id": customer['customer_id'],
-                    "name": full_name if full_name else "Guest",
+                    "first_name": customer['first_name'] or "Guest",
+                    "last_name": customer['last_name'] or "",
                     "email": customer['email'] or ""
                 }), 200
                 
