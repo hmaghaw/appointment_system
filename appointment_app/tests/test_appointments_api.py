@@ -88,7 +88,7 @@ def app():
                 CREATE TABLE appointment (
                     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     business_id INT NOT NULL,
-                    business_customer_id INT NOT NULL,
+                    customer_id INT NOT NULL,
                     service_id INT NOT NULL,
                     start_time DATETIME NOT NULL,
                     end_time DATETIME NOT NULL,
@@ -149,7 +149,7 @@ def test_create_appointment_success(client):
     # Make request
     response = client.post('/api/appointments', json={
         'business_id': BUSINESS_ID,
-        'business_customer_id': CUSTOMER_ID,
+        'customer_id': CUSTOMER_ID,
         'service_id': SERVICE_ID,
         'start_time': start_time.isoformat()
     })
@@ -159,7 +159,7 @@ def test_create_appointment_success(client):
     data = response.get_json()
     assert data['business_id'] == BUSINESS_ID
     assert data['service_id'] == SERVICE_ID
-    assert data['business_customer_id'] == CUSTOMER_ID
+    assert data['customer_id'] == CUSTOMER_ID
     assert data['status'] == 'scheduled'
     
     # Verify end time is 30 minutes after start time (service duration)
@@ -173,7 +173,7 @@ def test_create_appointment_missing_fields(client):
     """Test creating an appointment with missing fields"""
     response = client.post('/api/appointments', json={
         'business_id': BUSINESS_ID,
-        # Missing business_customer_id and service_id
+        # Missing customer_id and service_id
     })
     
     assert response.status_code == 400
@@ -183,7 +183,7 @@ def test_create_appointment_invalid_time_format(client):
     """Test creating an appointment with invalid time format"""
     response = client.post('/api/appointments', json={
         'business_id': BUSINESS_ID,
-        'business_customer_id': CUSTOMER_ID,
+        'customer_id': CUSTOMER_ID,
         'service_id': SERVICE_ID,
         'start_time': 'invalid-time-format'
     })
@@ -197,7 +197,7 @@ def test_create_appointment_service_not_found(client):
     
     response = client.post('/api/appointments', json={
         'business_id': BUSINESS_ID,
-        'business_customer_id': CUSTOMER_ID,
+        'customer_id': CUSTOMER_ID,
         'service_id': 999,  # Non-existent service
         'start_time': start_time.isoformat()
     })
@@ -212,7 +212,7 @@ def test_create_appointment_outside_business_hours(client):
     
     response = client.post('/api/appointments', json={
         'business_id': BUSINESS_ID,
-        'business_customer_id': CUSTOMER_ID,
+        'customer_id': CUSTOMER_ID,
         'service_id': SERVICE_ID,
         'start_time': start_time.isoformat()
     })
@@ -273,7 +273,7 @@ def test_search_appointments(client):
             for appt in test_appointments:
                 cursor.execute("""
                     INSERT INTO appointment 
-                    (business_id, business_customer_id, service_id, start_time, end_time, status)
+                    (business_id, customer_id, service_id, start_time, end_time, status)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """, (
                     appt['business_id'],
@@ -298,11 +298,11 @@ def test_search_appointments(client):
     assert all(a['business_id'] == 1 for a in appointments)
     
     # Test 3: Filter by customer_id
-    response = client.post('/api/appointments/search', json={'business_customer_id': 1})
+    response = client.post('/api/appointments/search', json={'customer_id': 1})
     assert response.status_code == 200
     appointments = response.get_json()
     assert len(appointments) == 2
-    assert all(a['business_customer_id'] == 1 for a in appointments)
+    assert all(a['customer_id'] == 1 for a in appointments)
     
     # Test 4: Filter by date range (today only)
     response = client.post('/api/appointments/search', json={

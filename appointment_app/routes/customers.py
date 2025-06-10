@@ -5,29 +5,35 @@ from datetime import datetime
 
 bp = Blueprint('customers', __name__, url_prefix='/api/customers')
 
+def validate_customer_data(data):
+    """Validate customer data and return error message if invalid"""
+    required_fields = ['business_id', 'first_name', 'last_name', 'phone_number']
+    for field in required_fields:
+        if field not in data or not str(data[field]).strip():
+            return f"{field} is required"
+    return None
+
 @bp.route('', methods=['POST'])
 def create_customer():
     """
     Create a new customer
     
     Request body should contain:
-    - business_id: ID of the business the customer belongs to
-    - first_name: Customer's first name
-    - last_name: Customer's last name
+    - business_id: ID of the business the customer belongs to (required)
+    - first_name: Customer's first name (required)
+    - last_name: Customer's last name (required)
+    - phone_number: Customer's phone number (required, unique per business)
     - email: Customer's email (optional)
-    - phone_number: Customer's phone number (required and must be unique per business)
     - notes: Additional notes (optional)
     
     Returns:
-        The created customer object with ID
+        The created customer object with ID or error message
     """
     data = request.get_json()
     
-    # Required fields
-    required_fields = ['business_id', 'first_name', 'last_name', 'phone_number']
-    for field in required_fields:
-        if field not in data or not data[field]:
-            return jsonify({"error": f"{field} is required"}), 400
+    # Validate required fields
+    if error := validate_customer_data(data):
+        return jsonify({"error": error}), 400
     
     try:
         with get_db_cursor(commit=True) as cursor:
@@ -36,106 +42,38 @@ def create_customer():
             if not cursor.fetchone():
                 return jsonify({"error": "Business not found"}), 404
             
-            # First, check if customer with this phone number already exists
+            # Check if phone number already exists for this business
             cursor.execute("""
                 SELECT id FROM customer 
-                WHERE phone_number = %s
-            """, (data['phone_number'],))
+                WHERE business_id = %s AND phone_number = %s
+            """, (data['business_id'], data['phone_number']))
             
-            customer_result = cursor.fetchone()
+            if cursor.fetchone():
+                return jsonify({"error": "A customer with this phone number already exists for this business"}), 409
             
-            if customer_result:
-                # Customer exists, get their ID
-                customer_id = customer_result['id']
-                # Update customer info
-                cursor.execute("""
-                    UPDATE customer 
-                    SET first_name = %(first_name)s,
-                        last_name = %(last_name)s,
-                        email = %(email)s,
-                        updated_at = NOW()
-                    WHERE id = %(customer_id)s
-                """, {
-                    'customer_id': customer_id,
-                    'first_name': data['first_name'],
-                    'last_name': data['last_name'],
-                    'email': data.get('email')
-                })
-            else:
-                # Insert new customer
-                cursor.execute("""
-                    INSERT INTO customer (
-                        first_name, last_name, email, phone_number, created_at, updated_at
-                    ) VALUES (
-                        %(first_name)s, %(last_name)s, %(email)s, %(phone_number)s, NOW(), NOW()
-                    )
-                """, {
-                    'first_name': data['first_name'],
-                    'last_name': data['last_name'],
-                    'email': data.get('email'),
-                    'phone_number': data['phone_number']
-                })
-                customer_id = cursor.lastrowid
-            
-            # Check if this customer is already associated with this business
+            # Insert new customer
             cursor.execute("""
-                SELECT id FROM business_customer 
-                WHERE business_id = %(business_id)s AND customer_id = %(customer_id)s
+                INSERT INTO customer (
+                    business_id, first_name, last_name, email, 
+                    phone_number, notes, created_at, updated_at
+                ) VALUES (
+                    %(business_id)s, %(first_name)s, %(last_name)s, %(email)s, 
+                    %(phone_number)s, %(notes)s, NOW(), NOW()
+                )
             """, {
                 'business_id': data['business_id'],
-                'customer_id': customer_id
+                'first_name': data['first_name'],
+                'last_name': data['last_name'],
+                'email': data.get('email'),
+                'phone_number': data['phone_number'],
+                'notes': data.get('notes')
             })
             
-            business_customer = cursor.fetchone()
-            
-            if business_customer:
-                # Update existing business customer
-                cursor.execute("""
-                    UPDATE business_customer 
-                    SET first_name = %(first_name)s,
-                        last_name = %(last_name)s,
-                        email = %(email)s,
-                        phone_number = %(phone_number)s,
-                        notes = %(notes)s,
-                        updated_at = NOW()
-                    WHERE id = %(id)s
-                """, {
-                    'id': business_customer['id'],
-                    'first_name': data['first_name'],
-                    'last_name': data['last_name'],
-                    'email': data.get('email'),
-                    'phone_number': data['phone_number'],
-                    'notes': data.get('notes')
-                })
-                business_customer_id = business_customer['id']
-            else:
-                # Create new business customer
-                cursor.execute("""
-                    INSERT INTO business_customer (
-                        business_id, customer_id, first_name, last_name, 
-                        email, phone_number, notes, created_at, updated_at
-                    ) VALUES (
-                        %(business_id)s, %(customer_id)s, %(first_name)s, %(last_name)s, 
-                        %(email)s, %(phone_number)s, %(notes)s, NOW(), NOW()
-                    )
-                """, {
-                    'business_id': data['business_id'],
-                    'customer_id': customer_id,
-                    'first_name': data['first_name'],
-                    'last_name': data['last_name'],
-                    'email': data.get('email'),
-                    'phone_number': data['phone_number'],
-                    'notes': data.get('notes')
-                })
-                business_customer_id = cursor.lastrowid
-            
-            # Get the created/updated business customer
-            cursor.execute("""
-                SELECT * FROM business_customer 
-                WHERE id = %s
-            """, (business_customer_id,))
-            
+            # Get the created customer
+            customer_id = cursor.lastrowid
+            cursor.execute("SELECT * FROM customer WHERE id = %s", (customer_id,))
             customer = cursor.fetchone()
+            
             return jsonify(customer), 201
             
     except mysql.connector.Error as err:
@@ -158,7 +96,7 @@ def update_customer():
     - is_active: Boolean indicating if customer is active
     
     Returns:
-        The updated customer object
+        The updated customer object or error message
     """
     data = request.get_json()
     
@@ -181,19 +119,36 @@ def update_customer():
     
     try:
         with get_db_cursor(commit=True) as cursor:
-            # Check if customer exists
+            # Check if customer exists and get current data
             cursor.execute("""
-                SELECT id FROM business_customer 
+                SELECT * FROM customer 
                 WHERE id = %(customer_id)s
                 FOR UPDATE
             """, {'customer_id': customer_id})
             
-            if not cursor.fetchone():
+            customer = cursor.fetchone()
+            if not customer:
                 return jsonify({"error": "Customer not found"}), 404
+            
+            # If phone number is being updated, check for duplicates
+            if 'phone_number' in data and data['phone_number'] != customer['phone_number']:
+                cursor.execute("""
+                    SELECT id FROM customer 
+                    WHERE business_id = %(business_id)s 
+                    AND phone_number = %(phone_number)s
+                    AND id != %(customer_id)s
+                """, {
+                    'business_id': customer['business_id'],
+                    'phone_number': data['phone_number'],
+                    'customer_id': customer_id
+                })
+                
+                if cursor.fetchone():
+                    return jsonify({"error": "A customer with this phone number already exists for this business"}), 409
             
             # Update customer
             update_query = f"""
-                UPDATE business_customer 
+                UPDATE customer 
                 SET {', '.join(update_fields)}, updated_at = NOW()
                 WHERE id = %(customer_id)s
             """
@@ -202,7 +157,7 @@ def update_customer():
             
             # Fetch the updated customer
             cursor.execute("""
-                SELECT * FROM business_customer 
+                SELECT * FROM customer 
                 WHERE id = %s
             """, (customer_id,))
             

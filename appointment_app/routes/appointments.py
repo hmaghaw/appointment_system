@@ -31,7 +31,7 @@ def search_appointments():
     Request Body (JSON):
     {
         "business_id": int,           # Optional: Filter by business ID
-        "business_customer_id": int,  # Optional: Filter by customer ID within the business
+        "customer_id": int,  # Optional: Filter by customer ID within the business
         "start_date": "YYYY-MM-DD",   # Optional: Filter appointments after this date
         "end_date": "YYYY-MM-DD",     # Optional: Filter appointments before this date
         "status": "string"            # Optional: Filter by appointment status
@@ -42,21 +42,20 @@ def search_appointments():
     
     # Extract parameters with defaults
     business_id = data.get('business_id')
-    customer_id = data.get('business_customer_id')
+    customer_id = data.get('customer_id')
     start_date = data.get('start_date')
     end_date = data.get('end_date')
     status = data.get('status')
     
     # Build the base query
     query = """
-        SELECT a.id, a.business_id, a.business_customer_id, a.service_id, 
+        SELECT a.id, a.business_id, a.customer_id, a.service_id, 
                a.start_time, a.end_time, a.status, a.created_at, a.updated_at,
                s.name as service_name,
                CONCAT(c.first_name, ' ', c.last_name) as customer_name
         FROM appointment a
         LEFT JOIN service s ON a.service_id = s.id AND a.business_id = s.business_id
-        LEFT JOIN business_customer bc ON a.business_customer_id = bc.id AND a.business_id = bc.business_id
-        LEFT JOIN customer c ON bc.customer_id = c.id
+        LEFT JOIN customer c ON a.customer_id = c.id
         WHERE 1=1
     """
     params = []
@@ -67,7 +66,7 @@ def search_appointments():
         params.append(business_id)
         
     if customer_id is not None:
-        query += " AND a.business_customer_id = %s"
+        query += " AND a.customer_id = %s"
         params.append(customer_id)
         
     if start_date:
@@ -127,14 +126,14 @@ def create_appointment():
     
     Request body should contain:
     - business_id: ID of the business
-    - business_customer_id: ID of the customer at this business
+    - customer_id: ID of the customer at this business
     - service_id: ID of the service being booked
     - start_time: Start time in ISO format (YYYY-MM-DDTHH:MM:SS)
     """
     data = request.get_json()
     
     # Validate required fields
-    required_fields = ['business_id', 'business_customer_id', 'service_id', 'start_time']
+    required_fields = ['business_id', 'customer_id', 'service_id', 'start_time']
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
     
@@ -171,12 +170,12 @@ def create_appointment():
         with get_db_cursor(commit=True) as cursor:
             cursor.execute("""
                 INSERT INTO appointment 
-                (business_id, business_customer_id, service_id, start_time, end_time, status)
-                VALUES (%(business_id)s, %(business_customer_id)s, %(service_id)s, 
+                (business_id, customer_id, service_id, start_time, end_time, status)
+                VALUES (%(business_id)s, %(customer_id)s, %(service_id)s, 
                         %(start_time)s, %(end_time)s, 'scheduled')
             """, {
                 'business_id': data['business_id'],
-                'business_customer_id': data['business_customer_id'],
+                'customer_id': data['customer_id'],
                 'service_id': data['service_id'],
                 'start_time': start_time,
                 'end_time': end_time

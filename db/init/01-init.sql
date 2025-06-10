@@ -38,30 +38,17 @@ CREATE TABLE IF NOT EXISTS business_phone (
 -- Customer table
 CREATE TABLE IF NOT EXISTS customer (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    phone_number VARCHAR(20) NOT NULL,
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
-    email VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_phone (phone_number)
-) ENGINE=InnoDB;
-
--- Business Customer (junction table)
-CREATE TABLE IF NOT EXISTS business_customer (
-    id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
-    customer_id INT NOT NULL,
     phone_number VARCHAR(20) NOT NULL,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255),
     notes TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_business_customer (business_id, customer_id),
-    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
-    FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE CASCADE
+    UNIQUE KEY unique_business_phone (business_id, phone_number),
+    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Service table
@@ -98,7 +85,7 @@ CREATE TABLE IF NOT EXISTS business_hours (
 CREATE TABLE IF NOT EXISTS appointment (
     id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
-    business_customer_id INT NOT NULL,
+    customer_id INT NOT NULL,
     service_id INT NOT NULL,
     start_time DATETIME NOT NULL,
     end_time DATETIME NOT NULL,
@@ -107,14 +94,15 @@ CREATE TABLE IF NOT EXISTS appointment (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
-    FOREIGN KEY (business_customer_id) REFERENCES business_customer(id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE CASCADE,
     FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Add indexes for performance
 CREATE INDEX idx_appointment_business ON appointment(business_id, start_time, end_time);
-CREATE INDEX idx_appointment_customer ON appointment(business_customer_id);
+CREATE INDEX idx_appointment_customer ON appointment(customer_id);
 CREATE INDEX idx_business_phone ON business_phone(phone_number);
+CREATE INDEX idx_customer_business ON customer(business_id, phone_number);
 
 -- Insert businesses
 INSERT INTO business (name, timezone, status) VALUES 
@@ -125,7 +113,7 @@ INSERT INTO business (name, timezone, status) VALUES
 ('CodeCraft Solutions', 'America/Chicago', 'active'),
 ('Digital Innovators', 'America/Los_Angeles', 'active');
 
--- Set business IDs
+-- Set business IDs for reference
 SET @hair_salon_id = 1;
 SET @tech_store_id = 2;
 SET @clinic_id = 3;
@@ -153,7 +141,7 @@ INSERT INTO business_phone (business_id, phone_number, is_primary) VALUES
 (@digital_innovators_id, '+19185554321', TRUE); -- Digital Innovators
 
 -- Insert business hours for all businesses
--- Luxe Hair Studio hours
+-- Luxe Hair Salon hours
 INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_closed) VALUES
 -- Monday-Friday: 9AM-7PM
 (@hair_salon_id, 0, '09:00:00', '19:00:00', FALSE),  -- Monday
@@ -199,16 +187,82 @@ INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_
 (@codecraft_id, 3, '10:00:00', '19:00:00', FALSE),
 (@codecraft_id, 4, '10:00:00', '19:00:00', FALSE),
 (@codecraft_id, 5, '10:00:00', '16:00:00', FALSE),
-(@codecraft_id, 6, NULL, NULL, TRUE),
+(@codecraft_id, 6, NULL, NULL, TRUE);
 
--- Digital Innovators hours (Weekdays: 8:30AM-5:30PM, Weekends: Closed)
-(@digital_innovators_id, 0, '08:30:00', '17:30:00', FALSE),
-(@digital_innovators_id, 1, '08:30:00', '17:30:00', FALSE),
-(@digital_innovators_id, 2, '08:30:00', '17:30:00', FALSE),
-(@digital_innovators_id, 3, '08:30:00', '17:30:00', FALSE),
-(@digital_innovators_id, 4, '08:30:00', '17:30:00', FALSE),
-(@digital_innovators_id, 5, NULL, NULL, TRUE),
-(@digital_innovators_id, 6, NULL, NULL, TRUE);
+-- Insert services for businesses
+-- Hair Salon Services
+INSERT INTO service (business_id, name, description, duration_minutes, price, buffer_before_minutes, buffer_after_minutes, is_active) VALUES
+(@hair_salon_id, 'Women\'s Haircut', 'Haircut and style for women', 90, 75.00, 10, 10, TRUE),
+(@hair_salon_id, 'Men\'s Haircut', 'Haircut and style for men', 30, 40.00, 5, 5, TRUE),
+(@hair_salon_id, 'Hair Coloring', 'Full hair coloring service', 180, 150.00, 15, 15, TRUE),
+(@hair_salon_id, 'Blowout', 'Wash and blow dry', 45, 50.00, 5, 5, TRUE),
+(@hair_salon_id, 'Beard Trim', 'Beard shaping and trimming', 30, 25.00, 5, 5, TRUE),
+
+-- Tech Store Services
+(@tech_store_id, 'Phone Screen Replacement', 'Replace broken phone screen', 60, 129.99, 10, 10, TRUE),
+(@tech_store_id, 'Virus Removal', 'Remove viruses and malware', 120, 99.99, 10, 10, TRUE),
+(@tech_store_id, 'Data Recovery', 'Recover lost or deleted files', 240, 199.99, 15, 15, TRUE),
+(@tech_store_id, 'Laptop Tune-up', 'Clean and optimize laptop performance', 90, 79.99, 10, 10, TRUE),
+(@tech_store_id, 'Device Setup', 'Set up new devices and transfer data', 60, 49.99, 5, 5, TRUE),
+
+-- Medical Center Services
+(@clinic_id, 'Annual Physical', 'Comprehensive physical examination', 30, 199.00, 10, 10, TRUE),
+(@clinic_id, 'Vaccination', 'Routine immunization', 15, 49.99, 5, 5, TRUE),
+(@clinic_id, 'Allergy Testing', 'Comprehensive allergy testing', 60, 299.00, 15, 15, TRUE),
+(@clinic_id, 'Dermatology Consultation', 'Skin condition evaluation', 45, 149.99, 10, 10, TRUE),
+(@clinic_id, 'Blood Work', 'Routine blood tests', 20, 89.99, 5, 5, TRUE);
+
+-- Insert sample customers
+-- For Luxe Hair Salon
+INSERT INTO customer (business_id, first_name, last_name, email, phone_number, notes) VALUES
+(@hair_salon_id, 'Sarah', 'Johnson', 'sarah.j@example.com', '+12025551234', 'Prefers corner chair'),
+(@hair_salon_id, 'Michael', 'Chen', 'michael.c@example.com', '+12025551235', 'Allergic to almonds'),
+(@hair_salon_id, 'Emily', 'Rodriguez', 'emily.r@example.com', '+12025551236', 'VIP customer');
+
+-- For TechGadgets
+INSERT INTO customer (business_id, first_name, last_name, email, phone_number, notes) VALUES
+(@tech_store_id, 'David', 'Kim', 'david.k@example.com', '+18185551234', 'Frequent buyer'),
+(@tech_store_id, 'Jennifer', 'Martinez', 'jennifer.m@example.com', '+18185551235', 'Interested in new releases');
+
+-- For Wellness Medical Center
+INSERT INTO customer (business_id, first_name, last_name, email, phone_number, notes) VALUES
+(@clinic_id, 'Robert', 'Wilson', 'robert.w@example.com', '+17735551234', 'Annual checkup'),
+(@clinic_id, 'Lisa', 'Anderson', 'lisa.a@example.com', '+17735551235', 'Allergy shots');
+
+-- Set customer IDs for appointments
+SET @sarah_id = (SELECT id FROM customer WHERE phone_number = '+12025551234' LIMIT 1);
+SET @michael_id = (SELECT id FROM customer WHERE phone_number = '+12025551235' LIMIT 1);
+SET @emily_id = (SELECT id FROM customer WHERE phone_number = '+12025551236' LIMIT 1);
+SET @david_id = (SELECT id FROM customer WHERE phone_number = '+18185551234' LIMIT 1);
+SET @jennifer_id = (SELECT id FROM customer WHERE phone_number = '+18185551235' LIMIT 1);
+SET @robert_id = (SELECT id FROM customer WHERE phone_number = '+17735551234' LIMIT 1);
+SET @lisa_id = (SELECT id FROM customer WHERE phone_number = '+17735551235' LIMIT 1);
+
+-- Insert sample appointments
+-- For Luxe Hair Salon
+INSERT INTO appointment (business_id, customer_id, service_id, start_time, end_time, status, notes) VALUES
+(@hair_salon_id, @sarah_id, 1, DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL '10:00' HOUR_MINUTE, 
+  DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL '11:30' HOUR_MINUTE, 'scheduled', 'Highlights and cut'),
+(@hair_salon_id, @michael_id, 2, DATE_ADD(NOW(), INTERVAL 2 DAY) + INTERVAL '14:00' HOUR_MINUTE, 
+  DATE_ADD(NOW(), INTERVAL 2 DAY) + INTERVAL '14:30' HOUR_MINUTE, 'scheduled', 'Regular trim'),
+(@hair_salon_id, @emily_id, 3, DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL '15:00' HOUR_MINUTE, 
+  DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL '16:00' HOUR_MINUTE, 'confirmed', 'Balayage');
+
+-- For TechGadgets
+INSERT INTO appointment (business_id, customer_id, service_id, start_time, end_time, status, notes) VALUES
+(@tech_store_id, @david_id, 4, DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL '11:00' HOUR_MINUTE, 
+  DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL '12:00' HOUR_MINUTE, 'scheduled', 'iPhone 14 screen replacement'),
+(@tech_store_id, @jennifer_id, 5, DATE_ADD(NOW(), INTERVAL 3 DAY) + INTERVAL '13:00' HOUR_MINUTE, 
+  DATE_ADD(NOW(), INTERVAL 3 DAY) + INTERVAL '15:00' HOUR_MINUTE, 'scheduled', 'Laptop virus removal');
+
+-- For Wellness Medical Center
+INSERT INTO appointment (business_id, customer_id, service_id, start_time, end_time, status, notes) VALUES
+(@clinic_id, @robert_id, 6, DATE_ADD(NOW(), INTERVAL 2 DAY) + INTERVAL '09:00' HOUR_MINUTE, 
+  DATE_ADD(NOW(), INTERVAL 2 DAY) + INTERVAL '09:30' HOUR_MINUTE, 'scheduled', 'Annual physical'),
+(@clinic_id, @lisa_id, 7, DATE_ADD(NOW(), INTERVAL 1 WEEK) + INTERVAL '10:30' HOUR_MINUTE, 
+  DATE_ADD(NOW(), INTERVAL 1 WEEK) + INTERVAL '11:00' HOUR_MINUTE, 'scheduled', 'Allergy shot');
+
+-- Business hours are already inserted above
 
 -- Insert services for each business
 -- Hair Salon Services
@@ -253,41 +307,4 @@ INSERT INTO service (business_id, name, description, duration_minutes, price, bu
 (@digital_innovators_id, 'MVP Development', 'Minimum Viable Product development', 300, 2999.00, 60, 60, TRUE),
 (@digital_innovators_id, 'UI/UX Design', 'User interface and experience design', 120, 599.00, 20, 20, TRUE);
 
--- Insert sample customers
-INSERT INTO customer (phone_number, first_name, last_name, email) VALUES
-('+14155551234', 'John', 'Smith', 'john.smith@example.com'),
-('+14155552345', 'Sarah', 'Johnson', 'sarah.j@example.com'),
-('+14155553456', 'Michael', 'Brown', 'michael.b@example.com'),
-('+14155554567', 'Emily', 'Davis', 'emily.d@example.com'),
-('+14155555678', 'David', 'Wilson', 'david.w@example.com');
-
--- Set customer IDs
-SET @customer1_id = 1;
-SET @customer2_id = 2;
-SET @customer3_id = 3;
-SET @customer4_id = 4;
-SET @customer5_id = 5;
-
--- Link customers to businesses (business_customer table)
--- John Smith uses all three businesses
-INSERT INTO business_customer (business_id, customer_id, phone_number, first_name, last_name, email) VALUES
-(@hair_salon_id, @customer1_id, '+14155551234', 'John', 'Smith', 'john.smith@example.com'),
-(@tech_store_id, @customer1_id, '+14155551234', 'John', 'Smith', 'john.smith@example.com'),
-(@clinic_id, @customer1_id, '+14155551234', 'John', 'Smith', 'john.smith@example.com'),
-
--- Sarah Johnson uses hair salon and clinic
-(@hair_salon_id, @customer2_id, '+14155552345', 'Sarah', 'Johnson', 'sarah.j@example.com'),
-(@clinic_id, @customer2_id, '+14155552345', 'Sarah', 'Johnson', 'sarah.j@example.com'),
-
--- Michael Brown uses tech store and clinic
-(@tech_store_id, @customer3_id, '+14155553456', 'Michael', 'Brown', 'michael.b@example.com'),
-(@clinic_id, @customer3_id, '+14155553456', 'Michael', 'Brown', 'michael.b@example.com'),
-
--- Emily Davis uses hair salon and tech store
-(@hair_salon_id, @customer4_id, '+14155554567', 'Emily', 'Davis', 'emily.d@example.com'),
-(@tech_store_id, @customer4_id, '+14155554567', 'Emily', 'Davis', 'emily.d@example.com'),
-
--- David Wilson uses all three businesses
-(@hair_salon_id, @customer5_id, '+14155555678', 'David', 'Wilson', 'david.w@example.com'),
-(@tech_store_id, @customer5_id, '+14155555678', 'David', 'Wilson', 'david.w@example.com'),
-(@clinic_id, @customer5_id, '+14155555678', 'David', 'Wilson', 'david.w@example.com');
+-- Customer data is already inserted above
