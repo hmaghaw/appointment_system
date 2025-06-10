@@ -2,98 +2,6 @@
 
 A robust appointment scheduling system built with Python, Flask, and MySQL. This system provides RESTful APIs for managing appointments, services, and business hours.
 
-## Database Schema
-
-### Entity Relationship Diagram
-
-```mermaid
-erDiagram
-    BUSINESS ||--o{ BUSINESS_GREETINGS : has
-    BUSINESS ||--o{ BUSINESS_PHONE : has
-    BUSINESS ||--o{ CUSTOMER : has
-    BUSINESS ||--o{ SERVICE : offers
-    BUSINESS ||--o{ BUSINESS_HOURS : has
-    CUSTOMER ||--o{ APPOINTMENT : schedules
-    SERVICE ||--o{ APPOINTMENT : booked_in
-    
-    BUSINESS {
-        int business_id PK
-        string name
-        string timezone
-        string status
-        datetime created_at
-        datetime updated_at
-    }
-    
-    BUSINESS_GREETINGS {
-        int business_greeting_id PK
-        int business_id FK
-        text greeting_text
-        boolean is_active
-        datetime created_at
-        datetime updated_at
-    }
-    
-    BUSINESS_PHONE {
-        int business_phone_id PK
-        int business_id FK
-        string business_phone
-        boolean is_primary
-        datetime created_at
-    }
-    
-    CUSTOMER {
-        int customer_id PK
-        int business_id FK
-        string customer_phone
-        string first_name
-        string last_name
-        string email
-        text notes
-        boolean is_active
-        datetime created_at
-        datetime updated_at
-    }
-    
-    SERVICE {
-        int service_id PK
-        int business_id FK
-        string name
-        text description
-        int duration_minutes
-        decimal price
-        boolean is_active
-        int buffer_before_minutes
-        int buffer_after_minutes
-        datetime created_at
-        datetime updated_at
-    }
-    
-    BUSINESS_HOURS {
-        int business_hours_id PK
-        int business_id FK
-        tinyint day_of_week
-        time open_time
-        time close_time
-        boolean is_closed
-        datetime created_at
-        datetime updated_at
-    }
-    
-    APPOINTMENT {
-        int appointment_id PK
-        int business_id FK
-        int customer_id FK
-        int service_id FK
-        datetime start_time
-        datetime end_time
-        string status
-        text notes
-        datetime created_at
-        datetime updated_at
-    }
-```
-
 ## Features
 
 - **Appointment Management**: Create, view, and manage appointments
@@ -433,115 +341,99 @@ graph TD
 5. **Admin Interfaces**: For business and system administration
 6. **Background Jobs**: For notifications and async processing
 
-## Database Design
+
+## Database Schema
 
 ### Entity Relationship Diagram (ERD)
 
-#### Visual ERD
 ```mermaid
-classDiagram
-    %% Business and its relationships
-    class Business {
-        +int id
-        +string name
-        +string timezone
-        +string status
-        +timestamp created_at
-        +timestamp updated_at
-    }
-
-    class BusinessPhone {
-        +int id
-        +string phone_number
-        +boolean is_primary
-        +timestamp created_at
-    }
-
-    class Service {
-        +int id
-        +string name
-        +text description
-        +int duration_minutes
-        +decimal price
-        +boolean is_active
-        +int buffer_before_minutes
-        +int buffer_after_minutes
-        +timestamp created_at
-        +timestamp updated_at
-    }
-
-    class Customer {
-        +int id
-        +string phone_number
-        +string first_name
-        +string last_name
-        +string email
-        +timestamp created_at
-        +timestamp updated_at
-    }
-
-    class BusinessCustomer {
-        +int id
-        +string phone_number
-        +string first_name
-        +string last_name
-        +string email
-        +text notes
-        +timestamp created_at
-        +timestamp updated_at
-    }
-
-    class Appointment {
-        +int id
-        +timestamp start_time
-        +timestamp end_time
-        +string status
-        +text notes
-        +timestamp created_at
-        +timestamp updated_at
-    }
-
-    class BusinessHours {
-        +int id
-        +int day_of_week
-        +time open_time
-        +time close_time
-        +boolean is_closed
-        +timestamp created_at
-        +timestamp updated_at
-    }
-
-    %% Relationships
-    Business "1" *-- "*" BusinessPhone : has
-    Business "1" *-- "*" Service : offers
-    Business "1" *-- "*" BusinessCustomer : serves
-    Business "1" *-- "7" BusinessHours : has
-    Business "1" *-- "*" Appointment : books
+erDiagram
+    BUSINESS ||--o{ BUSINESS_GREETINGS : has
+    BUSINESS ||--o{ BUSINESS_PHONE : has
+    BUSINESS ||--o{ CUSTOMER : has
+    BUSINESS ||--o{ SERVICE : offers
+    BUSINESS ||--o{ BUSINESS_HOURS : has
+    CUSTOMER ||--o{ APPOINTMENT : schedules
+    SERVICE ||--o{ APPOINTMENT : booked_in
     
-    Customer "1" *-- "*" BusinessCustomer : appears_in
-    BusinessCustomer "1" *-- "*" Appointment : has
-    Service "1" *-- "*" Appointment : scheduled_in
-
-    %% Hide technical fields for cleaner diagram
-    class BusinessCustomer_impl {
-        +int business_id
-        +int customer_id
+    BUSINESS {
+        int business_id PK
+        string name
+        string timezone
+        string status
+        datetime created_at
+        datetime updated_at
     }
     
-    class Appointment_impl {
-        +int business_id
-        +int business_customer_id
-        +int service_id
+    BUSINESS_GREETINGS {
+        int business_greeting_id PK
+        int business_id FK
+        text greeting_text
+        boolean is_active
+        datetime created_at
+        datetime updated_at
     }
     
-    class BusinessHours_impl {
-        +int business_id
+    BUSINESS_PHONE {
+        int business_phone_id PK
+        int business_id FK
+        string business_phone
+        boolean is_primary
+        datetime created_at
     }
     
-    class Service_impl {
-        +int business_id
+    CUSTOMER {
+        int customer_id PK
+        int business_id FK
+        string customer_phone
+        string first_name
+        string last_name
+        string email
+        text notes
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+    
+    SERVICE {
+        int service_id PK
+        int business_id FK
+        string name
+        text description
+        int duration_minutes
+        decimal price
+        boolean is_active
+        int buffer_before_minutes
+        int buffer_after_minutes
+        datetime created_at
+        datetime updated_at
+    }
+    
+    BUSINESS_HOURS {
+        int business_hours_id PK
+        int business_id FK
+        tinyint day_of_week
+        time open_time
+        time close_time
+        boolean is_closed
+        datetime created_at
+        datetime updated_at
+    }
+    
+    APPOINTMENT {
+        int appointment_id PK
+        int business_id FK
+        int customer_id FK
+        int service_id FK
+        datetime start_time
+        datetime end_time
+        string status
+        text notes
+        datetime created_at
+        datetime updated_at
     }
 ```
+
 
 #### Textual ERD
 ```
