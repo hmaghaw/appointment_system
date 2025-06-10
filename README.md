@@ -2,6 +2,98 @@
 
 A robust appointment scheduling system built with Python, Flask, and MySQL. This system provides RESTful APIs for managing appointments, services, and business hours.
 
+## Database Schema
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    BUSINESS ||--o{ BUSINESS_GREETINGS : has
+    BUSINESS ||--o{ BUSINESS_PHONE : has
+    BUSINESS ||--o{ CUSTOMER : has
+    BUSINESS ||--o{ SERVICE : offers
+    BUSINESS ||--o{ BUSINESS_HOURS : has
+    CUSTOMER ||--o{ APPOINTMENT : schedules
+    SERVICE ||--o{ APPOINTMENT : booked_in
+    
+    BUSINESS {
+        int business_id PK
+        string name
+        string timezone
+        string status
+        datetime created_at
+        datetime updated_at
+    }
+    
+    BUSINESS_GREETINGS {
+        int business_greeting_id PK
+        int business_id FK
+        text greeting_text
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+    
+    BUSINESS_PHONE {
+        int business_phone_id PK
+        int business_id FK
+        string business_phone
+        boolean is_primary
+        datetime created_at
+    }
+    
+    CUSTOMER {
+        int customer_id PK
+        int business_id FK
+        string customer_phone
+        string first_name
+        string last_name
+        string email
+        text notes
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+    
+    SERVICE {
+        int service_id PK
+        int business_id FK
+        string name
+        text description
+        int duration_minutes
+        decimal price
+        boolean is_active
+        int buffer_before_minutes
+        int buffer_after_minutes
+        datetime created_at
+        datetime updated_at
+    }
+    
+    BUSINESS_HOURS {
+        int business_hours_id PK
+        int business_id FK
+        tinyint day_of_week
+        time open_time
+        time close_time
+        boolean is_closed
+        datetime created_at
+        datetime updated_at
+    }
+    
+    APPOINTMENT {
+        int appointment_id PK
+        int business_id FK
+        int customer_id FK
+        int service_id FK
+        datetime start_time
+        datetime end_time
+        string status
+        text notes
+        datetime created_at
+        datetime updated_at
+    }
+```
+
 ## Features
 
 - **Appointment Management**: Create, view, and manage appointments
@@ -13,6 +105,90 @@ A robust appointment scheduling system built with Python, Flask, and MySQL. This
 - **RESTful API**: Clean, well-documented API endpoints
 
 ## API Reference
+
+### Appointments
+
+#### Create Appointment
+
+```http
+POST /api/appointments
+```
+
+**Request Body:**
+```json
+{
+    "business_id": 1,
+    "customer_id": 1,
+    "service_id": 1,
+    "start_time": "2025-06-15T14:00:00"
+}
+```
+
+**Responses:**
+- `201 Created` - Appointment created successfully
+- `400 Bad Request` - Missing required fields or invalid data
+- `404 Not Found` - Service not found
+- `409 Conflict` - Time slot not available
+
+#### Search Appointments
+
+```http
+POST /api/appointments/search
+```
+
+**Request Body:**
+```json
+{
+    "business_id": 1,
+    "customer_id": 1,
+    "start_date": "2025-06-01",
+    "end_date": "2025-06-30",
+    "status": "scheduled"
+}
+```
+
+**Responses:**
+- `200 OK` - Returns list of matching appointments
+- `400 Bad Request` - Invalid date format
+
+#### Update Appointment
+
+```http
+PUT /api/appointments
+```
+
+**Request Body:**
+```json
+{
+    "appointment_id": 1,
+    "service_id": 2,
+    "start_time": "2025-06-15T15:00:00",
+    "status": "rescheduled"
+}
+```
+
+**Responses:**
+- `200 OK` - Appointment updated successfully
+- `400 Bad Request` - Invalid data
+- `404 Not Found` - Appointment not found
+
+#### Cancel Appointment
+
+```http
+DELETE /api/appointments
+```
+
+**Request Body:**
+```json
+{
+    "id": 1
+}
+```
+
+**Responses:**
+- `200 OK` - Appointment cancelled successfully
+- `404 Not Found` - Appointment not found
+- `400 Bad Request` - Invalid request
 
 ### Customers
 
