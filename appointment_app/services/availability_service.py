@@ -47,7 +47,7 @@ def get_daily_availability(business_phone, service_id, target_date):
             SELECT * FROM business_hours 
             WHERE business_id = (
                 SELECT business_id FROM business_phone 
-                WHERE phone_number = %s
+                WHERE business_phone = %s
             ) AND day_of_week = %s
         """, (business_phone, day_of_week))
         
@@ -65,7 +65,7 @@ def get_daily_availability(business_phone, service_id, target_date):
             WHERE DATE(start_time) = %s 
             AND business_id = (
                 SELECT business_id FROM business_phone 
-                WHERE phone_number = %s
+                WHERE business_phone = %s
             )
             AND status != 'cancelled'
             ORDER BY start_time

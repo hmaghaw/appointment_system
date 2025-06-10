@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS business_greetings (
 CREATE TABLE IF NOT EXISTS business_phone (
     id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
-    phone_number VARCHAR(20) NOT NULL,
+    business_phone VARCHAR(20) NOT NULL,
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_phone (phone_number),
+    UNIQUE KEY unique_business_phone (business_phone),
     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS business_phone (
 CREATE TABLE IF NOT EXISTS customer (
     id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
-    phone_number VARCHAR(20) NOT NULL,
+    customer_phone VARCHAR(20) NOT NULL,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255),
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS customer (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_business_phone (business_id, phone_number),
+    UNIQUE KEY unique_business_customer_phone (business_id, customer_phone),
     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -101,8 +101,8 @@ CREATE TABLE IF NOT EXISTS appointment (
 -- Add indexes for performance
 CREATE INDEX idx_appointment_business ON appointment(business_id, start_time, end_time);
 CREATE INDEX idx_appointment_customer ON appointment(customer_id);
-CREATE INDEX idx_business_phone ON business_phone(phone_number);
-CREATE INDEX idx_customer_business ON customer(business_id, phone_number);
+CREATE INDEX idx_business_phone ON business_phone(business_phone);
+CREATE INDEX idx_customer_business ON customer(business_id, customer_phone);
 
 -- Insert businesses
 INSERT INTO business (name, timezone, status) VALUES 
@@ -131,7 +131,7 @@ INSERT INTO business_greetings (business_id, greeting_text, is_active) VALUES
 (@digital_innovators_id, 'Welcome to Digital Innovators - Transforming Ideas into Reality', TRUE);
 
 -- Insert business phone numbers
-INSERT INTO business_phone (business_id, phone_number, is_primary) VALUES
+INSERT INTO business_phone (business_id, business_phone, is_primary) VALUES
 (@hair_salon_id, '+12025551234', TRUE),  -- Luxe Hair Studio
 (@hair_salon_id, '+12025554321', FALSE),  -- Secondary number
 (@tech_store_id, '+18185559876', TRUE),   -- TechGadgets
@@ -214,29 +214,29 @@ INSERT INTO service (business_id, name, description, duration_minutes, price, bu
 
 -- Insert sample customers
 -- For Luxe Hair Salon
-INSERT INTO customer (business_id, first_name, last_name, email, phone_number, notes) VALUES
+INSERT INTO customer (business_id, first_name, last_name, email, customer_phone, notes) VALUES
 (@hair_salon_id, 'Sarah', 'Johnson', 'sarah.j@example.com', '+12025551234', 'Prefers corner chair'),
 (@hair_salon_id, 'Michael', 'Chen', 'michael.c@example.com', '+12025551235', 'Allergic to almonds'),
 (@hair_salon_id, 'Emily', 'Rodriguez', 'emily.r@example.com', '+12025551236', 'VIP customer');
 
 -- For TechGadgets
-INSERT INTO customer (business_id, first_name, last_name, email, phone_number, notes) VALUES
+INSERT INTO customer (business_id, first_name, last_name, email, customer_phone, notes) VALUES
 (@tech_store_id, 'David', 'Kim', 'david.k@example.com', '+18185551234', 'Frequent buyer'),
 (@tech_store_id, 'Jennifer', 'Martinez', 'jennifer.m@example.com', '+18185551235', 'Interested in new releases');
 
 -- For Wellness Medical Center
-INSERT INTO customer (business_id, first_name, last_name, email, phone_number, notes) VALUES
+INSERT INTO customer (business_id, first_name, last_name, email, customer_phone, notes) VALUES
 (@clinic_id, 'Robert', 'Wilson', 'robert.w@example.com', '+17735551234', 'Annual checkup'),
 (@clinic_id, 'Lisa', 'Anderson', 'lisa.a@example.com', '+17735551235', 'Allergy shots');
 
 -- Set customer IDs for appointments
-SET @sarah_id = (SELECT id FROM customer WHERE phone_number = '+12025551234' LIMIT 1);
-SET @michael_id = (SELECT id FROM customer WHERE phone_number = '+12025551235' LIMIT 1);
-SET @emily_id = (SELECT id FROM customer WHERE phone_number = '+12025551236' LIMIT 1);
-SET @david_id = (SELECT id FROM customer WHERE phone_number = '+18185551234' LIMIT 1);
-SET @jennifer_id = (SELECT id FROM customer WHERE phone_number = '+18185551235' LIMIT 1);
-SET @robert_id = (SELECT id FROM customer WHERE phone_number = '+17735551234' LIMIT 1);
-SET @lisa_id = (SELECT id FROM customer WHERE phone_number = '+17735551235' LIMIT 1);
+SET @sarah_id = (SELECT id FROM customer WHERE customer_phone = '+12025551234' LIMIT 1);
+SET @michael_id = (SELECT id FROM customer WHERE customer_phone = '+12025551235' LIMIT 1);
+SET @emily_id = (SELECT id FROM customer WHERE customer_phone = '+12025551236' LIMIT 1);
+SET @david_id = (SELECT id FROM customer WHERE customer_phone = '+18185551234' LIMIT 1);
+SET @jennifer_id = (SELECT id FROM customer WHERE customer_phone = '+18185551235' LIMIT 1);
+SET @robert_id = (SELECT id FROM customer WHERE customer_phone = '+17735551234' LIMIT 1);
+SET @lisa_id = (SELECT id FROM customer WHERE customer_phone = '+17735551235' LIMIT 1);
 
 -- Insert sample appointments
 -- For Luxe Hair Salon
