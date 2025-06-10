@@ -195,7 +195,7 @@ def create_appointment():
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 400
 
-@bp.route('/api/appointments/update', methods=['POST'])
+@bp.route('/api/appointments', methods=['PUT'])
 def update_appointment():
     """
     Update an existing appointment
@@ -299,7 +299,7 @@ def update_appointment():
             # Fetch the updated appointment
             cursor.execute("""
                 SELECT * FROM appointment 
-                WHERE id = %s
+                WHERE appointment_id = %s
             """, (appointment_id,))
             
             updated_appointment = cursor.fetchone()
@@ -354,7 +354,7 @@ def cancel_appointment():
             # Fetch the updated appointment
             cursor.execute("""
                 SELECT * FROM appointment 
-                WHERE id = %s
+                WHERE appointment_id = %s
             """, (appointment_id,))
             
             canceled_appointment = cursor.fetchone()
