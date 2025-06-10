@@ -5,11 +5,69 @@ A robust appointment scheduling system built with Python, Flask, and MySQL. This
 ## Features
 
 - **Appointment Management**: Create, view, and manage appointments
+- **Customer Management**: Create, update, and find customers by phone number
 - **Service Management**: Define services with durations and pricing
 - **Business Hours**: Set custom business hours for each day of the week
 - **Availability Checking**: Real-time availability checking based on business hours and existing appointments
 - **Multi-tenant**: Supports multiple businesses with separate data isolation
 - **RESTful API**: Clean, well-documented API endpoints
+
+## API Reference
+
+### Customers
+
+#### Find or Create Customer by Phone
+
+Finds an existing customer by phone number or creates a new one if not found.
+
+```http
+POST /api/customers/upsert
+```
+
+**Request Body:**
+```json
+{
+    "customer_phone": "+12025551234",
+    "business_phone": "+15551234567",
+    "first_name": "John",  // Optional
+    "last_name": "Doe",     // Optional
+    "email": "john@example.com"  // Optional
+}
+```
+
+**Responses:**
+
+- `200 OK` - Customer found
+  ```json
+  {
+      "customer_id": 123,
+      "name": "John Doe",
+      "email": "john@example.com"
+  }
+  ```
+
+- `201 Created` - New customer created
+  ```json
+  {
+      "customer_id": 124,
+      "name": "Guest",
+      "email": ""
+  }
+  ```
+
+- `400 Bad Request` - Missing required fields
+  ```json
+  {
+      "error": "customer_phone and business_phone are required"
+  }
+  ```
+
+- `404 Not Found` - Business not found
+  ```json
+  {
+      "error": "Business not found with the provided phone number"
+  }
+  ```
 
 ## Tech Stack
 
