@@ -313,7 +313,7 @@ def update_appointment():
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 400
 
-@bp.route('/api/appointments/cancel', methods=['POST'])
+@bp.route('/api/appointments', methods=['DELETE'])
 def cancel_appointment():
     """
     Cancel an appointment
