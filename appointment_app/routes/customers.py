@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from database import get_db_cursor
 import mysql.connector
 from datetime import datetime
+import re
 
 bp = Blueprint('customers', __name__, url_prefix='/api/customers')
 
@@ -169,3 +170,86 @@ def update_customer():
             
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 400
+
+@bp.route('/upsert', methods=['POST'])
+def upsert_customer():
+    """
+    Find or create a customer by phone number
+    
+    Request body should contain:
+    - customer_phone: Customer's phone number (required)
+    - business_phone: Business's phone number (required)
+    - first_name: Customer's first name (optional, will be set to 'Guest' if not provided)
+    - last_name: Customer's last name (optional, will be set to empty if not provided)
+    - email: Customer's email (optional, will be set to empty if not provided)
+    
+    Returns:
+        A JSON object with customer_id, name, and email
+    """
+    data = request.get_json()
+    
+    # Validate required fields
+    if not data or 'customer_phone' not in data or 'business_phone' not in data:
+        return jsonify({"error": "customer_phone and business_phone are required"}), 400
+    
+    # Use phone numbers exactly as provided
+    customer_phone = str(data['customer_phone']).strip()
+    business_phone = str(data['business_phone']).strip()
+    
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            # First, try to find the business by phone
+            cursor.execute("""
+                SELECT b.id 
+                FROM business b
+                JOIN business_phone bp ON b.id = bp.business_id
+                WHERE bp.phone_number = %s
+            """, (business_phone,))
+            business = cursor.fetchone()
+            
+            if not business:
+                return jsonify({"error": "Business not found with the provided phone number"}), 404
+            
+            business_id = business['id']
+            
+            # Try to find the customer by phone and business
+            cursor.execute("""
+                SELECT id, first_name, last_name, email 
+                FROM customer 
+                WHERE business_id = %s AND phone_number = %s
+            """, (business_id, customer_phone))
+            
+            customer = cursor.fetchone()
+            
+            if not customer:
+                # Create new customer with just the phone number if not found
+                cursor.execute("""
+                    INSERT INTO customer (
+                        business_id, phone_number, first_name, last_name, email,
+                        created_at, updated_at
+                    ) VALUES (
+                        %s, %s, 'Guest', '', '', NOW(), NOW()
+                    )
+                """, (business_id, customer_phone))
+                
+                customer_id = cursor.lastrowid
+                
+                # Return the newly created customer info with default values
+                return jsonify({
+                    "customer_id": customer_id,
+                    "name": "Guest",
+                    "email": ""
+                }), 201
+            else:
+                # Return existing customer info
+                full_name = f"{customer['first_name'] or ''} {customer['last_name'] or ''}".strip()
+                return jsonify({
+                    "customer_id": customer['id'],
+                    "name": full_name if full_name else "Guest",
+                    "email": customer['email'] or ""
+                }), 200
+                
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
