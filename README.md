@@ -137,7 +137,7 @@ All API endpoints require authentication using JWT tokens.
 
 - `GET /api/appointments` - List all appointments
 - `POST /api/appointments` - Create a new appointment
-- `POST /api/appointments/update` - Update an existing appointment
+- `PUT /api/appointments` - Update an existing appointment
   ```json
   {
     "appointment_id": 123,
@@ -146,12 +146,14 @@ All API endpoints require authentication using JWT tokens.
     "status": "rescheduled"
   }
   ```
-- `POST /api/appointments/cancel` - Cancel an appointment
+- `DELETE /api/appointments` - Cancel an appointment
   ```json
   {
-    "appointment_id": 123
+    "id": 123
   }
   ```
+  
+  **Note:** The cancel endpoint now uses the DELETE method and expects the appointment ID in the request body.
 
 #### Services
 
