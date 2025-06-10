@@ -21,7 +21,7 @@ TEST_DATETIME = datetime.combine(TODAY, time(10, 0))  # 10:00 AM today
 
 # Sample service data for testing
 SAMPLE_SERVICE = {
-    'id': SERVICE_ID,
+    'service_id': SERVICE_ID,
     'business_id': BUSINESS_ID,
     'name': 'Test Service',
     'duration_minutes': 30,
@@ -62,7 +62,7 @@ def app():
             # Create service table
             cursor.execute("""
                 CREATE TABLE service (
-                    id INT NOT NULL PRIMARY KEY,
+                    service_id INT NOT NULL PRIMARY KEY,
                     business_id INT NOT NULL,
                     name VARCHAR(255) NOT NULL,
                     duration_minutes INT NOT NULL,
@@ -73,7 +73,7 @@ def app():
             # Create business_hours table
             cursor.execute("""
                 CREATE TABLE business_hours (
-                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    business_hours_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     business_id INT NOT NULL,
                     day_of_week INT NOT NULL,
                     open_time TIME NOT NULL,
@@ -86,7 +86,7 @@ def app():
             # Create appointment table
             cursor.execute("""
                 CREATE TABLE appointment (
-                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    appointment_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     business_id INT NOT NULL,
                     customer_id INT NOT NULL,
                     service_id INT NOT NULL,
@@ -101,7 +101,7 @@ def app():
             # Insert test service
             cursor.execute("""
                 INSERT INTO service 
-                (id, business_id, name, duration_minutes, price)
+                (service_id, business_id, name, duration_minutes, price)
                 VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE 
                     business_id = VALUES(business_id),
@@ -109,7 +109,7 @@ def app():
                     duration_minutes = VALUES(duration_minutes),
                     price = VALUES(price)
             """, (
-                SAMPLE_SERVICE['id'],
+                SAMPLE_SERVICE['service_id'],
                 SAMPLE_SERVICE['business_id'],
                 SAMPLE_SERVICE['name'],
                 SAMPLE_SERVICE['duration_minutes'],

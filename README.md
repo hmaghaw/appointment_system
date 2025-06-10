@@ -140,7 +140,7 @@ All API endpoints require authentication using JWT tokens.
 - `POST /api/appointments/update` - Update an existing appointment
   ```json
   {
-    "id": 123,
+    "appointment_id": 123,
     "service_id": 5,
     "start_time": "2025-06-15T14:00:00",
     "status": "rescheduled"
@@ -149,7 +149,7 @@ All API endpoints require authentication using JWT tokens.
 - `POST /api/appointments/cancel` - Cancel an appointment
   ```json
   {
-    "id": 123
+    "appointment_id": 123
   }
   ```
 

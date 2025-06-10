@@ -49,13 +49,13 @@ def search_appointments():
     
     # Build the base query
     query = """
-        SELECT a.id, a.business_id, a.customer_id, a.service_id, 
+        SELECT a.appointment_id, a.business_id, a.customer_id, a.service_id, 
                a.start_time, a.end_time, a.status, a.created_at, a.updated_at,
                s.name as service_name,
                CONCAT(c.first_name, ' ', c.last_name) as customer_name
         FROM appointment a
-        LEFT JOIN service s ON a.service_id = s.id AND a.business_id = s.business_id
-        LEFT JOIN customer c ON a.customer_id = c.id
+        LEFT JOIN service s ON a.service_id = s.service_id AND a.business_id = s.business_id
+        LEFT JOIN customer c ON a.customer_id = c.customer_id
         WHERE 1=1
     """
     params = []
@@ -145,7 +145,7 @@ def create_appointment():
         with get_db_cursor() as cursor:
             cursor.execute("""
                 SELECT duration_minutes FROM service 
-                WHERE id = %s AND business_id = %s
+                WHERE service_id = %s AND business_id = %s
             """, (data['service_id'], data['business_id']))
             service = cursor.fetchone()
             
@@ -185,7 +185,7 @@ def create_appointment():
             
             # Fetch the created appointment
             cursor.execute("""
-                SELECT * FROM appointment WHERE id = %s
+                SELECT * FROM appointment WHERE appointment_id = %s
             """, (appointment_id,))
             appointment = cursor.fetchone()
             return jsonify(appointment), 201
@@ -220,7 +220,7 @@ def update_appointment():
             # First, get the current appointment
             cursor.execute("""
                 SELECT * FROM appointment 
-                WHERE id = %s
+                WHERE appointment_id = %s
                 FOR UPDATE
             """, (appointment_id,))
             appointment = cursor.fetchone()
@@ -247,7 +247,7 @@ def update_appointment():
                 service_id = data.get('service_id', appointment['service_id'])
                 cursor.execute("""
                     SELECT duration_minutes FROM service 
-                    WHERE id = %s AND business_id = %s
+                    WHERE service_id = %s AND business_id = %s
                 """, (service_id, appointment['business_id']))
                 service = cursor.fetchone()
                 
@@ -287,7 +287,7 @@ def update_appointment():
             update_query = """
                 UPDATE appointment 
                 SET {}
-                WHERE id = %(appointment_id)s
+                WHERE appointment_id = %(appointment_id)s
             """.format(", ".join(update_fields))
             
             # Add updated_at timestamp
@@ -331,8 +331,8 @@ def cancel_appointment():
         with get_db_cursor(commit=True) as cursor:
             # First, check if the appointment exists
             cursor.execute("""
-                SELECT id, status FROM appointment 
-                WHERE id = %s
+                SELECT appointment_id, status FROM appointment 
+                WHERE appointment_id = %s
                 FOR UPDATE
             """, (appointment_id,))
             appointment = cursor.fetchone()
@@ -348,7 +348,7 @@ def cancel_appointment():
                 UPDATE appointment 
                 SET status = 'canceled', 
                     updated_at = NOW()
-                WHERE id = %s
+                WHERE appointment_id = %s
             """, (appointment_id,))
             
             # Fetch the updated appointment

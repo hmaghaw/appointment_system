@@ -39,13 +39,13 @@ def create_customer():
     try:
         with get_db_cursor(commit=True) as cursor:
             # Check if business exists
-            cursor.execute("SELECT id FROM business WHERE id = %s", (data['business_id'],))
+            cursor.execute("SELECT business_id FROM business WHERE business_id = %s", (data['business_id'],))
             if not cursor.fetchone():
                 return jsonify({"error": "Business not found"}), 404
             
             # Check if phone number already exists for this business
             cursor.execute("""
-                SELECT id FROM customer 
+                SELECT customer_id FROM customer 
                 WHERE business_id = %s AND customer_phone = %s
             """, (data['business_id'], data['customer_phone']))
             
@@ -72,7 +72,7 @@ def create_customer():
             
             # Get the created customer
             customer_id = cursor.lastrowid
-            cursor.execute("SELECT * FROM customer WHERE id = %s", (customer_id,))
+            cursor.execute("SELECT * FROM customer WHERE customer_id = %s", (customer_id,))
             customer = cursor.fetchone()
             
             return jsonify(customer), 201
@@ -123,7 +123,7 @@ def update_customer():
             # Check if customer exists and get current data
             cursor.execute("""
                 SELECT * FROM customer 
-                WHERE id = %(customer_id)s
+                WHERE customer_id = %(customer_id)s
                 FOR UPDATE
             """, {'customer_id': customer_id})
             
@@ -134,10 +134,10 @@ def update_customer():
             # If phone number is being updated, check for duplicates
             if 'customer_phone' in data and data['customer_phone'] != customer['customer_phone']:
                 cursor.execute("""
-                    SELECT id FROM customer 
+                    SELECT customer_id FROM customer 
                     WHERE business_id = %(business_id)s 
                     AND customer_phone = %(customer_phone)s
-                    AND id != %(customer_id)s
+                    AND customer_id != %(customer_id)s
                 """, {
                     'business_id': customer['business_id'],
                     'customer_phone': data['customer_phone'],
@@ -151,7 +151,7 @@ def update_customer():
             update_query = f"""
                 UPDATE customer 
                 SET {', '.join(update_fields)}, updated_at = NOW()
-                WHERE id = %(customer_id)s
+                WHERE customer_id = %(customer_id)s
             """
             
             cursor.execute(update_query, params)
@@ -159,7 +159,7 @@ def update_customer():
             # Fetch the updated customer
             cursor.execute("""
                 SELECT * FROM customer 
-                WHERE id = %s
+                WHERE customer_id = %s
             """, (customer_id,))
             
             updated_customer = cursor.fetchone()
@@ -200,9 +200,9 @@ def upsert_customer():
         with get_db_cursor(commit=True) as cursor:
             # First, try to find the business by phone
             cursor.execute("""
-                SELECT b.id 
+                SELECT b.business_id 
                 FROM business b
-                JOIN business_phone bp ON b.id = bp.business_id
+                JOIN business_phone bp ON b.business_id = bp.business_id
                 WHERE bp.business_phone = %s
             """, (business_phone,))
             business = cursor.fetchone()
@@ -210,11 +210,11 @@ def upsert_customer():
             if not business:
                 return jsonify({"error": "Business not found with the provided phone number"}), 404
             
-            business_id = business['id']
+            business_id = business['business_id']
             
             # Try to find the customer by phone and business
             cursor.execute("""
-                SELECT id, first_name, last_name, email 
+                SELECT customer_id, first_name, last_name, email 
                 FROM customer 
                 WHERE business_id = %s AND customer_phone = %s
             """, (business_id, customer_phone))
@@ -244,7 +244,7 @@ def upsert_customer():
                 # Return existing customer info
                 full_name = f"{customer['first_name'] or ''} {customer['last_name'] or ''}".strip()
                 return jsonify({
-                    "customer_id": customer['id'],
+                    "customer_id": customer['customer_id'],
                     "name": full_name if full_name else "Guest",
                     "email": customer['email'] or ""
                 }), 200

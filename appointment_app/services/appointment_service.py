@@ -21,7 +21,7 @@ def validate_appointment(business_id, service_id, start_time, end_time, exclude_
         # Get service duration
         cursor.execute("""
             SELECT duration_minutes FROM service 
-            WHERE id = %s AND business_id = %s
+            WHERE service_id = %s AND business_id = %s
         """, (service_id, business_id))
         service = cursor.fetchone()
         
@@ -71,10 +71,10 @@ def validate_appointment(business_id, service_id, start_time, end_time, exclude_
             
         # Check for overlapping appointments
         query = """
-            SELECT id FROM appointment 
+            SELECT appointment_id FROM appointment 
             WHERE business_id = %s
             AND status != 'cancelled'
-            AND id != COALESCE(%s, -1)
+            AND appointment_id != COALESCE(%s, -1)
             AND (
                 (start_time < %s AND end_time > %s) OR  # New appointment starts during existing
                 (start_time < %s AND end_time > %s) OR  # New appointment ends during existing

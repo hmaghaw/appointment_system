@@ -5,7 +5,7 @@ USE appointment_db;
 
 -- Business table
 CREATE TABLE IF NOT EXISTS business (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     timezone VARCHAR(50) NOT NULL DEFAULT 'UTC',
     status VARCHAR(20) NOT NULL DEFAULT 'active',
@@ -15,29 +15,29 @@ CREATE TABLE IF NOT EXISTS business (
 
 -- Business Greetings
 CREATE TABLE IF NOT EXISTS business_greetings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    business_greeting_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     greeting_text TEXT NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Business Phone Numbers
 CREATE TABLE IF NOT EXISTS business_phone (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    business_phone_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     business_phone VARCHAR(20) NOT NULL,
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_business_phone (business_phone),
-    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Customer table
 CREATE TABLE IF NOT EXISTS customer (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     customer_phone VARCHAR(20) NOT NULL,
     first_name VARCHAR(100),
@@ -48,12 +48,12 @@ CREATE TABLE IF NOT EXISTS customer (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_business_customer_phone (business_id, customer_phone),
-    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Service table
 CREATE TABLE IF NOT EXISTS service (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    service_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -64,12 +64,12 @@ CREATE TABLE IF NOT EXISTS service (
     buffer_after_minutes INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Business Hours
 CREATE TABLE IF NOT EXISTS business_hours (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    business_hours_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     day_of_week TINYINT NOT NULL, -- 0=Monday, 6=Sunday
     open_time TIME,
@@ -78,12 +78,12 @@ CREATE TABLE IF NOT EXISTS business_hours (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_business_day (business_id, day_of_week),
-    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Appointment table
 CREATE TABLE IF NOT EXISTS appointment (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     customer_id INT NOT NULL,
     service_id INT NOT NULL,
@@ -93,9 +93,9 @@ CREATE TABLE IF NOT EXISTS appointment (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
-    FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE CASCADE,
-    FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Add indexes for performance
