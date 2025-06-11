@@ -152,6 +152,42 @@ POST /availability
 
 ## Business
 
+### Get Business by Phone
+
+```http
+POST /business/by-phone
+```
+
+**Request Body:**
+```json
+{
+    "business_phone": "+1234567890"
+}
+```
+
+**Responses:**
+- `200 OK` - Returns business information
+- `400 Bad Request` - Business phone number is required
+- `404 Not Found` - No business found with the provided phone number
+
+**Example Response:**
+```json
+{
+    "business_id": 1,
+    "name": "Business Name",
+    "email": "business@example.com",
+    "address": "123 Business St",
+    "city": "New York",
+    "state": "NY",
+    "zip_code": "10001",
+    "country": "USA",
+    "timezone": "America/New_York",
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2023-01-01T00:00:00",
+    "business_phone": "+1234567890"
+}
+```
+
 ### Get Business Greeting
 
 ```http

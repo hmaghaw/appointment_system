@@ -244,6 +244,16 @@ All API endpoints require authentication using JWT tokens.
 - `GET /api/services` - List all services
 - `POST /api/services` - Create a new service
 
+#### Business
+
+- `POST /api/business/by-phone` - Get business information by phone number
+  ```json
+  {
+      "business_phone": "+1234567890"
+  }
+  ```
+  Returns business details including name, address, contact info, and timezone.
+
 #### Business Hours
 
 - `GET /api/business-hours` - Get business hours
