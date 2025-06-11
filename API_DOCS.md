@@ -188,10 +188,12 @@ POST /business/by-phone
 }
 ```
 
-### Get Business Greeting
+### Business Messages
+
+#### Get Business Messages
 
 ```http
-POST /business/greeting
+POST /business/messages
 ```
 
 **Request Body:**
@@ -202,9 +204,77 @@ POST /business/greeting
 ```
 
 **Responses:**
-- `200 OK` - Returns business greeting information
-- `400 Bad Request` - Missing business_id
-- `404 Not Found` - Business or greeting not found
+- `200 OK` - Returns list of active messages for the business
+- `400 Bad Request` - Missing or invalid business_id
+- `404 Not Found` - No messages found for the business
+
+**Example Response:**
+```json
+{
+    "messages": [
+        {
+            "business_message_id": 1,
+            "business_id": 1,
+            "type": "greeting",
+            "message": "Welcome to our business!",
+            "is_active": true,
+            "created_at": "2023-01-01T00:00:00",
+            "updated_at": "2023-01-01T00:00:00",
+            "business_name": "Example Business"
+        },
+        {
+            "business_message_id": 2,
+            "business_id": 1,
+            "type": "confirmation",
+            "message": "Your appointment has been confirmed!",
+            "is_active": true,
+            "created_at": "2023-01-01T00:00:00",
+            "updated_at": "2023-01-01T00:00:00",
+            "business_name": "Example Business"
+        }
+    ],
+    "count": 2
+}
+```
+
+#### Create Business Message
+
+```http
+POST /business/messages
+```
+
+**Request Body:**
+```json
+{
+    "business_id": 1,
+    "message": "Your appointment is confirmed for {time} on {date}.",
+    "type": "confirmation",
+    "is_active": true
+}
+```
+
+**Parameters:**
+- `business_id` (required): ID of the business this message belongs to
+- `message` (required): The message text (can include placeholders like {time}, {date}, etc.)
+- `type` (required): Type of the message (e.g., 'greeting', 'confirmation', 'reminder')
+- `is_active` (optional, default: true): Whether the message is active
+
+**Responses:**
+- `201 Created` - Message created successfully
+  ```json
+  {
+      "business_message_id": 3,
+      "business_id": 1,
+      "type": "confirmation",
+      "message": "Your appointment is confirmed for {time} on {date}.",
+      "is_active": true,
+      "created_at": "2023-01-01T12:00:00",
+      "updated_at": "2023-01-01T12:00:00",
+      "business_name": "Example Business"
+  }
+  ```
+- `400 Bad Request` - Missing required fields or invalid data
+- `500 Internal Server Error` - Server error
 
 ---
 

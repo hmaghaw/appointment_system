@@ -6,47 +6,127 @@ from functools import wraps
 
 bp = Blueprint('business', __name__, url_prefix='/api/business')
 
-@bp.route('/greeting', methods=['POST'])
-def get_business_greeting():
+@bp.route('/messages', methods=['POST'])
+def handle_business_messages():
     """
-    Get greeting for a specific business
+    Handle business messages
     
-    Request body: {
-        "business_id": 123  # ID of the business
+    For listing messages, send:
+    {
+        "business_id": 123
+    }
+    
+    For creating a new message, send:
+    {
+        "business_id": 123,
+        "message": "Welcome to our business!",
+        "type": "greeting",
+        "is_active": true
     }
     """
+    data = request.get_json() or {}
+    
+    # If message and type are provided, it's a create request
+    if 'message' in data and 'type' in data:
+        return create_business_message()
+    # Otherwise, it's a list request
+    elif 'business_id' in data:
+        return get_business_messages()
+    else:
+        return jsonify({"error": "Invalid request. Either provide business_id for listing or required fields for creation"}), 400
+
+def get_business_messages():
     data = request.get_json() or {}
     business_id = data.get('business_id')
     
     if not business_id:
         return jsonify({"error": "business_id is required in the request body"}), 400
+    
     query = """
-        SELECT bg.*, b.name as business_name
-        FROM business_greetings bg
-        JOIN business b ON bg.business_id = b.business_id
-        WHERE bg.business_id = %s AND bg.is_active = TRUE
-        ORDER BY bg.created_at DESC
-        LIMIT 1
+        SELECT 
+            bm.business_message_id,
+            bm.business_id,
+            bm.type,
+            bm.message,
+            bm.is_active,
+            bm.created_at,
+            bm.updated_at,
+            b.name as business_name
+        FROM business_messages bm
+        JOIN business b ON bm.business_id = b.business_id
+        WHERE bm.business_id = %s AND bm.is_active = TRUE
+        ORDER BY bm.created_at DESC
     """
     
     with get_db_cursor() as cursor:
         cursor.execute(query, (business_id,))
-        result = cursor.fetchone()
+        results = cursor.fetchall()
         
-        if not result:
-            return jsonify({"error": "No active greeting found for this business"}), 404
+        if not results:
+            return jsonify({"messages": [], "count": 0})
         
-        # Convert row to dictionary
+        # Convert rows to list of dictionaries
         columns = [col[0] for col in cursor.description]
-        greeting = {}
-        for i, value in enumerate(result):
-            col_name = columns[i]
-            if isinstance(value, (datetime, timedelta)):
-                greeting[col_name] = value.isoformat()
-            else:
-                greeting[col_name] = result[col_name]
+        messages = []
+        
+        for row in results:
+            message = {}
+            for i, value in enumerate(row):
+                col_name = columns[i]
+                if isinstance(value, (datetime, timedelta)):
+                    message[col_name] = value.isoformat()
+                else:
+                    message[col_name] = row[col_name]
+            messages.append(message)
     
-    return jsonify(greeting)
+    return jsonify({
+        "messages": messages,
+        "count": len(messages)
+    })
+
+def create_business_message():
+    data = request.get_json() or {}
+    business_id = data.get('business_id')
+    message = data.get('message')
+    message_type = data.get('type', 'greeting')
+    is_active = data.get('is_active', True)
+    
+    if not all([business_id, message]):
+        return jsonify({"error": "business_id and message are required"}), 400
+    
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute("""
+                INSERT INTO business_messages 
+                (business_id, message, type, is_active, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, NOW(), NOW())
+            """, (business_id, message, message_type, is_active))
+            
+            # Get the created message
+            message_id = cursor.lastrowid
+            cursor.execute("""
+                SELECT bm.*, b.name as business_name
+                FROM business_messages bm
+                JOIN business b ON bm.business_id = b.business_id
+                WHERE bm.business_message_id = %s
+            """, (message_id,))
+            
+            result = cursor.fetchone()
+            columns = [col[0] for col in cursor.description]
+            new_message = {}
+            for i, value in enumerate(result):
+                col_name = columns[i]
+                if isinstance(value, (datetime, timedelta)):
+                    new_message[col_name] = value.isoformat()
+                else:
+                    new_message[col_name] = result[col_name]
+            
+            return jsonify(new_message), 201
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 @bp.route('/by-phone', methods=['POST'])
 def get_business_by_phone():

@@ -20,14 +20,20 @@ SET @ideationmax_id = 4;
 SET @codecraft_id = 5;
 SET @digital_innovators_id = 6;
 
--- Insert business greetings
-INSERT INTO business_greetings (business_id, greeting_text, is_active) VALUES
-(@hair_salon_id, 'Welcome to Luxe Hair Studio - Where Style Meets Elegance', TRUE),
-(@tech_store_id, 'Welcome to TechGadgets - Your One-Stop Tech Solution', TRUE),
-(@clinic_id, 'Welcome to Wellness Medical Center - Your Health is Our Priority', TRUE),
-(@ideationmax_id, 'Welcome to IdeationMax. The leading AI Agents development firm', TRUE),
-(@codecraft_id, 'Welcome to CodeCraft Solutions - Building the Future with Clean Code', TRUE),
-(@digital_innovators_id, 'Welcome to Digital Innovators - Transforming Ideas into Reality', TRUE);
+-- Insert business messages
+INSERT INTO business_messages (business_id, type, message, is_active) VALUES
+-- Greetings
+(@hair_salon_id, 'greeting', 'Welcome to Luxe Hair Studio - Where Style Meets Elegance', TRUE),
+(@tech_store_id, 'greeting', 'Welcome to TechGadgets - Your One-Stop Tech Solution', TRUE),
+(@clinic_id, 'greeting', 'Welcome to Wellness Medical Center - Your Health is Our Priority', TRUE),
+(@ideationmax_id, 'greeting', 'Welcome to IdeationMax. The leading AI Agents development firm', TRUE),
+(@codecraft_id, 'greeting', 'Welcome to CodeCraft Solutions - Building the Future with Clean Code', TRUE),
+(@digital_innovators_id, 'greeting', 'Welcome to Digital Innovators - Transforming Ideas into Reality', TRUE),
+-- Add some additional message types
+(@hair_salon_id, 'confirmation', 'Your appointment at Luxe Hair Studio has been confirmed!', TRUE),
+(@hair_salon_id, 'reminder', 'Reminder: Your appointment at Luxe Hair Studio is tomorrow at {time}', TRUE),
+(@clinic_id, 'confirmation', 'Your appointment at Wellness Medical Center has been confirmed', TRUE),
+(@clinic_id, 'reminder', 'Friendly reminder: Your appointment is in 24 hours', TRUE);
 
 -- Insert business phone numbers
 INSERT INTO business_phone (business_id, business_phone, is_primary) VALUES

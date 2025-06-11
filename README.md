@@ -254,6 +254,26 @@ All API endpoints require authentication using JWT tokens.
   ```
   Returns business details including name, address, contact info, and timezone.
 
+- `POST /api/business/messages` - Manage business messages
+  - **Get messages**:
+    ```json
+    {
+        "business_id": 1
+    }
+    ```
+    Returns all active messages for the business.
+  
+  - **Create message**:
+    ```json
+    {
+        "business_id": 1,
+        "message": "Your appointment is confirmed!",
+        "type": "confirmation",
+        "is_active": true
+    }
+    ```
+    Creates a new business message (e.g., greetings, confirmations, reminders).
+
 #### Business Hours
 
 - `GET /api/business-hours` - Get business hours

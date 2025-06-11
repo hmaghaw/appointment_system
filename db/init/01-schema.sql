@@ -15,15 +15,17 @@ CREATE TABLE IF NOT EXISTS business (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Business Greetings
-CREATE TABLE IF NOT EXISTS business_greetings (
-    business_greeting_id INT AUTO_INCREMENT PRIMARY KEY,
+-- Business Messages
+CREATE TABLE IF NOT EXISTS business_messages (
+    business_message_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
-    greeting_text TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'greeting',
+    message TEXT NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
+    INDEX idx_business_id (business_id)
 ) ENGINE=InnoDB;
 
 -- Business Phone Numbers
