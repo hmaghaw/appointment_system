@@ -472,6 +472,140 @@ POST /call-history/read
 
 - `500 Internal Server Error` - Server error
 
+## Call History
+
+### Create or Update Call Metadata
+
+```http
+POST /api/call-history/create
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "meta": {
+        "from": "+1234567890",
+        "to": "+1987654321",
+        "status": "completed",
+        "duration": "120",
+        "direction": "inbound",
+        "recording_url": "https://example.com/recording.mp3"
+    }
+}
+```
+
+**Responses:**
+- `200 OK` - Call metadata created/updated successfully
+- `400 Bad Request` - Missing required fields
+- `500 Internal Server Error` - Server error
+
+### Get Call Metadata
+
+```http
+POST /api/call-history/read
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+    "exists": true,
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "meta": {
+        "from": "+1234567890",
+        "to": "+1987654321",
+        "status": "completed"
+    },
+    "created_at": "2025-06-11T14:30:00",
+    "updated_at": "2025-06-11T14:30:00"
+}
+```
+
+**Not Found Response (200 OK):**
+```json
+{
+    "exists": false,
+    "call_sid": "CA1234567890abcdef1234567890abcdef"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - Missing call_sid
+- `500 Internal Server Error` - Server error
+
+## Call Conversations
+
+### Add Conversation Item
+
+```http
+POST /api/call-history/conversation/add
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "role": "user",
+    "content": "Hello, I'd like to book an appointment."
+}
+```
+
+**Responses:**
+- `201 Created` - Conversation item created successfully
+- `400 Bad Request` - Missing required fields or invalid role
+- `500 Internal Server Error` - Server error
+
+### List Conversation Items
+
+```http
+POST /api/call-history/conversation/list
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+    "status": "success",
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "count": 2,
+    "items": [
+        {
+            "call_conversation_id": 1,
+            "call_sid": "CA1234567890abcdef1234567890abcdef",
+            "role": "user",
+            "content": "Hello, I'd like to book an appointment.",
+            "created_at": "2025-06-11T15:30:00",
+            "updated_at": "2025-06-11T15:30:00"
+        },
+        {
+            "call_conversation_id": 2,
+            "call_sid": "CA1234567890abcdef1234567890abcdef",
+            "role": "assistant",
+            "content": "I'd be happy to help you with that. What date works for you?",
+            "created_at": "2025-06-11T15:30:05",
+            "updated_at": "2025-06-11T15:30:05"
+        }
+    ]
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - Missing call_sid
+- `500 Internal Server Error` - Server error
+
 ## Rate Limiting
 API requests are subject to rate limiting:
 - 100 requests per minute per IP address

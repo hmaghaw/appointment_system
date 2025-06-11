@@ -18,6 +18,18 @@ CREATE TABLE IF NOT EXISTS `call_meta` (
     INDEX `idx_updated_at` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores call metadata with call_sid as primary key';
 
+CREATE TABLE IF NOT EXISTS `call_conversation` (
+    `call_conversation_id` BIGINT NOT NULL AUTO_INCREMENT,
+    `call_sid` VARCHAR(64) NOT NULL,
+    `role` VARCHAR(50) NOT NULL,
+    `content` TEXT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`call_conversation_id`),
+    INDEX `idx_call_sid` (`call_sid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- Add comments to explain the JSON structure
 -- The meta JSON typically includes:
 -- {

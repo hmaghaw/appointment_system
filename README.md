@@ -11,8 +11,104 @@ A robust appointment scheduling system built with Python, Flask, and MySQL. This
 - **Availability Checking**: Real-time availability checking based on business hours and existing appointments
 - **Multi-tenant**: Supports multiple businesses with separate data isolation
 - **RESTful API**: Clean, well-documented API endpoints
+- **Call History**: Track and manage call metadata and recordings
 
 ## API Reference
+
+### Call History
+
+#### Create or Update Call Metadata
+
+```http
+POST /api/call-history/create
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "meta": {
+        "from": "+1234567890",
+        "to": "+1987654321",
+        "status": "completed",
+        "duration": "120",
+        "direction": "inbound",
+        "recording_url": "https://example.com/recording.mp3"
+    }
+}
+```
+
+#### Get Call Metadata
+
+```http
+POST /api/call-history/read
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef"
+}
+```
+
+### Conversation Management
+
+#### Add Conversation Item
+
+```http
+POST /api/call-history/conversation/add
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "role": "user",
+    "content": "Hello, I'd like to book an appointment."
+}
+```
+
+#### List Conversation Items
+
+```http
+POST /api/call-history/conversation/list
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "success",
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "count": 2,
+    "items": [
+        {
+            "call_conversation_id": 1,
+            "call_sid": "CA1234567890abcdef1234567890abcdef",
+            "role": "user",
+            "content": "Hello, I'd like to book an appointment.",
+            "created_at": "2025-06-11T15:30:00",
+            "updated_at": "2025-06-11T15:30:00"
+        },
+        {
+            "call_conversation_id": 2,
+            "call_sid": "CA1234567890abcdef1234567890abcdef",
+            "role": "assistant",
+            "content": "I'd be happy to help you with that. What date works for you?",
+            "created_at": "2025-06-11T15:30:05",
+            "updated_at": "2025-06-11T15:30:05"
+        }
+    ]
+}
+```
+
+For complete API documentation, see [API_DOCS.md](API_DOCS.md)
 
 ### Appointments
 

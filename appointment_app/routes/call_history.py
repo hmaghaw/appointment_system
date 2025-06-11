@@ -1,7 +1,6 @@
 import json
 from flask import Blueprint, jsonify, request
 import mysql.connector
-from datetime import datetime
 from database import get_db_cursor
 
 bp = Blueprint('call_history', __name__, url_prefix='/api/call-history')
@@ -13,24 +12,7 @@ def _get_call_meta(call_sid):
             SELECT * FROM call_meta 
             WHERE call_sid = %s
         """, (call_sid,))
-        
-        call = cursor.fetchone()
-        
-        if call:
-            # Convert datetime objects to ISO format for JSON serialization
-            call['created_at'] = call['created_at'].isoformat() if call['created_at'] else None
-            call['updated_at'] = call['updated_at'].isoformat() if call['updated_at'] else None
-        
-        return call
-
-def _call_exists(call_sid):
-    """Helper function to check if a call exists"""
-    with get_db_cursor() as cursor:
-        cursor.execute("""
-            SELECT 1 FROM call_meta 
-            WHERE call_sid = %s
-        """, (call_sid,))
-        return cursor.fetchone() is not None
+        return cursor.fetchone()
 
 @bp.route('/create', methods=['POST'])
 def create_or_update_call_meta():
@@ -39,15 +21,8 @@ def create_or_update_call_meta():
     
     Request Body:
     {
-        "call_sid": "CA1234567890abcdef1234567890abcdef",
-        "meta": {
-            "from": "+1234567890",
-            "to": "+1987654321",
-            "status": "completed",
-            "duration": "120",
-            "direction": "inbound",
-            "recording_url": "https://example.com/recording.mp3"
-        }
+        "call_sid": "CA123...",
+        "meta": { ... }  # Any JSON-serializable data
     }
     """
     data = request.get_json()
@@ -59,11 +34,9 @@ def create_or_update_call_meta():
     meta = data['meta']
     
     try:
-        # Convert meta dictionary to JSON string if it's a dictionary
-        meta_json = json.dumps(meta) if isinstance(meta, dict) else meta
+        meta_json = json.dumps(meta) if not isinstance(meta, str) else meta
         
         with get_db_cursor(database='call_history', commit=True) as cursor:
-            # First try to update if record exists
             cursor.execute("""
                 INSERT INTO call_meta (call_sid, meta)
                 VALUES (%s, %s)
@@ -73,8 +46,8 @@ def create_or_update_call_meta():
             """, (call_sid, meta_json))
             
             return jsonify({
-                "call_sid": call_sid,
                 "status": "success",
+                "call_sid": call_sid,
                 "action": "created" if cursor.rowcount == 1 else "updated"
             }), 200
             
@@ -86,28 +59,16 @@ def create_or_update_call_meta():
 @bp.route('/read', methods=['POST'])
 def read_call_meta():
     """
-    Read call metadata and check if it exists
+    Read call metadata
     
     Request Body:
     {
-        "call_sid": "CA1234567890abcdef1234567890abcdef"
+        "call_sid": "CA123..."
     }
     
     Returns:
-    - If call exists:
-    {
-        "exists": true,
-        "call_sid": "CA123...",
-        "meta": { ... },
-        "created_at": "...",
-        "updated_at": "..."
-    }
-    
-    - If call doesn't exist:
-    {
-        "exists": false,
-        "call_sid": "CA123..."
-    }
+    - If call exists: {call data}
+    - If call doesn't exist: {"exists": false, "call_sid": "..."}
     """
     data = request.get_json()
     
@@ -118,15 +79,28 @@ def read_call_meta():
     
     try:
         call = _get_call_meta(call_sid)
-        if call:
-            call['exists'] = True
-            return jsonify(call), 200
-        else:
+        if not call:
             return jsonify({
                 "exists": False,
                 "call_sid": call_sid
-            }), 200
-            
+            })
+        
+        # Convert datetime objects to strings
+        if 'created_at' in call and call['created_at']:
+            call['created_at'] = call['created_at'].isoformat()
+        if 'updated_at' in call and call['updated_at']:
+            call['updated_at'] = call['updated_at'].isoformat()
+        
+        # Parse meta if it's a string
+        if 'meta' in call and isinstance(call['meta'], str):
+            try:
+                call['meta'] = json.loads(call['meta'])
+            except json.JSONDecodeError:
+                pass
+        
+        call['exists'] = True
+        return jsonify(call)
+        
     except mysql.connector.Error as err:
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
