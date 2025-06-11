@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from datetime import datetime, timedelta
 import mysql.connector
 from database import get_db_cursor
+from functools import wraps
 
 bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -103,6 +104,75 @@ def get_business_by_phone():
                     business_dict[col_name] = business[col_name]
             
             return jsonify(business_dict)
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+def validate_business_id(f):
+    """Decorator to validate business_id in request"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        data = request.get_json() or {}
+        business_id = data.get('business_id')
+        if not business_id:
+            return jsonify({"error": "business_id is required in the request body"}), 400
+        return f(*args, **kwargs)
+    return decorated_function
+
+@bp.route('/services', methods=['POST'])
+@validate_business_id
+def list_services():
+    """
+    List all active services for a business
+    
+    Request body: {
+        "business_id": 1  # ID of the business
+    }
+    
+    Returns: List of active services for the business
+    """
+    data = request.get_json()
+    business_id = data['business_id']
+    
+    try:
+        with get_db_cursor() as cursor:
+            # Get all active services for the business
+            cursor.execute("""
+                SELECT 
+                    service_id,
+                    name,
+                    description,
+                    duration_minutes,
+                    CAST(price AS FLOAT) as price,
+                    buffer_before_minutes,
+                    buffer_after_minutes,
+                    created_at,
+                    updated_at
+                FROM service
+                WHERE business_id = %s AND is_active = TRUE
+                ORDER BY name
+            """, (business_id,))
+            
+            services = []
+            columns = [col[0] for col in cursor.description]
+            
+            for row in cursor.fetchall():
+                service = {}
+                for i, value in enumerate(row):
+                    col_name = columns[i]
+                    if isinstance(value, (datetime, timedelta)):
+                        service[col_name] = value.isoformat()
+                    else:
+                        service[col_name] = row[col_name]
+                services.append(service)
+            
+            return jsonify({
+                "business_id": business_id,
+                "services": services,
+                "count": len(services)
+            })
             
     except mysql.connector.Error as err:
         return jsonify({"error": f"Database error: {str(err)}"}), 500
