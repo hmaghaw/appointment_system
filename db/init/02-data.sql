@@ -37,7 +37,7 @@ INSERT INTO business_messages (business_id, type, message, is_active) VALUES
 
 -- Insert business phone numbers
 INSERT INTO business_phone (business_id, business_phone, is_primary) VALUES
-(@hair_salon_id, '+12025551234', TRUE),  -- Luxe Hair Studio
+(@hair_salon_id, '+16473605789', TRUE),  -- Luxe Hair Studio
 (@hair_salon_id, '+12025554321', FALSE),  -- Secondary number
 (@tech_store_id, '+18185559876', TRUE),   -- TechGadgets
 (@clinic_id, '+17735550123', TRUE),       -- Wellness Medical
