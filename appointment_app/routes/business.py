@@ -72,13 +72,8 @@ def get_business_by_phone():
                 SELECT 
                     b.business_id, 
                     b.name, 
-                    b.email, 
-                    b.address,
-                    b.city,
-                    b.state,
-                    b.zip_code,
-                    b.country,
                     b.timezone,
+                    b.status,
                     b.created_at,
                     b.updated_at,
                     bp.business_phone
