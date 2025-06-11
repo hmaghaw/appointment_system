@@ -388,6 +388,90 @@ For endpoints that return lists of items, the following query parameters are sup
 
 Example: `/api/appointments?page=2&per_page=10`
 
+## Call History
+
+### Create or Update Call Metadata
+
+```http
+POST /call-history/create
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "meta": {
+        "from": "+1234567890",
+        "to": "+1987654321",
+        "status": "completed",
+        "duration": "120",
+        "direction": "inbound",
+        "recording_url": "https://example.com/recording.mp3"
+    }
+}
+```
+
+**Responses:**
+- `200 OK` - Call metadata created or updated successfully
+  ```json
+  {
+      "call_sid": "CA1234567890abcdef1234567890abcdef",
+      "status": "success"
+  }
+  ```
+- `400 Bad Request` - Missing required fields
+- `500 Internal Server Error` - Server error
+
+### Read Call Metadata (with existence check)
+
+```http
+POST /call-history/read
+```
+
+**Request Body:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef"
+}
+```
+
+**Responses:**
+
+- `200 OK` - Call exists (returns full metadata)
+  ```json
+  {
+      "exists": true,
+      "call_sid": "CA1234567890abcdef1234567890abcdef",
+      "meta": {
+          "from": "+1234567890",
+          "to": "+1987654321",
+          "status": "completed",
+          "duration": "120",
+          "direction": "inbound",
+          "recording_url": "https://example.com/recording.mp3"
+      },
+      "created_at": "2023-01-01T12:00:00",
+      "updated_at": "2023-01-01T12:05:00"
+  }
+  ```
+
+- `200 OK` - Call doesn't exist
+  ```json
+  {
+      "exists": false,
+      "call_sid": "CA1234567890abcdef1234567890abcdef"
+  }
+  ```
+
+- `400 Bad Request` - Missing call_sid
+  ```json
+  {
+      "error": "call_sid is required"
+  }
+  ```
+
+- `500 Internal Server Error` - Server error
+
 ## Rate Limiting
 API requests are subject to rate limiting:
 - 100 requests per minute per IP address
