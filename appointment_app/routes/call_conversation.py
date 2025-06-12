@@ -1,0 +1,185 @@
+import json
+from flask import Blueprint, jsonify, request
+import mysql.connector
+from database import get_db_cursor
+from datetime import datetime
+
+bp = Blueprint('call_conversation', __name__, url_prefix='/api/call-history/conversation')
+
+@bp.route('/add', methods=['POST'])
+def add_conversation_item():
+    """
+    Add a new conversation item
+    
+    Request Body:
+    {
+        "call_sid": "CA123...",
+        "name": "optional_name",  # Optional name for the message
+        "role": "user|assistant|system|function",
+        "content": "The message content (can be null for function calls)",
+        "function_call": {  # Optional, for function calls
+            "name": "function_name",
+            "arguments": "{...}"  # JSON string of arguments
+        }
+    }
+    """
+    data = request.get_json()
+    
+    if not data or 'call_sid' not in data or 'role' not in data:
+        return jsonify({"error": "call_sid and role are required"}), 400
+    
+    call_sid = data['call_sid']
+    name = data.get('name')
+    role = data['role']
+    content = data.get('content')
+    function_call = data.get('function_call')
+    
+    # Validate role
+    valid_roles = ['user', 'assistant', 'system', 'function']
+    if role not in valid_roles:
+        return jsonify({
+            "error": f"Invalid role. Must be one of: {', '.join(valid_roles)}"
+        }), 400
+    
+    # Validate function_call structure if provided
+    if function_call is not None:
+        if not isinstance(function_call, dict):
+            return jsonify({"error": "function_call must be an object"}), 400
+        
+        # Only validate function_call structure if it's not empty
+        if function_call:
+            if 'name' not in function_call or 'arguments' not in function_call:
+                return jsonify({"error": "function_call must contain 'name' and 'arguments' when provided"}), 400
+            try:
+                # Try to parse arguments to validate it's valid JSON
+                if isinstance(function_call['arguments'], str):
+                    json.loads(function_call['arguments'])
+            except (json.JSONDecodeError, TypeError):
+                return jsonify({"error": "function_call.arguments must be a valid JSON string"}), 400
+    
+    try:
+        with get_db_cursor(database='call_history', commit=True) as cursor:
+            # Convert function_call to JSON string
+            function_call_json = json.dumps(function_call) if function_call is not None else None
+            
+            cursor.execute("""
+                INSERT INTO call_conversation 
+                (call_sid, name, role, content, function_call)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                call_sid,
+                name,
+                role,
+                content,
+                function_call_json
+            ))
+            
+            # Get the inserted record
+            cursor.execute("""
+                SELECT * FROM call_conversation 
+                WHERE call_conversation_id = %s
+            """, (cursor.lastrowid,))
+            
+            item = cursor.fetchone()
+            if item:
+                item = dict(item)
+                # Convert datetime objects to strings and handle JSON fields
+                if 'created_at' in item and item['created_at']:
+                    item['created_at'] = item['created_at'].isoformat()
+                if 'updated_at' in item and item['updated_at']:
+                    item['updated_at'] = item['updated_at'].isoformat()
+                if 'function_call' in item and item['function_call']:
+                    try:
+                        item['function_call'] = json.loads(item['function_call'])
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+            
+            return jsonify({
+                "status": "success",
+                "item": item
+            }), 201
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/list', methods=['POST'])
+def list_conversation_items():
+    """
+    List all conversation items for a call
+    
+    Request Body:
+    {
+        "call_sid": "CA123..."
+    }
+    
+    Optional Query Parameters:
+    - name: Filter by name
+    - role: Filter by role
+    - has_function: If 'true', only include items with function_calls
+    """
+    data = request.get_json()
+    
+    if not data or 'call_sid' not in data:
+        return jsonify({"error": "call_sid is required"}), 400
+    
+    call_sid = data['call_sid']
+    name_filter = request.args.get('name')
+    role_filter = request.args.get('role')
+    has_function = request.args.get('has_function') == 'true'
+    
+    try:
+        with get_db_cursor(dictionary=True, database='call_history') as cursor:
+            # Build the query
+            query = """
+                SELECT call_conversation_id, call_sid, name, role, content, 
+                       function_call, created_at, updated_at
+                FROM call_conversation 
+                WHERE call_sid = %s
+            """
+            params = [call_sid]
+            
+            # Add filters
+            if name_filter:
+                query += " AND name = %s"
+                params.append(name_filter)
+                
+            if role_filter:
+                query += " AND role = %s"
+                params.append(role_filter)
+                
+            if has_function:
+                query += " AND function_call IS NOT NULL"
+            
+            # Add ordering
+            query += " ORDER BY call_conversation_id ASC"
+            
+            cursor.execute(query, tuple(params))
+            
+            items = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                # Convert datetime objects to strings and handle JSON fields
+                if 'created_at' in item and item['created_at']:
+                    item['created_at'] = item['created_at'].isoformat()
+                if 'updated_at' in item and item['updated_at']:
+                    item['updated_at'] = item['updated_at'].isoformat()
+                if 'function_call' in item and item['function_call']:
+                    try:
+                        item['function_call'] = json.loads(item['function_call'])
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                items.append(item)
+            
+            return jsonify({
+                "status": "success",
+                "call_sid": call_sid,
+                "count": len(items),
+                "items": items
+            })
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500

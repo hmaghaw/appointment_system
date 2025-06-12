@@ -548,12 +548,55 @@ POST /api/call-history/read
 POST /api/call-history/conversation/add
 ```
 
-**Request Body:**
+**Minimal Valid Message (only call_sid and role are required):**
 ```json
 {
     "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "role": "user"
+}
+```
+
+**Message with Optional Name:**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "name": "optional_name",
     "role": "user",
     "content": "Hello, I'd like to book an appointment."
+}
+```
+
+**Assistant Function Call (function_call is optional):**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "role": "assistant",
+    "function_call": {
+        "name": "book_appointment",
+        "arguments": "{\"date\":\"2025-06-15\",\"time\":\"14:30\",\"service\":\"Haircut\"}"
+    }
+}
+```
+
+**Function Response (function_call is optional):**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "role": "function",
+    "function_call": {
+        "name": "book_appointment",
+        "arguments": "{\"date\":\"2025-06-15\",\"time\":\"14:30\",\"service\":\"Haircut\"}",
+        "response": "Appointment booked successfully for 2025-06-15 at 14:30"
+    }
+}
+```
+
+**Empty Function Call (valid - will be stored as null):**
+```json
+{
+    "call_sid": "CA1234567890abcdef1234567890abcdef",
+    "role": "assistant",
+    "function_call": {}
 }
 ```
 

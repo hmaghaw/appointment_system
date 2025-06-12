@@ -21,12 +21,15 @@ CREATE TABLE IF NOT EXISTS `call_meta` (
 CREATE TABLE IF NOT EXISTS `call_conversation` (
     `call_conversation_id` BIGINT NOT NULL AUTO_INCREMENT,
     `call_sid` VARCHAR(64) NOT NULL,
+    `name` VARCHAR(255) NULL,
     `role` VARCHAR(50) NOT NULL,
-    `content` TEXT NOT NULL,
+    `content` TEXT NULL,
+    `function_call` JSON NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`call_conversation_id`),
-    INDEX `idx_call_sid` (`call_sid`)
+    INDEX `idx_call_sid` (`call_sid`),
+    INDEX `idx_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
