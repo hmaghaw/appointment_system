@@ -24,7 +24,7 @@ def create_app(config_dict=None):
     from routes.availability import bp as availability_bp
     from routes.business import bp as business_bp
     from routes.customers import bp as customers_bp
-    from routes.call_history import bp as call_history_bp
+    from routes.call_meta import bp as call_history_bp
     from routes.call_conversation import bp as call_conversation_bp
     
     app.register_blueprint(appointments_bp)

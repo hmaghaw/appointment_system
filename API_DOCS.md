@@ -188,6 +188,53 @@ POST /business/by-phone
 }
 ```
 
+### Get Working Hours
+
+```http
+POST /business/working-hours
+```
+
+**Request Body:**
+```json
+{
+    "business_id": 1
+}
+```
+
+**Responses:**
+- `200 OK` - Returns working hours for the business
+- `400 Bad Request` - Missing or invalid business_id
+
+**Example Response:**
+```json
+{
+    "business_id": 1,
+    "working_hours": [
+        {
+            "day_of_week": "Monday",
+            "day_number": 0,
+            "open_time": "09:00:00",
+            "close_time": "19:00:00",
+            "is_closed": false
+        },
+        {
+            "day_of_week": "Tuesday",
+            "day_number": 1,
+            "open_time": "09:00:00",
+            "close_time": "19:00:00",
+            "is_closed": false
+        },
+        {
+            "day_of_week": "Sunday",
+            "day_number": 6,
+            "open_time": null,
+            "close_time": null,
+            "is_closed": true
+        }
+    ]
+}
+```
+
 ### Business Messages
 
 #### Get Business Messages

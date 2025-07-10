@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 import mysql.connector
 from database import get_db_cursor
 
-bp = Blueprint('call_history', __name__, url_prefix='/api/call-history')
+bp = Blueprint('call_history', __name__, url_prefix='/api/call-meta')
 
 def _get_call_meta(call_sid):
     """Helper function to get call metadata by call_sid"""

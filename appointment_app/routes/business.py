@@ -4,6 +4,17 @@ import mysql.connector
 from database import get_db_cursor
 from functools import wraps
 
+# Map day numbers to day names
+DAY_NAMES = {
+    0: 'Monday',
+    1: 'Tuesday',
+    2: 'Wednesday',
+    3: 'Thursday',
+    4: 'Friday',
+    5: 'Saturday',
+    6: 'Sunday'
+}
+
 bp = Blueprint('business', __name__, url_prefix='/api/business')
 
 @bp.route('/messages', methods=['POST'])
@@ -247,6 +258,68 @@ def list_services():
                 "business_id": business_id,
                 "services": services,
                 "count": len(services)
+            })
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/working-hours', methods=['POST'])
+def get_working_hours():
+    """
+    Get working hours for a business
+    
+    Request body: {
+        "business_id": 1  # ID of the business
+    }
+    
+    Returns: List of working hours for each day of the week with day names
+    """
+    data = request.get_json() or {}
+    business_id = data.get('business_id')
+    
+    if not business_id:
+        return jsonify({"error": "business_id is required in the request body"}), 400
+    
+    try:
+        with get_db_cursor(dictionary=True) as cursor:
+            # Get working hours from the database
+            cursor.execute("""
+                SELECT 
+                    day_of_week,
+                    open_time,
+                    close_time,
+                    is_closed
+                FROM business_hours
+                WHERE business_id = %s
+                ORDER BY day_of_week
+            """, (business_id,))
+            
+            hours = cursor.fetchall()
+            
+            # If no hours found, return empty list for all days
+            if not hours:
+                return jsonify({
+                    "business_id": business_id,
+                    "working_hours": []
+                })
+            
+            # Convert to list with day names
+            working_hours = []
+            for day in hours:
+                day_info = {
+                    "day_of_week": DAY_NAMES[day['day_of_week']],
+                    "day_number": day['day_of_week'],
+                    "open_time": str(day['open_time']) if day['open_time'] else None,
+                    "close_time": str(day['close_time']) if day['close_time'] else None,
+                    "is_closed": bool(day['is_closed'])
+                }
+                working_hours.append(day_info)
+            
+            return jsonify({
+                "business_id": business_id,
+                "working_hours": working_hours
             })
             
     except mysql.connector.Error as err:

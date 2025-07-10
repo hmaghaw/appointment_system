@@ -4,7 +4,7 @@ import mysql.connector
 from database import get_db_cursor
 from datetime import datetime
 
-bp = Blueprint('call_conversation', __name__, url_prefix='/api/call-history/conversation')
+bp = Blueprint('call_conversation', __name__, url_prefix='/api/call-conversation')
 
 @bp.route('/add', methods=['POST'])
 def add_conversation_item():
