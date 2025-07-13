@@ -80,96 +80,104 @@ def create_customer():
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 400
 
+
 @bp.route('', methods=['PUT'])
 def update_customer():
     """
     Update an existing customer
-    
+
     Request body must contain:
-    - id: ID of the customer to update
-    
+    - customer_id: ID of the customer to update
+
     Request body may contain any of these fields to update:
-    - first_name: Customer's first name
-    - last_name: Customer's last name
-    - email: Customer's email
-    - customer_phone: Customer's phone number (must be unique per business)
-    - notes: Additional notes
-    - is_active: Boolean indicating if customer is active
-    
+    - first_name
+    - last_name
+    - email
+    - customer_phone (must be unique per business)
+    - notes
+    - is_active
+
     Returns:
-        The updated customer object or error message
+        JSON with success status, message, and updated customer data on success.
     """
     data = request.get_json()
-    
-    if not data or 'id' not in data:
-        return jsonify({"error": "Customer ID is required"}), 400
-        
-    customer_id = data['id']
+
+    if not data or 'customer_id' not in data:
+        return jsonify({"success": False, "message": "Customer ID is required"}), 400
+
+    customer_id = data['customer_id']
     update_fields = []
     params = {'customer_id': customer_id}
-    
-    # Check which fields to update
+
     updatable_fields = ['first_name', 'last_name', 'email', 'customer_phone', 'notes', 'is_active']
     for field in updatable_fields:
         if field in data:
             update_fields.append(f"{field} = %({field})s")
             params[field] = data[field]
-    
+
     if not update_fields:
-        return jsonify({"error": "No valid fields to update"}), 400
-    
+        return jsonify({"success": False, "message": "No valid fields to update"}), 400
+
     try:
         with get_db_cursor(commit=True) as cursor:
-            # Check if customer exists and get current data
             cursor.execute("""
-                SELECT * FROM customer 
-                WHERE customer_id = %(customer_id)s
-                FOR UPDATE
-            """, {'customer_id': customer_id})
-            
+                           SELECT *
+                           FROM customer
+                           WHERE customer_id = %(customer_id)s
+                               FOR UPDATE
+                           """, {'customer_id': customer_id})
+
             customer = cursor.fetchone()
             if not customer:
-                return jsonify({"error": "Customer not found"}), 404
-            
-            # If phone number is being updated, check for duplicates
+                return jsonify({"success": False, "message": "Customer not found"}), 404
+
+            # Check for unique phone per business if updated
             if 'customer_phone' in data and data['customer_phone'] != customer['customer_phone']:
                 cursor.execute("""
-                    SELECT customer_id FROM customer 
-                    WHERE business_id = %(business_id)s 
-                    AND customer_phone = %(customer_phone)s
-                    AND customer_id != %(customer_id)s
-                """, {
-                    'business_id': customer['business_id'],
-                    'customer_phone': data['customer_phone'],
-                    'customer_id': customer_id
-                })
-                
+                               SELECT customer_id
+                               FROM customer
+                               WHERE business_id = %(business_id)s
+                                 AND customer_phone = %(customer_phone)s
+                                 AND customer_id != %(customer_id)s
+                               """, {
+                                   'business_id': customer['business_id'],
+                                   'customer_phone': data['customer_phone'],
+                                   'customer_id': customer_id
+                               })
                 if cursor.fetchone():
-                    return jsonify({"error": "A customer with this customer_phone already exists for this business"}), 409
-            
-            # Update customer
+                    return jsonify({"success": False,
+                                    "message": "A customer with this phone number already exists for this business"}), 409
+
             update_query = f"""
                 UPDATE customer 
                 SET {', '.join(update_fields)}, updated_at = NOW()
                 WHERE customer_id = %(customer_id)s
             """
-            
+
             cursor.execute(update_query, params)
-            
-            # Fetch the updated customer
+
+            if cursor.rowcount == 0:
+                return jsonify({"success": False, "message": "Failed to update customer"}), 500
+
             cursor.execute("""
-                SELECT * FROM customer 
-                WHERE customer_id = %s
-            """, (customer_id,))
-            
+                           SELECT *
+                           FROM customer
+                           WHERE customer_id = %s
+                           """, (customer_id,))
+
             updated_customer = cursor.fetchone()
             if not updated_customer:
-                return jsonify({"error": "Failed to retrieve updated customer"}), 500
-                
-            return jsonify(updated_customer), 200
-            
+                return jsonify({"success": False, "message": "Failed to retrieve updated customer"}), 500
+
+            return jsonify({
+                "success": True,
+                "message": "Customer updated successfully",
+                "customer": updated_customer
+            }), 200
+
     except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 400
+        return jsonify({"success": False, "message": str(err)}), 400
+
 
 @bp.route('/upsert', methods=['POST'])
 def upsert_customer():
