@@ -195,176 +195,126 @@ def create_appointment():
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 400
 
+
 @bp.route('/api/appointments', methods=['PUT'])
 def update_appointment():
-    """
-    Update an existing appointment
-    
-    Request body must contain:
-    - id: ID of the appointment to update
-    
-    Request body may contain:
-    - service_id: New service ID
-    - start_time: New start time in ISO format (YYYY-MM-DDTHH:MM:SS)
-    - status: New status (e.g., 'rescheduled', 'canceled')
-    """
     data = request.get_json()
-    
-    if not data or 'id' not in data:
-        return jsonify({"error": "Appointment ID is required in the request body"}), 400
-        
-    appointment_id = data['id']
-    
+
+    if not data or 'appointment_id' not in data:
+        return jsonify({"success": False, "message": "Appointment ID is required in the request body"}), 400
+
+    appointment_id = data['appointment_id']
+
+    if 'date' not in data or 'time' not in data:
+        return jsonify({"success": False, "message": "Both 'date' and 'time' are required"}), 400
+
     try:
+        # Validate date format strictly: YYYY-MM-DD
+        date_str = data['date']
+        datetime.strptime(date_str, "%Y-%m-%d")
+
+        # Validate time format strictly: HH:MM (24-hour)
+        time_str = data['time']
+        datetime.strptime(time_str, "%H:%M")
+
+        # Combine date and time into datetime object
+        start_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+
         with get_db_cursor(commit=True) as cursor:
-            # First, get the current appointment
             cursor.execute("""
                 SELECT * FROM appointment 
                 WHERE appointment_id = %s
-                FOR UPDATE
+                    FOR UPDATE
             """, (appointment_id,))
             appointment = cursor.fetchone()
-            
+
             if not appointment:
-                return jsonify({"error": "Appointment not found"}), 404
-                
-            # Prepare update fields
-            update_fields = []
-            params = {}
-            
-            # Always set status to 'scheduled' when updating
-            update_fields.append("status = 'scheduled'")
-            
-            # Check which fields to update
-            if 'service_id' in data:
-                update_fields.append("service_id = %(service_id)s")
-                params['service_id'] = data['service_id']
-                
-            if 'start_time' in data:
-                start_time = parse_datetime(data['start_time'])
-                
-                # Get service duration (either from existing or new service)
-                service_id = data.get('service_id', appointment['service_id'])
-                cursor.execute("""
-                    SELECT duration_minutes FROM service 
-                    WHERE service_id = %s AND business_id = %s
-                """, (service_id, appointment['business_id']))
-                service = cursor.fetchone()
-                
-                if not service:
-                    return jsonify({"error": "Service not found"}), 404
-                    
-                end_time = start_time + timedelta(minutes=service['duration_minutes'])
-                update_fields.append("start_time = %(start_time)s")
-                update_fields.append("end_time = %(end_time)s")
-                params.update({
-                    'start_time': start_time,
-                    'end_time': end_time
-                })
-                
-                # Validate the new time slot
-                is_valid, error = validate_appointment(
-                    business_id=appointment['business_id'],
-                    service_id=service_id,
-                    start_time=start_time,
-                    end_time=end_time,
-                    exclude_appointment_id=appointment_id  # Exclude current appointment from conflict check
-                )
-                
-                if not is_valid:
-                    return jsonify({"error": error}), 400
-            
-            # Remove this block since we're always setting status to 'scheduled'
-            # if 'status' in data:
-            #     update_fields.append("status = %(status)s")
-            #     params['status'] = data['status']
-            
-            # Only check other fields since we always have at least the status update
-            if len(update_fields) <= 1:  # Only status field is set
-                return jsonify({"error": "No valid fields to update"}), 400
-            
-            # Build and execute the update query
+                return jsonify({"success": False, "message": "Appointment not found"}), 404
+
+            service_id = appointment['service_id']
+
+            cursor.execute("""
+                SELECT duration_minutes FROM service 
+                WHERE service_id = %s AND business_id = %s
+            """, (service_id, appointment['business_id']))
+            service = cursor.fetchone()
+
+            if not service:
+                return jsonify({"success": False, "message": "Service not found"}), 404
+
+            end_time = start_time + timedelta(minutes=service['duration_minutes'])
+
+            is_valid, error = validate_appointment(
+                business_id=appointment['business_id'],
+                service_id=service_id,
+                start_time=start_time,
+                end_time=end_time,
+                exclude_appointment_id=appointment_id
+            )
+
+            if not is_valid:
+                return jsonify({"success": False, "message": error}), 400
+
             update_query = """
                 UPDATE appointment 
-                SET {}
+                SET start_time = %(start_time)s,
+                    end_time = %(end_time)s,
+                    status = 'scheduled',
+                    updated_at = NOW()
                 WHERE appointment_id = %(appointment_id)s
-            """.format(", ".join(update_fields))
-            
-            # Add updated_at timestamp
-            update_fields.append("updated_at = NOW()")
-            
-            params['appointment_id'] = appointment_id
-            cursor.execute(update_query, params)
-            
-            # Fetch the updated appointment
-            cursor.execute("""
-                SELECT * FROM appointment 
-                WHERE appointment_id = %s
-            """, (appointment_id,))
-            
-            updated_appointment = cursor.fetchone()
-            if not updated_appointment:
-                return jsonify({"error": "Failed to retrieve updated appointment"}), 500
-                
-            return jsonify(updated_appointment), 200
-            
+            """
+
+            cursor.execute(update_query, {
+                'start_time': start_time,
+                'end_time': end_time,
+                'appointment_id': appointment_id
+            })
+
+            if cursor.rowcount == 0:
+                return jsonify({"success": False, "message": "Failed to Update Appointment"}), 500
+
+            return jsonify({"success": True, "message": "Appointment Updated Successfully"}), 200
+
     except ValueError as e:
-        return jsonify({"error": f"Invalid date/time format: {str(e)}"}), 400
+        return jsonify({"success": False, "message": f"Invalid date/time format: {str(e)}"}), 400
     except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 400
+        return jsonify({"success": False, "message": str(err)}), 400
 
 @bp.route('/api/appointments', methods=['DELETE'])
 def cancel_appointment():
-    """
-    Cancel an appointment
-    
-    Request body must contain:
-    - id: ID of the appointment to cancel
-    """
     data = request.get_json()
-    
-    if not data or 'id' not in data:
-        return jsonify({"error": "Appointment ID is required in the request body"}), 400
-        
-    appointment_id = data['id']
+
+    if not data or 'appointment_id' not in data:
+        return jsonify({"success": False, "message": "Appointment ID is required in the request body"}), 400
+
+    appointment_id = data['appointment_id']
+
     try:
         with get_db_cursor(commit=True) as cursor:
-            # First, check if the appointment exists
+            # Check if appointment exists
             cursor.execute("""
-                SELECT appointment_id, status FROM appointment 
+                SELECT * FROM appointment 
                 WHERE appointment_id = %s
                 FOR UPDATE
             """, (appointment_id,))
             appointment = cursor.fetchone()
-            
+
             if not appointment:
-                return jsonify({"error": "Appointment not found"}), 404
-                
-            if appointment['status'] == 'canceled':
-                return jsonify({"message": "Appointment is already canceled"}), 200
-                
-            # Update the appointment status to canceled
-            cursor.execute("""
+                return jsonify({"success": False, "message": "Appointment not found"}), 404
+
+            # Update appointment status to 'canceled'
+            update_query = """
                 UPDATE appointment 
-                SET status = 'canceled', 
+                SET status = 'canceled',
                     updated_at = NOW()
                 WHERE appointment_id = %s
-            """, (appointment_id,))
-            
-            # Fetch the updated appointment
-            cursor.execute("""
-                SELECT * FROM appointment 
-                WHERE appointment_id = %s
-            """, (appointment_id,))
-            
-            canceled_appointment = cursor.fetchone()
-            if not canceled_appointment:
-                return jsonify({"error": "Failed to retrieve canceled appointment"}), 500
-                
-            return jsonify({
-                "message": "Appointment canceled successfully",
-                "appointment": canceled_appointment
-            }), 200
-            
+            """
+            cursor.execute(update_query, (appointment_id,))
+
+            if cursor.rowcount == 0:
+                return jsonify({"success": False, "message": "Failed to cancel Appointment"}), 500
+
+            return jsonify({"success": True, "message": "Appointment canceled successfully"}), 200
+
     except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 400
+        return jsonify({"success": False, "message": str(err)}), 400
