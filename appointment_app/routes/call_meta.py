@@ -121,9 +121,9 @@ def get_sms_sid():
     
     Request Body:
     {
-        "business_id": 1,          # Required: ID of the business
-        "customer_id": 1,          # Required: ID of the customer
-        "expiry_minutes": 5        # Optional: expiry time in minutes (default: 5)
+        "business_phone": "+1234567890",  # Required: Phone number of the business
+        "customer_phone": "+1987654321",  # Required: Phone number of the customer
+        "expiry_minutes": 5               # Optional: expiry time in minutes (default: 5)
     }
     
     Returns:
@@ -133,49 +133,81 @@ def get_sms_sid():
     """
     data = request.get_json()
     
-    if not data or 'business_id' not in data or 'customer_id' not in data:
-        return jsonify({"error": "business_id and customer_id are required"}), 400
+    if not data or 'business_phone' not in data or 'customer_phone' not in data:
+        return jsonify({"error": "business_phone and customer_phone are required"}), 400
     
-    business_id = data['business_id']
-    customer_id = data['customer_id']
+    business_phone = data['business_phone']
+    customer_phone = data['customer_phone']
     expiry_minutes = int(data.get('expiry_minutes', 5))
     
     try:
         # Get a connection first
-        with get_db_connection(database='call_history') as conn:
+        with get_db_connection() as conn:  # Using default database for business/customer lookup
             with conn.cursor(dictionary=True) as cursor:
-                # Check for existing valid SID
+                # Get business ID from phone number using the business_phone table
                 cursor.execute("""
-                    SELECT sms_sid, created_at 
-                    FROM sms_sid 
-                    WHERE business_id = %s 
-                    AND customer_id = %s
-                """, (business_id, customer_id))
+                    SELECT bp.business_id, b.name 
+                    FROM business_phone bp
+                    JOIN business b ON bp.business_id = b.business_id
+                    WHERE bp.business_phone = %s AND bp.is_primary = TRUE
+                """, (business_phone,))
+                business = cursor.fetchone()
+                if not business:
+                    return jsonify({"error": "Business not found with the provided phone number"}), 404
                 
-                existing = cursor.fetchone()
-                if existing:
-                    # Check if the existing SID is still valid
-                    expiry_time = existing['created_at'].replace(tzinfo=timezone.utc) + timedelta(minutes=expiry_minutes)
-                    if expiry_time > datetime.now(timezone.utc):
-                        return jsonify({"sms_id": existing['sms_sid']})
+                business_id = business['business_id']
                 
-                # If we get here, we need to generate a new SID
-                new_sid = _generate_sms_sid()
-                
-                # Insert or update the SID
-                now = datetime.now(timezone.utc)
+                # Get customer ID from phone number and business_id
                 cursor.execute("""
-                    INSERT INTO sms_sid (business_id, customer_id, sms_sid, created_at)
-                    VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE
-                        sms_sid = VALUES(sms_sid),
-                        created_at = VALUES(created_at)
-                """, (business_id, customer_id, new_sid, now))
+                    SELECT customer_id, first_name, last_name 
+                    FROM customer 
+                    WHERE customer_phone = %s AND business_id = %s
+                """, (customer_phone, business_id))
+                customer = cursor.fetchone()
+                if not customer:
+                    return jsonify({"error": "Customer not found with the provided phone number for this business"}), 404
                 
-                # Commit the transaction
-                conn.commit()
+                customer_id = customer['customer_id']
                 
-                return jsonify({"sms_id": new_sid})
+                # Switch to call_history database
+                cursor.close()
+                conn.close()
+                
+                # Now work with call_history database
+                with get_db_connection(database='call_history') as conn_hist:
+                    with conn_hist.cursor(dictionary=True) as cursor_hist:
+                        # Check for existing valid SID
+                        cursor_hist.execute("""
+                            SELECT sms_sid, created_at 
+                            FROM sms_sid 
+                            WHERE business_id = %s 
+                            AND customer_id = %s
+                        """, (business_id, customer_id))
+                        
+                        existing = cursor_hist.fetchone()
+                        if existing:
+                            # Check if the existing SID is still valid
+                            expiry_time = existing['created_at'].replace(tzinfo=timezone.utc) + timedelta(minutes=expiry_minutes)
+                            if expiry_time > datetime.now(timezone.utc):
+                                return jsonify({"sms_id": existing['sms_sid']})
+                        
+                        # If we get here, we need to generate a new SID
+                        new_sid = _generate_sms_sid()
+                        
+                        # Insert or update the SID
+                        now = datetime.now(timezone.utc)
+                        cursor_hist.execute("""
+                            INSERT INTO sms_sid (business_id, customer_id, sms_sid, created_at)
+                            VALUES (%s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE
+                                sms_sid = VALUES(sms_sid),
+                                created_at = VALUES(created_at)
+                        """, (business_id, customer_id, new_sid, now))
+                        
+                        # Commit the transaction
+                        conn_hist.commit()
+                        
+                        return jsonify({"sms_id": new_sid})
             
     except mysql.connector.Error as err:
         return jsonify({"error": f"Database error: {str(err)}"}), 500
