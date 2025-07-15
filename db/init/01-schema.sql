@@ -102,6 +102,16 @@ CREATE TABLE IF NOT EXISTS appointment (
     FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- Business Admin Phone Numbers
+CREATE TABLE IF NOT EXISTS business_admin_phone (
+    business_admin_phone_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
+    admin_phone VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_business_admin_phone (business_id, admin_phone),
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Add indexes for performance
 CREATE INDEX idx_appointment_business ON appointment(business_id, start_time, end_time);
 CREATE INDEX idx_appointment_customer ON appointment(customer_id);

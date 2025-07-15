@@ -2,7 +2,7 @@ import json
 import random
 import string
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 import mysql.connector
 from database import get_db_cursor, get_db_connection
 
@@ -213,3 +213,63 @@ def get_sms_sid():
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/is_business_admin_phone', methods=['POST'])
+def is_business_admin_phone():
+    """
+    Check if a customer phone is a business admin phone
+    
+    Request Body:
+    {
+        "business_phone": "1234567890",
+        "customer_phone": "9876543210"
+    }
+    
+    Returns:
+    {
+        "admin_phone": true/false
+    }
+    """
+    data = request.get_json()
+    
+    if not data or 'business_phone' not in data or 'customer_phone' not in data:
+        return jsonify({"error": "business_phone and customer_phone are required"}), 400
+    
+    business_phone = data['business_phone']
+    customer_phone = data['customer_phone']
+    
+    try:
+        with get_db_cursor(dictionary=True) as cursor:
+            # First, get the business ID from the business_phone
+            cursor.execute("""
+                SELECT business_id 
+                FROM business_phone 
+                WHERE business_phone = %s 
+                AND is_primary = TRUE
+                LIMIT 1
+            """, (business_phone,))
+            
+            business = cursor.fetchone()
+            if not business:
+                return jsonify({"admin_phone": False})
+                
+            business_id = business['business_id']
+            
+            # Check if the customer phone is an admin for this business
+            cursor.execute("""
+                SELECT 1 
+                FROM business_admin_phone 
+                WHERE business_id = %s 
+                AND admin_phone = %s
+                LIMIT 1
+            """, (business_id, customer_phone))
+            
+            is_admin = cursor.fetchone() is not None
+            return jsonify({"admin_phone": is_admin})
+            
+    except mysql.connector.Error as err:
+        current_app.logger.error(f"Database error checking admin phone: {str(err)}")
+        return jsonify({"error": "Database error checking admin status"}), 500
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error checking admin phone: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
