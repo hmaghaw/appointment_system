@@ -51,3 +51,12 @@ CREATE TABLE IF NOT EXISTS `call_conversation` (
 --     "error_message": null,
 --     "custom_data": {}
 -- }
+
+-- Table to track SMS message IDs
+CREATE TABLE IF NOT EXISTS `sms_sid` (
+    `business_id` INT NOT NULL COMMENT 'ID of the business associated with the SMS',
+    `customer_id` INT NOT NULL COMMENT 'ID of the customer associated with the SMS',
+    `sms_sid` VARCHAR(64) NOT NULL COMMENT 'Unique identifier for the SMS from the provider',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the SMS record was created',
+    PRIMARY KEY (`business_id`, `customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks SMS message IDs for business-customer communications';

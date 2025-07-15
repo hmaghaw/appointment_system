@@ -1,7 +1,10 @@
 import json
+import random
+import string
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 import mysql.connector
-from database import get_db_cursor
+from database import get_db_cursor, get_db_connection
 
 bp = Blueprint('call_history', __name__, url_prefix='/api/call-meta')
 
@@ -99,8 +102,81 @@ def read_call_meta():
                 pass
         
         call['exists'] = True
-        return jsonify(call)
+        return jsonify(call), 200
         
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+def _generate_sms_sid():
+    """Generate a random 20-character string for SMS SID"""
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choice(chars) for _ in range(20))
+
+@bp.route('/get_sms_sid', methods=['POST'])
+def get_sms_sid():
+    """
+    Get or create an SMS SID for a business-customer pair with expiry check
+    
+    Request Body:
+    {
+        "business_id": 1,          # Required: ID of the business
+        "customer_id": 1,          # Required: ID of the customer
+        "expiry_minutes": 5        # Optional: expiry time in minutes (default: 5)
+    }
+    
+    Returns:
+    {
+        "sms_id": "generated_or_existing_sid"
+    }
+    """
+    data = request.get_json()
+    
+    if not data or 'business_id' not in data or 'customer_id' not in data:
+        return jsonify({"error": "business_id and customer_id are required"}), 400
+    
+    business_id = data['business_id']
+    customer_id = data['customer_id']
+    expiry_minutes = int(data.get('expiry_minutes', 5))
+    
+    try:
+        # Get a connection first
+        with get_db_connection(database='call_history') as conn:
+            with conn.cursor(dictionary=True) as cursor:
+                # Check for existing valid SID
+                cursor.execute("""
+                    SELECT sms_sid, created_at 
+                    FROM sms_sid 
+                    WHERE business_id = %s 
+                    AND customer_id = %s
+                """, (business_id, customer_id))
+                
+                existing = cursor.fetchone()
+                if existing:
+                    # Check if the existing SID is still valid
+                    expiry_time = existing['created_at'].replace(tzinfo=timezone.utc) + timedelta(minutes=expiry_minutes)
+                    if expiry_time > datetime.now(timezone.utc):
+                        return jsonify({"sms_id": existing['sms_sid']})
+                
+                # If we get here, we need to generate a new SID
+                new_sid = _generate_sms_sid()
+                
+                # Insert or update the SID
+                now = datetime.now(timezone.utc)
+                cursor.execute("""
+                    INSERT INTO sms_sid (business_id, customer_id, sms_sid, created_at)
+                    VALUES (%s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                        sms_sid = VALUES(sms_sid),
+                        created_at = VALUES(created_at)
+                """, (business_id, customer_id, new_sid, now))
+                
+                # Commit the transaction
+                conn.commit()
+                
+                return jsonify({"sms_id": new_sid})
+            
     except mysql.connector.Error as err:
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
