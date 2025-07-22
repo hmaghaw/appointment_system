@@ -253,7 +253,7 @@ def list_services():
                     if value is None:
                         service[col_name] = None
                         continue
-                        
+                    value = row[col_name]
                     # Convert to string if it's bytes
                     if isinstance(value, bytes):
                         try:
@@ -265,6 +265,7 @@ def list_services():
                         value = value.isoformat()
                     
                     service[col_name] = value
+
                 services.append(service)
             
             return jsonify({

@@ -126,6 +126,27 @@ SELECT
 FROM service
 WHERE name IS NOT NULL AND description IS NOT NULL;
 
+-- Add Arabic translations for all services
+INSERT INTO service_translation (service_id, language_code, name, description) VALUES
+-- Hair Salon Services
+(1, 'ar', 'قصة شعر نسائية', 'قص وتصفيف الشعر للنساء'),
+(2, 'ar', 'قصة شعر رجالية', 'قص وتصفيف الشعر للرجال'),
+(3, 'ar', 'صبغة شعر', 'خدمة صبغة شعر كاملة'),
+(4, 'ar', 'تصفيف الشعر', 'غسل وتنشيف وتصفيف الشعر'),
+(5, 'ar', 'تشذيب اللحية', 'تشكيل وتشذيب اللحية'),
+
+-- Tech Store Services
+(6, 'ar', 'إزالة الفيروسات', 'إزالة كاملة للفيروسات والبرمجيات الخبيثة'),
+(7, 'ar', 'استعادة البيانات', 'استعادة الملفات المفقودة'),
+(8, 'ar', 'صيانة الحاسوب المحمول', 'تحسين أداء الحاسوب'),
+
+-- Medical Services
+(9, 'ar', 'فحص عام', 'فحص صحي روتيني'),
+(10, 'ar', 'تطعيم', 'حقن التطعيمات'),
+(11, 'ar', 'فحص الحساسية', 'فحص شامل للحساسية'),
+(12, 'ar', 'استشارة جلدية', 'تقييم حالة الجلد'),
+(13, 'ar', 'تحاليل دم', 'تحاليل دم روتينية');
+
 -- Insert sample customers
 INSERT INTO customer (business_id, customer_phone, first_name, last_name, email, is_active) VALUES
 -- Hair Salon Customers
