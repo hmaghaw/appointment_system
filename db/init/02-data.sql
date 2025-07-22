@@ -115,6 +115,17 @@ INSERT INTO service (business_id, name, description, duration_minutes, price, bu
 (@clinic_id, 'Dermatology Consultation', 'Skin condition evaluation', 45, 149.99, 10, 10, TRUE),
 (@clinic_id, 'Blood Work', 'Routine blood tests', 20, 89.99, 5, 5, TRUE);
 
+-- Insert service translations for all services (English)
+-- This will create English translations for all existing services
+INSERT INTO service_translation (service_id, language_code, name, description)
+SELECT 
+    service_id, 
+    'en' as language_code, 
+    name, 
+    description
+FROM service
+WHERE name IS NOT NULL AND description IS NOT NULL;
+
 -- Insert sample customers
 INSERT INTO customer (business_id, customer_phone, first_name, last_name, email, is_active) VALUES
 -- Hair Salon Customers

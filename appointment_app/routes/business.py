@@ -211,35 +211,37 @@ def validate_business_id(f):
 @validate_business_id
 def list_services():
     """
-    List all active services for a business
+    List all active services for a business with optional language translation
     
     Request body: {
-        "business_id": 1  # ID of the business
+        "business_id": 1,  # ID of the business
+        "language": "en"   # Optional: Language code (defaults to 'en')
     }
     
-    Returns: List of active services for the business
+    Returns: List of active services for the business with translated content if available
     """
-    data = request.get_json()
+    data = request.get_json() or {}
     business_id = data['business_id']
+    language = data.get('language', 'en')
     
     try:
         with get_db_cursor() as cursor:
-            # Get all active services for the business
+            # Get all active services for the business with translations
             cursor.execute("""
                 SELECT 
-                    service_id,
-                    name,
-                    description,
-                    duration_minutes,
-                    CAST(price AS FLOAT) as price,
-                    buffer_before_minutes,
-                    buffer_after_minutes,
-                    created_at,
-                    updated_at
-                FROM service
-                WHERE business_id = %s AND is_active = TRUE
+                    s.service_id,
+                    COALESCE(st.name, s.name) as name,
+                    CAST(COALESCE(st.description, s.description) AS CHAR) as description,
+                    s.duration_minutes,
+                    CAST(s.price AS FLOAT) as price,
+                    s.buffer_before_minutes,
+                    s.buffer_after_minutes
+                FROM service s
+                LEFT JOIN service_translation st ON s.service_id = st.service_id 
+                    AND st.language_code = %s
+                WHERE s.business_id = %s AND s.is_active = TRUE
                 ORDER BY name
-            """, (business_id,))
+            """, (language, business_id))
             
             services = []
             columns = [col[0] for col in cursor.description]
@@ -248,10 +250,21 @@ def list_services():
                 service = {}
                 for i, value in enumerate(row):
                     col_name = columns[i]
-                    if isinstance(value, (datetime, timedelta)):
-                        service[col_name] = value.isoformat()
-                    else:
-                        service[col_name] = row[col_name]
+                    if value is None:
+                        service[col_name] = None
+                        continue
+                        
+                    # Convert to string if it's bytes
+                    if isinstance(value, bytes):
+                        try:
+                            value = value.decode('utf-8')
+                        except UnicodeDecodeError:
+                            value = str(value, 'latin-1')
+                    # Handle other non-serializable types
+                    elif isinstance(value, (datetime, timedelta)):
+                        value = value.isoformat()
+                    
+                    service[col_name] = value
                 services.append(service)
             
             return jsonify({

@@ -117,3 +117,18 @@ CREATE INDEX idx_appointment_business ON appointment(business_id, start_time, en
 CREATE INDEX idx_appointment_customer ON appointment(customer_id);
 CREATE INDEX idx_business_phone ON business_phone(business_phone);
 CREATE INDEX idx_customer_business ON customer(business_id, customer_phone);
+
+-- Service Translations
+CREATE TABLE IF NOT EXISTS service_translation (
+    translation_id INT AUTO_INCREMENT PRIMARY KEY,
+    service_id INT NOT NULL,
+    language_code VARCHAR(10) NOT NULL COMMENT 'ISO 639-1 language code (e.g., en, es, fr)',
+    name VARCHAR(255) COMMENT 'Translated service name',
+    description TEXT COMMENT 'Translated service description',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_service_language (service_id, language_code),
+    FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE,
+    INDEX idx_service_id (service_id),
+    INDEX idx_language_code (language_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores translations for service names and descriptions';
