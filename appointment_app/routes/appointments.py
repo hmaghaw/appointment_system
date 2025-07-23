@@ -26,15 +26,16 @@ def parse_datetime(dt_str):
 @bp.route('/api/appointments/search', methods=['POST'])
 def search_appointments():
     """
-    Search for appointments with filtering
+    Search for appointments with filtering and language-specific service names
     
     Request Body (JSON):
     {
         "business_id": int,           # Optional: Filter by business ID
-        "customer_id": int,  # Optional: Filter by customer ID within the business
+        "customer_id": int,           # Optional: Filter by customer ID within the business
         "start_date": "YYYY-MM-DD",   # Optional: Filter appointments after this date
         "end_date": "YYYY-MM-DD",     # Optional: Filter appointments before this date
-        "status": "string"            # Optional: Filter by appointment status
+        "status": "string",           # Optional: Filter by appointment status
+        "language": "string"          # Optional: Language code for service names (default: 'en')
     }
     """
     # Get parameters from request body
@@ -46,19 +47,23 @@ def search_appointments():
     start_date = data.get('start_date')
     end_date = data.get('end_date')
     status = data.get('status')
+    language = data.get('language', 'en')  # Default to English
     
-    # Build the base query
+    # Build the base query with language support for service names
     query = """
         SELECT a.appointment_id, a.business_id, a.customer_id, a.service_id, 
                a.start_time, a.end_time, a.status, a.created_at, a.updated_at,
-               s.name as service_name,
+               COALESCE(st.name, s.name) as service_name,
+               CAST(COALESCE(st.description, s.description) AS CHAR) as service_description,
                CONCAT(c.first_name, ' ', c.last_name) as customer_name
         FROM appointment a
         LEFT JOIN service s ON a.service_id = s.service_id AND a.business_id = s.business_id
+        LEFT JOIN service_translation st ON s.service_id = st.service_id 
+            AND st.language_code = %s
         LEFT JOIN customer c ON a.customer_id = c.customer_id
         WHERE 1=1
     """
-    params = []
+    params = [language]  # Add language as the first parameter
     
     # Add filters based on query parameters
     if business_id is not None:
