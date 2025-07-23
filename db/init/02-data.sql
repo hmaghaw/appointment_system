@@ -411,7 +411,80 @@ INSERT INTO translations (phrase, language_code, translated_phrase) VALUES
 ('current_date_and_time', 'fr', 'Utilisez ces informations pour fournir des réponses tenant compte du temps, comme suggérer des disponibilités plus tard dans la journée ou faire référence à des jours spécifiques (par exemple, ''demain'', ''vendredi après-midi'').\n'),
 
 -- Chinese (zh)
-('current_date_and_time', 'zh', '使用此信息提供时间感知的响应，例如建议今天晚些时候的空闲时间或参考特定日期（例如“明天”、“周五下午”）。\n');
+('current_date_and_time', 'zh', '使用此信息提供时间感知的响应，例如建议今天晚些时候的空闲时间或参考特定日期（例如“明天”、“周五下午”）。\n'),
+
+-- Unknown Customer Instructions
+-- English (en)
+('unknown_customer', 'en', 'Name not yet known.\nOnly ask for the customer''s name if they are making a booking.\nWhen the name is provided, call the `update_customer` function as defined in the'),
+
+-- Arabic (ar)
+('unknown_customer', 'ar', 'الاسم غير معروف بعد.\nاطلب اسم العميل فقط إذا كان يقوم بحجز.\nعند تقديم الاسم، استدعِ الدالة `update_customer` كما هي معرفة في'),
+
+-- French (fr)
+('unknown_customer', 'fr', 'Nom pas encore connu.\nNe demandez le nom du client que s''il effectue une réservation.\nLorsque le nom est fourni, appelez la fonction `update_customer` telle que définie dans le'),
+
+-- Chinese (zh)
+('unknown_customer', 'zh', '姓名尚未知。\n仅当客户进行预订时才询问其姓名。\n提供姓名后，调用`update_customer`函数，如'),
+
+-- Appointments for Customer
+-- English (en)
+('APPOINTMENTS FOR CUSTOMER', 'en', 'APPOINTMENTS FOR CUSTOMER'),
+
+-- Arabic (ar)
+('APPOINTMENTS FOR CUSTOMER', 'ar', 'مواعيد العميل'),
+
+-- French (fr)
+('APPOINTMENTS FOR CUSTOMER', 'fr', 'RENDEZ-VOUS DU CLIENT'),
+
+-- Chinese (zh)
+('APPOINTMENTS FOR CUSTOMER', 'zh', '客户预约'),
+
+-- New translations from translation_script.txt
+-- English (en)
+('known_customer', 'en', 'When greeting, say: Hi'),
+('thanks_for_calling', 'en', 'Thanks for calling'),
+('how_can_i_help', 'en', 'How can I help you today?'),
+
+-- Arabic (ar)
+('known_customer', 'ar', 'عند التحية، قل: مرحباً'),
+('thanks_for_calling', 'ar', 'شكراً لتواصلكم معنا'),
+('how_can_i_help', 'ar', 'كيف يمكنني مساعدتك اليوم؟'),
+
+-- French (fr)
+('known_customer', 'fr', 'Lors de l''accueil, dites: Bonjour'),
+('thanks_for_calling', 'fr', 'Merci d''avoir appelé'),
+('how_can_i_help', 'fr', 'Comment puis-je vous aider aujourd''hui?'),
+
+-- Chinese (zh)
+('known_customer', 'zh', '问候时说：您好'),
+('thanks_for_calling', 'zh', '感谢您的来电'),
+('how_can_i_help', 'zh', '今天有什么可以帮您？'),
+
+-- No Appointments Message
+-- English (en)
+('no_appointments', 'en', 'The Customer Does NOT have any appointments'),
+
+-- Arabic (ar)
+('no_appointments', 'ar', 'لا توجد مواعيد حجز للعميل'),
+
+-- French (fr)
+('no_appointments', 'fr', 'Le client n''a pas de rendez-vous'),
+
+-- Chinese (zh)
+('no_appointments', 'zh', '该客户没有任何预约'),
+
+-- Functions Calling Instructions
+-- English (en)
+('functions_calling_instructions', 'en', 'Always confirm with the customer before performing any appointment-related action (booking, rescheduling, or canceling).\nOnly proceed if the customer explicitly agrees after you confirm the details.\nThe only exception is `update_customer`, which should be called immediately after the customer provides their name.'),
+
+-- Arabic (ar)
+('functions_calling_instructions', 'ar', 'يجب التأكيد مع العميل دائمًا قبل تنفيذ أي إجراء متعلق بالمواعيد (الحجز أو إعادة الجدولة أو الإلغاء).\nتابع فقط إذا وافق العميل صراحة بعد تأكيد التفاصيل.\nالاستثناء الوحيد هو `update_customer`، الذي يجب استدعاؤه فورًا بعد أن يقدم العميل اسمه.'),
+
+-- French (fr)
+('functions_calling_instructions', 'fr', 'Confirmez toujours avec le client avant d''effectuer toute action liée à un rendez-vous (réservation, report ou annulation).\nNe procédez que si le client donne son accord explicite après confirmation des détails.\nLa seule exception est `update_customer`, qui doit être appelé immédiatement après que le client a fourni son nom.'),
+
+-- Chinese (zh)
+('functions_calling_instructions', 'zh', '在执行任何与预约相关的操作（预订、重新安排或取消）之前，请务必与客户确认。\n只有在您确认详细信息后客户明确同意的情况下才能继续。\n唯一的例外是`update_customer`，它应在客户提供姓名后立即调用。');
 -- Hair Salon Appointments
 -- Get service IDs
 SET @womens_haircut = (SELECT service_id FROM service WHERE name = 'Women\'s Haircut' AND business_id = @hair_salon_id);
