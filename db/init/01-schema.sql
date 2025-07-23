@@ -47,12 +47,14 @@ CREATE TABLE IF NOT EXISTS customer (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255),
+    language VARCHAR(10) DEFAULT 'en' COMMENT 'ISO 639-1 language code (e.g., en, ar, fr)',
     notes TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_business_customer_phone (business_id, customer_phone),
-    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
+    INDEX idx_language (language)
 ) ENGINE=InnoDB;
 
 -- Service table
@@ -117,6 +119,22 @@ CREATE INDEX idx_appointment_business ON appointment(business_id, start_time, en
 CREATE INDEX idx_appointment_customer ON appointment(customer_id);
 CREATE INDEX idx_business_phone ON business_phone(business_phone);
 CREATE INDEX idx_customer_business ON customer(business_id, customer_phone);
+
+-- Translations table
+CREATE TABLE IF NOT EXISTS translations (
+    translation_id INT AUTO_INCREMENT PRIMARY KEY,
+    phrase VARCHAR(255) NOT NULL COMMENT 'The original phrase to be translated',
+    language_code VARCHAR(10) NOT NULL COMMENT 'ISO 639-1 language code (e.g., en, ar, fr)',
+    translated_phrase VARCHAR(500) NOT NULL COMMENT 'The translated phrase in the target language',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_phrase_language (phrase(191), language_code),
+    INDEX idx_phrase (phrase(191)),
+    INDEX idx_language (language_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Service Translations
+CREATE TABLE IF NOT EXISTS service_translation (
 
 -- Service Translations
 CREATE TABLE IF NOT EXISTS service_translation (

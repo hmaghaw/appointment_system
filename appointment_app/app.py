@@ -26,6 +26,7 @@ def create_app(config_dict=None):
     from routes.customers import bp as customers_bp
     from routes.call_meta import bp as call_history_bp
     from routes.call_conversation import bp as call_conversation_bp
+    from routes.translations import bp as translations_bp
     
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -33,6 +34,7 @@ def create_app(config_dict=None):
     app.register_blueprint(customers_bp)
     app.register_blueprint(call_history_bp)
     app.register_blueprint(call_conversation_bp)
+    app.register_blueprint(translations_bp)
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])

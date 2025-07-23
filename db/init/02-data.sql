@@ -147,6 +147,27 @@ INSERT INTO service_translation (service_id, language_code, name, description) V
 (12, 'ar', 'استشارة جلدية', 'تقييم حالة الجلد'),
 (13, 'ar', 'تحاليل دم', 'تحاليل دم روتينية');
 
+-- Add French translations for all services
+INSERT INTO service_translation (service_id, language_code, name, description) VALUES
+-- Hair Salon Services
+(1, 'fr', 'Coupe femme', 'Coupe et coiffure pour femmes'),
+(2, 'fr', 'Coupe homme', 'Coupe et coiffure pour hommes'),
+(3, 'fr', 'Coloration', 'Service complet de coloration capillaire'),
+(4, 'fr', 'Brushing', 'Shampooing et brushing'),
+(5, 'fr', 'Taille de barbe', 'Taille et mise en forme de la barbe'),
+
+-- Tech Store Services
+(6, 'fr', 'Suppression de virus', 'Suppression complète des virus et logiciels malveillants'),
+(7, 'fr', 'Récupération de données', 'Récupération des fichiers perdus'),
+(8, 'fr', 'Optimisation PC portable', 'Amélioration des performances de l\'ordinateur'),
+
+-- Medical Services
+(9, 'fr', 'Examen général', 'Examen de santé de routine'),
+(10, 'fr', 'Vaccination', 'Injection de vaccins'),
+(11, 'fr', 'Test d\'allergie', 'Test d\'allergie complet'),
+(12, 'fr', 'Consultation dermatologique', 'Évaluation de l\'état de la peau'),
+(13, 'fr', 'Analyses de sang', 'Analyses de sang de routine');
+
 -- Insert sample customers
 INSERT INTO customer (business_id, customer_phone, first_name, last_name, email, is_active) VALUES
 -- Hair Salon Customers
@@ -168,6 +189,78 @@ SET @tomorrow = DATE_ADD(@now, INTERVAL 1 DAY);
 SET @in_two_days = DATE_ADD(@now, INTERVAL 2 DAY);
 SET @in_three_days = DATE_ADD(@now, INTERVAL 3 DAY);
 
+-- Insert days of the week in multiple languages
+-- English (en)
+INSERT INTO translations (phrase, language_code, translated_phrase) VALUES
+-- Days of the week
+('Monday', 'en', 'Monday'),
+('Tuesday', 'en', 'Tuesday'),
+('Wednesday', 'en', 'Wednesday'),
+('Thursday', 'en', 'Thursday'),
+('Friday', 'en', 'Friday'),
+('Saturday', 'en', 'Saturday'),
+('Sunday', 'en', 'Sunday'),
+
+-- Arabic (ar)
+('Monday', 'ar', 'الاثنين'),
+('Tuesday', 'ar', 'الثلاثاء'),
+('Wednesday', 'ar', 'الأربعاء'),
+('Thursday', 'ar', 'الخميس'),
+('Friday', 'ar', 'الجمعة'),
+('Saturday', 'ar', 'السبت'),
+('Sunday', 'ar', 'الأحد'),
+
+-- French (fr)
+('Monday', 'fr', 'Lundi'),
+('Tuesday', 'fr', 'Mardi'),
+('Wednesday', 'fr', 'Mercredi'),
+('Thursday', 'fr', 'Jeudi'),
+('Friday', 'fr', 'Vendredi'),
+('Saturday', 'fr', 'Samedi'),
+('Sunday', 'fr', 'Dimanche'),
+
+-- Chinese (zh)
+('Monday', 'zh', '星期一'),
+('Tuesday', 'zh', '星期二'),
+('Wednesday', 'zh', '星期三'),
+('Thursday', 'zh', '星期四'),
+('Friday', 'zh', '星期五'),
+('Saturday', 'zh', '星期六'),
+('Sunday', 'zh', '星期日');
+('CURRENT DATE & TIME', 'en', 'Current Date & Time'),
+('CUSTOMER INFORMATION', 'en', 'Customer Information'),
+('BUSINESS INFORMATION', 'en', 'Business Information'),
+('BUSINESS WORKING HOURS', 'en', 'Business Working Hours'),
+('SERVICES', 'en', 'Services'),
+('EXAMPLES OF CONCISE RESPONSES', 'en', 'Examples of Concise Responses'),
+('FUNCTION INSTRUCTIONS', 'en', 'Function Instructions'),
+
+-- Arabic (ar)
+('CURRENT DATE & TIME', 'ar', 'التاريخ والوقت الحالي'),
+('CUSTOMER INFORMATION', 'ar', 'معلومات العميل'),
+('BUSINESS INFORMATION', 'ar', 'معلومات العمل'),
+('BUSINESS WORKING HOURS', 'ar', 'ساعات العمل'),
+('SERVICES', 'ar', 'الخدمات'),
+('EXAMPLES OF CONCISE RESPONSES', 'ar', 'أمثلة على الردود المختصرة'),
+('FUNCTION INSTRUCTIONS', 'ar', 'تعليمات الوظيفة'),
+
+-- French (fr)
+('CURRENT DATE & TIME', 'fr', 'Date et heure actuelles'),
+('CUSTOMER INFORMATION', 'fr', 'Informations client'),
+('BUSINESS INFORMATION', 'fr', 'Informations sur l\'entreprise'),
+('BUSINESS WORKING HOURS', 'fr', 'Heures d\'ouverture'),
+('SERVICES', 'fr', 'Services'),
+('EXAMPLES OF CONCISE RESPONSES', 'fr', 'Exemples de réponses concises'),
+('FUNCTION INSTRUCTIONS', 'fr', 'Instructions de fonction'),
+
+-- Chinese (zh)
+('CURRENT DATE & TIME', 'zh', '当前日期和时间'),
+('CUSTOMER INFORMATION', 'zh', '客户信息'),
+('BUSINESS INFORMATION', 'zh', '商家信息'),
+('BUSINESS WORKING HOURS', 'zh', '营业时间'),
+('SERVICES', 'zh', '服务'),
+('EXAMPLES OF CONCISE RESPONSES', 'zh', '简洁回复示例'),
+('FUNCTION INSTRUCTIONS', 'zh', '功能说明');
 -- Hair Salon Appointments
 -- Get service IDs
 SET @womens_haircut = (SELECT service_id FROM service WHERE name = 'Women\'s Haircut' AND business_id = @hair_salon_id);
