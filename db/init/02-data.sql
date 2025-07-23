@@ -260,7 +260,158 @@ INSERT INTO translations (phrase, language_code, translated_phrase) VALUES
 ('BUSINESS WORKING HOURS', 'zh', '营业时间'),
 ('SERVICES', 'zh', '服务'),
 ('EXAMPLES OF CONCISE RESPONSES', 'zh', '简洁回复示例'),
-('FUNCTION INSTRUCTIONS', 'zh', '功能说明');
+('FUNCTION INSTRUCTIONS', 'zh', '功能说明'),
+
+-- Time and Business Terms
+-- English (en)
+('AM', 'en', 'AM'),
+('PM', 'en', 'PM'),
+('Minute', 'en', 'Minute'),
+('Business Name', 'en', 'Business Name'),
+('Business Phone', 'en', 'Business Phone'),
+
+-- Arabic (ar)
+('AM', 'ar', 'ص'),
+('PM', 'ar', 'م'),
+('Minute', 'ar', 'دقيقة'),
+('Business Name', 'ar', 'اسم النشاط التجاري'),
+('Business Phone', 'ar', 'هاتف النشاط التجاري'),
+
+-- French (fr)
+('AM', 'fr', 'AM'),
+('PM', 'fr', 'PM'),
+('Minute', 'fr', 'Minute'),
+('Business Name', 'fr', 'Nom de l\'entreprise'),
+('Business Phone', 'fr', 'Téléphone de l\'entreprise'),
+
+-- Chinese (zh)
+('AM', 'zh', '上午'),
+('PM', 'zh', '下午'),
+('Minute', 'zh', '分钟'),
+('Business Name', 'zh', '商家名称'),
+('Business Phone', 'zh', '商家电话'),
+
+-- Business Status
+-- English (en)
+('Closed', 'en', 'Closed'),
+
+-- Arabic (ar)
+('Closed', 'ar', 'مغلق'),
+
+-- French (fr)
+('Closed', 'fr', 'Fermé'),
+
+-- Chinese (zh)
+('Closed', 'zh', '已关闭'),
+
+-- Appointments Section
+-- English (en)
+('APPOINTMENTS FOR CUSTOMER', 'en', 'Appointments for Customer'),
+
+-- Arabic (ar)
+('APPOINTMENTS FOR CUSTOMER', 'ar', 'مواعيد العميل'),
+
+-- French (fr)
+('APPOINTMENTS FOR CUSTOMER', 'fr', 'Rendez-vous du client'),
+
+-- Chinese (zh)
+('APPOINTMENTS FOR CUSTOMER', 'zh', '客户预约'),
+
+-- Months of the Year
+-- English (en)
+('January', 'en', 'January'),
+('February', 'en', 'February'),
+('March', 'en', 'March'),
+('April', 'en', 'April'),
+('May', 'en', 'May'),
+('June', 'en', 'June'),
+('July', 'en', 'July'),
+('August', 'en', 'August'),
+('September', 'en', 'September'),
+('October', 'en', 'October'),
+('November', 'en', 'November'),
+('December', 'en', 'December'),
+
+-- Arabic (ar)
+('January', 'ar', 'يناير'),
+('February', 'ar', 'فبراير'),
+('March', 'ar', 'مارس'),
+('April', 'ar', 'أبريل'),
+('May', 'ar', 'مايو'),
+('June', 'ar', 'يونيو'),
+('July', 'ar', 'يوليو'),
+('August', 'ar', 'أغسطس'),
+('September', 'ar', 'سبتمبر'),
+('October', 'ar', 'أكتوبر'),
+('November', 'ar', 'نوفمبر'),
+('December', 'ar', 'ديسمبر'),
+
+-- French (fr)
+('January', 'fr', 'Janvier'),
+('February', 'fr', 'Février'),
+('March', 'fr', 'Mars'),
+('April', 'fr', 'Avril'),
+('May', 'fr', 'Mai'),
+('June', 'fr', 'Juin'),
+('July', 'fr', 'Juillet'),
+('August', 'fr', 'Août'),
+('September', 'fr', 'Septembre'),
+('October', 'fr', 'Octobre'),
+('November', 'fr', 'Novembre'),
+('December', 'fr', 'Décembre'),
+
+-- Chinese (zh)
+('January', 'zh', '一月'),
+('February', 'zh', '二月'),
+('March', 'zh', '三月'),
+('April', 'zh', '四月'),
+('May', 'zh', '五月'),
+('June', 'zh', '六月'),
+('July', 'zh', '七月'),
+('August', 'zh', '八月'),
+('September', 'zh', '九月'),
+('October', 'zh', '十月'),
+('November', 'zh', '十一月'),
+('December', 'zh', '十二月'),
+
+-- Assistant Introduction
+-- English (en)
+('you_are', 'en', 'You are a friendly phone assistant for'),
+
+-- Arabic (ar)
+('you_are', 'ar', 'أنت مساعد هاتف ودود لـ'),
+
+-- French (fr)
+('you_are', 'fr', 'Vous êtes un assistant téléphonique sympathique pour'),
+
+-- Chinese (zh)
+('you_are', 'zh', '您是一个友好的电话助手，为'),
+
+-- Assistant Introduction Instructions
+-- English (en)
+('intro', 'en', 'Greet callers warmly. Answer questions clearly and briefly. Offer the service name, price, and duration only when asked. Help with bookings by asking what service and time they prefer. \n'),
+
+-- Arabic (ar)
+('intro', 'ar', 'رحب بالمتصلين بحرارة. أجب على الأسئلة بوضوح وإيجاز. قدم اسم الخدمة والسعر والمدة فقط عند الطلب. ساعد في الحجوزات بالسؤال عن الخدمة والوقت المفضلين. \n'),
+
+-- French (fr)
+('intro', 'fr', 'Accueillez les appelants chaleureusement. Répondez aux questions clairement et brièvement. Proposez le nom du service, le prix et la durée uniquement lorsqu\'on vous le demande. Aidez aux réservations en demandant quel service et à quelle heure ils préfèrent. \n'),
+
+-- Chinese (zh)
+('intro', 'zh', '热情地问候来电者。 清晰简洁地回答问题。 仅在被问到时提供服务名称、价格和持续时间。 通过询问他们喜欢什么服务和时间来帮助预订。 \n'),
+
+-- Current Date and Time Instructions
+-- English (en)
+('current_date_and_time', 'en', 'Use this information to provide time-aware responses, such as suggesting availability later today or referencing specific days (e.g., ''tomorrow'', ''Friday afternoon'').\n'),
+
+-- Arabic (ar)
+('current_date_and_time', 'ar', 'استخدم هذه المعلومات لتقديم ردود واعية بالوقت، مثل اقتراح أوقات متاحة لاحقًا اليوم أو الإشارة إلى أيام محددة (مثل ''غدًا''، ''بعد ظهر الجمعة'').\n'),
+
+-- French (fr)
+('current_date_and_time', 'fr', 'Utilisez ces informations pour fournir des réponses tenant compte du temps, comme suggérer des disponibilités plus tard dans la journée ou faire référence à des jours spécifiques (par exemple, ''demain'', ''vendredi après-midi'').\n'),
+
+-- Chinese (zh)
+('current_date_and_time', 'zh', '使用此信息提供时间感知的响应，例如建议今天晚些时候的空闲时间或参考特定日期（例如“明天”、“周五下午”）。\n');
 -- Hair Salon Appointments
 -- Get service IDs
 SET @womens_haircut = (SELECT service_id FROM service WHERE name = 'Women\'s Haircut' AND business_id = @hair_salon_id);

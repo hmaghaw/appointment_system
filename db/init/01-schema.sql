@@ -125,11 +125,11 @@ CREATE TABLE IF NOT EXISTS translations (
     translation_id INT AUTO_INCREMENT PRIMARY KEY,
     phrase VARCHAR(255) NOT NULL COMMENT 'The original phrase to be translated',
     language_code VARCHAR(10) NOT NULL COMMENT 'ISO 639-1 language code (e.g., en, ar, fr)',
-    translated_phrase VARCHAR(500) NOT NULL COMMENT 'The translated phrase in the target language',
+    translated_phrase TEXT NOT NULL COMMENT 'The translated phrase in the target language',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_phrase_language (phrase(191), language_code),
-    INDEX idx_phrase (phrase(191)),
+    UNIQUE KEY unique_phrase_language (phrase, language_code),
+    INDEX idx_phrase (phrase),
     INDEX idx_language (language_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
