@@ -183,3 +183,63 @@ def list_conversation_items():
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/update-system-prompt', methods=['POST'])
+def update_system_prompt():
+    """
+    Update the system prompt for a call
+    
+    Request Body:
+    {
+        "call_sid": "CA123...",
+        "content": "Updated system prompt content"
+    }
+    """
+    data = request.get_json()
+    
+    if not data or 'call_sid' not in data or 'content' not in data:
+        return jsonify({"error": "call_sid and content are required"}), 400
+    
+    call_sid = data['call_sid']
+    content = data['content']
+    
+    try:
+        with get_db_cursor(database='call_history', commit=True) as cursor:
+            # Check if a system prompt already exists for this call
+            cursor.execute("""
+                SELECT call_conversation_id 
+                FROM call_conversation 
+                WHERE call_sid = %s AND role = 'system'
+                ORDER BY call_conversation_id DESC
+                LIMIT 1
+            """, (call_sid,))
+            
+            existing_prompt = cursor.fetchone()
+            
+            if existing_prompt:
+                # Update existing system prompt
+                cursor.execute("""
+                    UPDATE call_conversation 
+                    SET content = %s, updated_at = NOW()
+                    WHERE call_conversation_id = %s
+                """, (content, existing_prompt['call_conversation_id']))
+                action = "updated"
+            else:
+                # Insert new system prompt
+                cursor.execute("""
+                    INSERT INTO call_conversation 
+                    (call_sid, role, content, created_at, updated_at)
+                    VALUES (%s, 'system', %s, NOW(), NOW())
+                """, (call_sid, content))
+                action = "created"
+            
+            return jsonify({
+                "status": "success",
+                "action": action,
+                "call_sid": call_sid
+            })
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
