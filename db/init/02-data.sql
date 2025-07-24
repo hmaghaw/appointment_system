@@ -484,7 +484,40 @@ INSERT INTO translations (phrase, language_code, translated_phrase) VALUES
 ('functions_calling_instructions', 'fr', 'Confirmez toujours avec le client avant d''effectuer toute action liée à un rendez-vous (réservation, report ou annulation).\nNe procédez que si le client donne son accord explicite après confirmation des détails.\nLa seule exception est `update_customer`, qui doit être appelé immédiatement après que le client a fourni son nom.'),
 
 -- Chinese (zh)
-('functions_calling_instructions', 'zh', '在执行任何与预约相关的操作（预订、重新安排或取消）之前，请务必与客户确认。\n只有在您确认详细信息后客户明确同意的情况下才能继续。\n唯一的例外是`update_customer`，它应在客户提供姓名后立即调用。');
+('functions_calling_instructions', 'zh', '在执行任何与预约相关的操作（预订、重新安排或取消）之前，请务必与客户确认。\n只有在您确认详细信息后客户明确同意的情况下才能继续。\n唯一的例外是`update_customer`，它应在客户提供姓名后立即调用。'),
+
+-- Final Commands and Common Phrases
+-- English (en)
+('FINAL COMMANDS', 'en', 'FINAL COMMANDS'),
+('Keep replies short, polite, and helpful.', 'en', 'Keep replies short, polite, and helpful.'),
+('If booking: \'Great! May I have your name, please?\'', 'en', 'If booking: \'Great! May I have your name, please?\''),
+('We\'re open until 7 PM today. Would you like something this afternoon?', 'en', 'We\'re open until 7 PM today. Would you like something this afternoon?'),
+('When would you like to come in?', 'en', 'When would you like to come in?'),
+('Please feel free to call us on our phone:', 'en', 'Please feel free to call us on our phone:'),
+
+-- Arabic (ar)
+('FINAL COMMANDS', 'ar', 'الأوامر النهائية'),
+('Keep replies short, polite, and helpful.', 'ar', 'اجعل الردود قصيرة ولطيفة ومفيدة.'),
+('If booking: \'Great! May I have your name, please?\'', 'ar', 'إذا كنت ترغب في الحجز: \'رائع! هل يمكنني معرفة اسمك من فضلك؟\''),
+('We\'re open until 7 PM today. Would you like something this afternoon?', 'ar', 'نحن مفتوحون حتى الساعة 7 مساءً اليوم. هل ترغب في شيء ما بعد الظهر؟'),
+('When would you like to come in?', 'ar', 'متى ترغب في الحضور؟'),
+('Please feel free to call us on our phone:', 'ar', 'لا تتردد في الاتصال بنا على رقم هاتفنا:'),
+
+-- French (fr)
+('FINAL COMMANDS', 'fr', 'COMMANDES FINALES'),
+('Keep replies short, polite, and helpful.', 'fr', 'Gardez les réponses courtes, polies et utiles.'),
+('If booking: \'Great! May I have your name, please?\'', 'fr', 'Pour une réservation : \'Parfait ! Puis-je avoir votre nom, s\'il vous plaît ?\''),
+('We\'re open until 7 PM today. Would you like something this afternoon?', 'fr', 'Nous sommes ouverts jusqu\'à 19h aujourd\'hui. Souhaitez-vous prendre rendez-vous cet après-midi ?'),
+('When would you like to come in?', 'fr', 'Quand souhaitez-vous venir ?'),
+('Please feel free to call us on our phone:', 'fr', 'N\'hésitez pas à nous appeler au :'),
+
+-- Chinese (zh)
+('FINAL COMMANDS', 'zh', '最终命令'),
+('Keep replies short, polite, and helpful.', 'zh', '保持回复简短、礼貌且有用。'),
+('If booking: \'Great! May I have your name, please?\'', 'zh', '如需预约：\'太好了！请问您贵姓？\''),
+('We\'re open until 7 PM today. Would you like something this afternoon?', 'zh', '我们今天营业到晚上7点。您想今天下午预约吗？'),
+('When would you like to come in?', 'zh', '您想什么时候来？'),
+('Please feel free to call us on our phone:', 'zh', '欢迎随时致电我们：');
 -- Hair Salon Appointments
 -- Get service IDs
 SET @womens_haircut = (SELECT service_id FROM service WHERE name = 'Women\'s Haircut' AND business_id = @hair_salon_id);
