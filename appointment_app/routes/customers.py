@@ -96,6 +96,7 @@ def update_customer():
     - customer_phone (must be unique per business)
     - notes
     - is_active
+    - language: ISO 639-1 language code (e.g., 'en', 'ar', 'fr')
 
     Returns:
         JSON with success status, message, and updated customer data on success.
@@ -109,7 +110,7 @@ def update_customer():
     update_fields = []
     params = {'customer_id': customer_id}
 
-    updatable_fields = ['first_name', 'last_name', 'email', 'customer_phone', 'notes', 'is_active']
+    updatable_fields = ['first_name', 'last_name', 'email', 'customer_phone', 'notes', 'is_active', 'language']
     for field in updatable_fields:
         if field in data:
             update_fields.append(f"{field} = %({field})s")
@@ -222,7 +223,7 @@ def upsert_customer():
             
             # Try to find the customer by phone and business
             cursor.execute("""
-                SELECT customer_id, first_name, last_name, email 
+                SELECT customer_id, first_name, last_name, email, language 
                 FROM customer 
                 WHERE business_id = %s AND customer_phone = %s
             """, (business_id, customer_phone))
@@ -247,7 +248,8 @@ def upsert_customer():
                     "customer_id": customer_id,
                     "first_name": "Guest",
                     "last_name": "",
-                    "email": ""
+                    "email": "",
+                    "language": "en"  # Default language for new customers
                 }), 201
             else:
                 # Return existing customer info
@@ -255,7 +257,8 @@ def upsert_customer():
                     "customer_id": customer['customer_id'],
                     "first_name": customer['first_name'] or "Guest",
                     "last_name": customer['last_name'] or "",
-                    "email": customer['email'] or ""
+                    "email": customer['email'] or "",
+                    "language": customer.get('language', 'en')  # Return the customer's language, default to 'en' if not set
                 }), 200
                 
     except mysql.connector.Error as err:
