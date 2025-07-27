@@ -1,10 +1,66 @@
 from flask import Blueprint, request, jsonify
+from typing import Dict, Any, Optional
 from database import get_db_cursor
 import mysql.connector
+from mysql.connector import Error
 from datetime import datetime
 import re
 
 bp = Blueprint('customers', __name__, url_prefix='/api/customers')
+
+def get_customer_by_id(customer_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Retrieve customer information by customer_id
+    
+    Args:
+        customer_id: The ID of the customer to retrieve
+        
+    Returns:
+        Dictionary containing customer information if found, None otherwise
+    """
+    try:
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute("""
+                SELECT * FROM customer 
+                WHERE customer_id = %s
+            """, (customer_id,))
+            return cursor.fetchone()
+    except Error as e:
+        print(f"Error fetching customer: {e}")
+        return None
+
+@bp.route('/info', methods=['POST'])
+def get_customer():
+    """
+    Get customer information by ID
+    
+    Request body should contain:
+    {
+        "customer_id": 1  // ID of the customer to retrieve
+    }
+    
+    Returns:
+        JSON with customer data if found, or error message
+    """
+    data = request.get_json()
+    
+    if not data or 'customer_id' not in data:
+        return jsonify({"error": "Missing customer_id in request body"}), 400
+        
+    try:
+        customer_id = int(data['customer_id'])
+    except (ValueError, TypeError):
+        return jsonify({"error": "customer_id must be an integer"}), 400
+    
+    customer = get_customer_by_id(customer_id)
+    
+    if not customer:
+        return jsonify({"error": "Customer not found"}), 404
+        
+    return jsonify({
+        "success": True,
+        "customer": customer
+    })
 
 def validate_customer_data(data):
     """Validate customer data and return error message if invalid"""
