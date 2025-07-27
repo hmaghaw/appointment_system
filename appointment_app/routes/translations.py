@@ -1,6 +1,7 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from database import get_db_cursor
 import mysql.connector
+from typing import Dict, Any
 
 bp = Blueprint('translations', __name__, url_prefix='/api/translations')
 
@@ -104,3 +105,46 @@ def get_translation_post():
         "language": language,
         "translated_phrase": translated_phrase
     })
+
+@bp.route('/all', methods=['GET'])
+def get_all_translations():
+    """
+    Get all translations from the database.
+    
+    Returns:
+        JSON with the structure {
+            "phrase1": {
+                "en": "english translation",
+                "ar": "arabic translation"
+            },
+            "phrase2": { ... }
+        }
+    """
+    try:
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute(
+                """
+                SELECT phrase, language_code, translated_phrase 
+                FROM translations 
+                ORDER BY phrase, language_code
+                """
+            )
+            
+            result = {}
+            for row in cursor.fetchall():
+                phrase = row['phrase']
+                lang = row['language_code']
+                translation = row['translated_phrase']
+                
+                if phrase not in result:
+                    result[phrase] = {}
+                result[phrase][lang] = translation
+            
+            return jsonify(result)
+            
+    except mysql.connector.Error as e:
+        current_app.logger.error(f"Database error in get_all_translations: {e}")
+        return jsonify({"error": "Failed to retrieve translations"}), 500
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error in get_all_translations: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
