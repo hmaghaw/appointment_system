@@ -184,6 +184,71 @@ def list_conversation_items():
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
+@bp.route('/save-bulk-messages', methods=['POST'])
+def save_bulk_messages():
+    """
+    Save multiple conversation items for a call in bulk
+    
+    Request Body:
+    {
+        "call_sid": "CA123...",
+        "messages": [
+            {"content": "message 1", "role": "user"},
+            {"content": "message 2", "role": "assistant"}
+        ]
+    }
+    """
+    data = request.get_json()
+    
+    if not data or 'call_sid' not in data or 'messages' not in data:
+        return jsonify({"error": "Missing required fields: call_sid and messages are required"}), 400
+    
+    call_sid = data['call_sid']
+    messages = data['messages']
+    
+    if not isinstance(messages, list):
+        return jsonify({"error": "messages must be a list of message objects"}), 400
+    
+    # Prepare the values to insert
+    values = []
+    current_time = datetime.utcnow()
+    
+    for msg in messages:
+        if not isinstance(msg, dict) or 'role' not in msg or 'content' not in msg:
+            continue  # Skip invalid message formats
+            
+        values.append((
+            call_sid,
+            msg.get('role'),
+            msg.get('content'),
+            current_time
+        ))
+    
+    if not values:
+        return jsonify({"error": "No valid messages to save"}), 400
+    
+    try:
+        with get_db_cursor(commit=True, use_call_db=True, database='call_history') as cursor:
+            # Prepare the insert query
+            query = """
+            INSERT INTO call_conversation (call_sid, role, content, created_at)
+            VALUES (%s, %s, %s, %s)
+            """
+            
+            # Execute the bulk insert
+            cursor.executemany(query, values)
+            
+            return jsonify({
+                "status": "success",
+                "message": f"Successfully saved {len(values)} messages",
+                "call_sid": call_sid
+            }), 200
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
 @bp.route('/update-system-prompt', methods=['POST'])
 def update_system_prompt():
     """
