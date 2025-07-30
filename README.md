@@ -15,6 +15,143 @@ A robust appointment scheduling system built with Python, Flask, and MySQL. This
 
 ## API Reference
 
+### Authentication
+
+#### Email/Password Login
+
+```http
+POST /api/auth/login
+```
+
+**Request Body:**
+```json
+{
+    "email": "user@example.com",
+    "password": "yourpassword",
+    "business_id": "1"
+}
+```
+
+**Response (Success - 200 OK):**
+```json
+{
+    "success": true,
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "Bearer",
+    "expires_in": 86400,
+    "admin": {
+        "id": "user_123",
+        "email": "user@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "full_name": "John Doe",
+        "role": "admin",
+        "permissions": ["read", "write"],
+        "avatar_url": "https://example.com/avatar.jpg",
+        "auth_provider": "email"
+    },
+    "business": {
+        "id": 1,
+        "name": "Elite Wellness Spa",
+        "timezone": "America/New_York"
+    }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request` - Missing required fields
+  ```json
+  {
+      "success": false,
+      "error": "missing_credentials",
+      "message": "Email and password are required"
+  }
+  ```
+
+- `401 Unauthorized` - Invalid credentials
+  ```json
+  {
+      "success": false,
+      "error": "invalid_credentials",
+      "message": "Invalid email or password"
+  }
+  ```
+
+#### Google OAuth Login
+
+```http
+POST /api/auth/social/callback
+```
+
+**Request Body:**
+```json
+{
+    "code": "4/0Adeu5B...",
+    "redirect_uri": "https://yourapp.com/oauth/callback"
+}
+```
+
+**Response (Success - 200 OK):**
+```json
+{
+    "success": true,
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "Bearer",
+    "expires_in": 86400,
+    "admin": {
+        "id": "google_123456789",
+        "email": "user@gmail.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "full_name": "John Doe",
+        "role": "user",
+        "permissions": ["read"],
+        "avatar_url": "https://lh3.googleusercontent.com/...",
+        "auth_provider": "google"
+    },
+    "business": {
+        "id": 1,
+        "name": "Elite Wellness Spa",
+        "timezone": "America/New_York"
+    }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request` - Missing required fields or invalid request
+  ```json
+  {
+      "success": false,
+      "error": "invalid_request",
+      "message": "Authorization code is required"
+  }
+  ```
+
+- `401 Unauthorized` - Invalid or expired authorization code
+  ```json
+  {
+      "success": false,
+      "error": "invalid_credentials",
+      "message": "Invalid authorization code"
+  }
+  ```
+
+#### Health Check
+
+```http
+GET /api/auth/health
+```
+
+**Response (200 OK):**
+```json
+{
+    "status": "ok",
+    "timestamp": "2025-07-30T16:25:17.123456Z"
+}
+```
+
 ### Call History
 
 #### Create or Update Call Metadata

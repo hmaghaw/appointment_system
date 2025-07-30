@@ -1,6 +1,7 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from config import Config
+import os
 
 def create_app(config_dict=None):
     """Create and configure the Flask application.
@@ -16,8 +17,24 @@ def create_app(config_dict=None):
     if config_dict:
         app.config.update(config_dict)
     
-    # Enable CORS
+    # Configure CORS
     CORS(app)
+    # CORS(app,
+    #      resources={
+    #          r"/*": {
+    #              "origins": [
+    #                  "https://your-spa-frontend.com",
+    #                  "https://coffeehome.ca",
+    #                  "https://*.replit.app",
+    #                  "https://*.replit.dev",
+    #                  "http://localhost:*",
+    #                  "http://127.0.0.1:*"
+    #              ],
+    #              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    #              "allow_headers": ["Content-Type", "Authorization", "X-Domain", "Accept", "Origin"],
+    #              "supports_credentials": True
+    #          }
+    #      })
     
     # Import and register blueprints
     from routes.appointments import bp as appointments_bp
@@ -27,6 +44,7 @@ def create_app(config_dict=None):
     from routes.call_meta import bp as call_history_bp
     from routes.call_conversation import bp as call_conversation_bp
     from routes.translations import bp as translations_bp
+    from routes.user import bp as user_bp
     
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -35,6 +53,7 @@ def create_app(config_dict=None):
     app.register_blueprint(call_history_bp)
     app.register_blueprint(call_conversation_bp)
     app.register_blueprint(translations_bp)
+    app.register_blueprint(user_bp, url_prefix='/api/auth')
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])

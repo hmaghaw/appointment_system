@@ -15,6 +15,43 @@ CREATE TABLE IF NOT EXISTS business (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- Users table for authentication and user management
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(50) PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NULL,  -- NULL for social login users
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    role VARCHAR(50) DEFAULT 'staff' CHECK (role IN ('admin', 'manager', 'staff')),
+    business_id INT NOT NULL,
+    permissions JSON,
+    active BOOLEAN DEFAULT TRUE,
+    auth_provider VARCHAR(50) DEFAULT 'email' CHECK (auth_provider IN ('email', 'google', 'facebook', 'apple', 'email,google', 'email,facebook', 'email,apple')),
+    social_id VARCHAR(255) NULL,  -- Provider's unique user ID
+    profile_picture_url VARCHAR(500) NULL,
+    phone VARCHAR(20) NULL,
+    last_login TIMESTAMP NULL,
+    email_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Ensure either password or social login exists
+    CONSTRAINT check_auth_method CHECK (
+        (auth_provider = 'email' AND password_hash IS NOT NULL) OR
+        (auth_provider != 'email' AND social_id IS NOT NULL) OR
+        (auth_provider LIKE 'email,%' AND password_hash IS NOT NULL AND social_id IS NOT NULL)
+    ),
+    
+    -- Foreign key to business
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
+    
+    -- Indexes for performance
+    INDEX idx_email (email),
+    INDEX idx_business_id (business_id),
+    INDEX idx_social_id (social_id),
+    INDEX idx_active (active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Business Messages
 CREATE TABLE IF NOT EXISTS business_messages (
     business_message_id INT AUTO_INCREMENT PRIMARY KEY,
