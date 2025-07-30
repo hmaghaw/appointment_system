@@ -118,6 +118,7 @@ def format_user_response(user):
 
 def get_business_info(business_id):
     """Get business information"""
+
     query = "SELECT * FROM business WHERE business_id = %s"
     business = execute_query(query, (business_id,), fetch='one')
 
@@ -129,6 +130,37 @@ def get_business_info(business_id):
             'status': business['status']
         }
     return None
+
+def create_weekly_business_hours(business_id):
+    default_hours = [
+        {"day_of_week": 0, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Monday
+        {"day_of_week": 1, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Tuesday
+        {"day_of_week": 2, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Wednesday
+        {"day_of_week": 3, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Thursday
+        {"day_of_week": 4, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Friday
+        {"day_of_week": 5, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True},  # Saturday (closed)
+        {"day_of_week": 6, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True}  # Sunday (closed)
+    ]
+
+    try:
+        # Insert default hours for each day
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        for day in default_hours:
+            cursor.execute("""
+                           INSERT INTO business_hours
+                               (business_id, day_of_week, open_time, close_time, is_closed)
+                           VALUES (%s, %s, %s, %s, %s)
+                           """, (
+                               business_id,
+                               day['day_of_week'],
+                               day['open_time'],
+                               day['close_time'],
+                               False
+                           ))
+        conn.commit()
+    except mysql.connector.Error as err:
+        return jsonify({"success": False, "error": f"Database error: {str(err)}"}), 500
 
 @bp.route('/signup', methods=['POST', 'OPTIONS'])
 def signup():
@@ -240,7 +272,8 @@ def signup():
             
             if business_id is None or business_id == 0:
                 raise Exception("No business ID returned from database")
-                
+
+            create_weekly_business_hours(business_id)
             # Commit the transaction
             conn.commit()
             
