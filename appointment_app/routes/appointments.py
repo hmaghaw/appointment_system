@@ -323,3 +323,108 @@ def cancel_appointment():
 
     except mysql.connector.Error as err:
         return jsonify({"success": False, "message": str(err)}), 400
+
+@bp.route('/api/appointments/business', methods=['POST'])
+def list_business_appointments():
+    """
+    List all appointments for a business with detailed customer and service information
+    
+    Request Body (JSON):
+    {
+        "business_id": 123,           # Required: ID of the business
+        "start_date": "2025-07-01",   # Optional: Filter appointments on or after this date (YYYY-MM-DD)
+        "end_date": "2025-07-31",     # Optional: Filter appointments on or before this date
+        "status": "confirmed"         # Optional: Filter by status (e.g., 'scheduled', 'confirmed', 'completed', 'cancelled'). If not provided, returns appointments of all statuses.
+    }
+    """
+    data = request.get_json() or {}
+    
+    # Validate required fields
+    if 'business_id' not in data:
+        return jsonify({"error": "business_id is required"}), 400
+    
+    # Extract parameters
+    business_id = data['business_id']
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    status = data.get('status')
+    
+    # Build the query with detailed customer and service information
+    query = """
+        SELECT 
+            a.appointment_id, 
+            a.business_id, 
+            a.customer_id, 
+            a.service_id, 
+            a.start_time, 
+            a.end_time, 
+            a.status, 
+            a.created_at, 
+            a.updated_at,
+            a.notes,
+            COALESCE(st.name, s.name) as service_name,
+            CAST(COALESCE(st.description, s.description) AS CHAR) as service_description,
+            c.first_name as customer_first_name,
+            c.last_name as customer_last_name,
+            CONCAT(c.first_name, ' ', c.last_name) as customer_full_name,
+            c.email as customer_email
+        FROM appointment a
+        LEFT JOIN service s ON a.service_id = s.service_id AND a.business_id = s.business_id
+        LEFT JOIN service_translation st ON s.service_id = st.service_id 
+            AND st.language_code = 'en'  # Default to English for service names
+        LEFT JOIN customer c ON a.customer_id = c.customer_id
+        WHERE a.business_id = %s
+    """
+    params = [business_id]
+    
+    # Add date filters
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            query += " AND a.start_time >= %s"
+            params.append(start_dt)
+        except ValueError:
+            return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
+    
+    if end_date:
+        try:
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            query += " AND a.start_time < %s"
+            params.append(end_dt)
+        except ValueError:
+            return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
+    
+    # Add status filter if provided
+    if status:
+        query += " AND a.status = %s"
+        params.append(status)
+    
+    # Sort by start time (oldest first)
+    query += " ORDER BY a.start_time ASC"
+    
+    with get_db_cursor() as cursor:
+        cursor.execute(query, tuple(params))
+        columns = [col[0] for col in cursor.description]
+        appointments = []
+        
+        for row in cursor.fetchall():
+            appointment = {}
+            for i, value in enumerate(row):
+                col_name = columns[i]
+                if value is None:
+                    appointment[col_name] = None
+                    continue
+                    
+                if isinstance(value, (datetime, timedelta)):
+                    if isinstance(value, timedelta):
+                        # Convert timedelta to string (HH:MM:SS)
+                        hours, remainder = divmod(value.seconds, 3600)
+                        minutes, seconds = divmod(remainder, 60)
+                        appointment[col_name] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    else:
+                        appointment[col_name] = value.isoformat()
+                else:
+                    appointment[col_name] = row[col_name]
+            appointments.append(appointment)
+        
+        return jsonify(appointments)
