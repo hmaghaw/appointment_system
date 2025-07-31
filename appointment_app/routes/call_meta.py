@@ -179,6 +179,7 @@ def list_call_meta():
     {
         "business_id": 17,            # Required: Business ID to filter by
         "customer_id": 123,           # Optional: Customer ID to filter by
+        "customer_name": "john",      # Optional: Filter by customer name (case-insensitive partial match)
         "status": "Completed",        # Optional: Filter by call status
         "communication_channel": "sms", # Optional: Filter by communication channel (e.g., 'phone', 'sms', 'whatsapp')
         "direction": "inbound",        # Optional: Filter by direction ('inbound' or 'outbound')
@@ -200,6 +201,7 @@ def list_call_meta():
     
     business_id = data['business_id']
     customer_id = data.get('customer_id')
+    customer_name = data.get('customer_name')
     status = data.get('status')
     communication_channel = data.get('communication_channel')
     direction = data.get('direction')
@@ -221,7 +223,8 @@ def list_call_meta():
             cm.direction,
             cm.created_at,
             cm.updated_at,
-            CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) as customer_name
+            CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) as customer_name,
+            c.customer_phone as customer_phone
         FROM call_meta cm
         LEFT JOIN appointment_db.customer c ON cm.customer_id = c.customer_id
         WHERE cm.business_id = %s
@@ -234,6 +237,13 @@ def list_call_meta():
     if customer_id:
         query += " AND cm.customer_id = %s"
         params.append(customer_id)
+        
+    # Add customer_name filter if provided
+    if customer_name:
+        # Search in both first_name and last_name, case-insensitive
+        query += " AND (LOWER(c.first_name) LIKE %s OR LOWER(c.last_name) LIKE %s OR LOWER(CONCAT(c.first_name, ' ', c.last_name)) LIKE %s)"
+        search_term = f"%{customer_name.lower()}%"
+        params.extend([search_term, search_term, search_term])
     
     # Add status filter if provided
     if status:
