@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS `call_meta` (
     `call_end` DATETIME NULL COMMENT 'When the call ended',
     `call_duration` INT NULL COMMENT 'Call duration in seconds',
     `call_status` VARCHAR(50) NULL COMMENT 'Status of the call (e.g., Completed, In Progress)',
+    `communication_channel` VARCHAR(50) NULL DEFAULT 'phone' COMMENT 'Communication channel (e.g., phone, sms, whatsapp)',
+    `direction` VARCHAR(20) NULL DEFAULT 'inbound' COMMENT 'Call direction (inbound/outbound)',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the call record was first created',
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the call record was last updated',
     PRIMARY KEY (`call_sid`),
@@ -25,7 +27,9 @@ CREATE TABLE IF NOT EXISTS `call_meta` (
     INDEX `idx_business_id` (`business_id`),
     INDEX `idx_customer_id` (`customer_id`),
     INDEX `idx_call_start` (`call_start`),
-    INDEX `idx_call_status` (`call_status`)
+    INDEX `idx_call_status` (`call_status`),
+    INDEX `idx_communication_channel` (`communication_channel`),
+    INDEX `idx_direction` (`direction`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores call metadata with call_sid as primary key';
 
 CREATE TABLE IF NOT EXISTS `call_conversation` (

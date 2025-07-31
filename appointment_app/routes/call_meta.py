@@ -92,7 +92,7 @@ def create_or_update_call_meta():
 @bp.route('/conversation', methods=['POST'])
 def get_call_conversation():
     """
-    Get the conversation for a specific call, excluding system messages
+    Get all conversation records for a specific call_sid, excluding system messages
     
     Request Body:
     {
@@ -105,13 +105,14 @@ def get_call_conversation():
         "conversation": [
             {
                 "call_conversation_id": 1,
+                "call_sid": "CA123...",
                 "name": "Assistant",
                 "role": "assistant",
                 "content": "Hello, how can I help you today?",
                 "function_call": null,
                 "created_at": "2025-07-30T10:30:00",
                 "updated_at": "2025-07-30T10:30:00"
-            },
+            }
             // ... more messages
         ]
     }
@@ -125,32 +126,44 @@ def get_call_conversation():
     call_sid = data['call_sid']
     
     try:
-        # First verify the call exists
-        call_meta = _get_call_meta(call_sid)
-        if not call_meta:
-            return jsonify({"error": "Call not found"}), 404
-        
-        # Get the conversation
-        conversation = _get_call_conversation(call_sid)
-        
-        # Convert datetime objects to strings for JSON serialization
-        for msg in conversation:
-            for field in ['created_at', 'updated_at']:
-                if msg.get(field) and isinstance(msg[field], datetime):
-                    msg[field] = msg[field].isoformat()
+        with get_db_cursor(dictionary=True, database='call_history') as cursor:
+            # Query the call_conversation table directly
+            cursor.execute("""
+                SELECT 
+                    call_conversation_id,
+                    call_sid,
+                    name,
+                    role,
+                    content,
+                    function_call,
+                    created_at,
+                    updated_at
+                FROM call_conversation 
+                WHERE call_sid = %s 
+                AND role != 'system'
+                ORDER BY created_at ASC
+            """, (call_sid,))
             
-            # Parse function_call if it's a string
-            if 'function_call' in msg and msg['function_call'] and isinstance(msg['function_call'], str):
-                try:
-                    msg['function_call'] = json.loads(msg['function_call'])
-                except json.JSONDecodeError:
-                    pass  # Keep as string if not valid JSON
-        
-        return jsonify({
-            "call_sid": call_sid,
-            "conversation": conversation
-        })
-        
+            conversation = cursor.fetchall()
+            
+            # Convert datetime objects to strings for JSON serialization
+            for msg in conversation:
+                for field in ['created_at', 'updated_at']:
+                    if msg.get(field) and isinstance(msg[field], datetime):
+                        msg[field] = msg[field].isoformat()
+                
+                # Parse function_call if it's a string
+                if 'function_call' in msg and msg['function_call'] and isinstance(msg['function_call'], str):
+                    try:
+                        msg['function_call'] = json.loads(msg['function_call'])
+                    except json.JSONDecodeError:
+                        pass  # Keep as string if not valid JSON
+            
+            return jsonify({
+                "call_sid": call_sid,
+                "conversation": conversation
+            })
+            
     except mysql.connector.Error as err:
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
@@ -199,9 +212,10 @@ def list_call_meta():
             call_end,
             call_duration,
             call_status,
+            communication_channel,
+            direction,
             created_at,
-            updated_at,
-            meta
+            updated_at
         FROM call_meta
         WHERE business_id = %s
     """
