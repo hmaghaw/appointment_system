@@ -524,6 +524,7 @@ def get_working_hours():
             # Get working hours from the database
             cursor.execute("""
                 SELECT 
+                    business_hours_id,
                     day_of_week,
                     open_time,
                     close_time,
@@ -546,6 +547,7 @@ def get_working_hours():
             working_hours = []
             for day in hours:
                 day_info = {
+                    "business_hours_id": day['business_hours_id'],
                     "day_of_week": DAY_NAMES[day['day_of_week']],
                     "day_number": day['day_of_week'],
                     "open_time": str(day['open_time']) if day['open_time'] else None,
