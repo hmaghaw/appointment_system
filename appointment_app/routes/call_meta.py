@@ -3,6 +3,7 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request, current_app
+from datetime import datetime
 import mysql.connector
 from database import get_db_cursor, get_db_connection
 
@@ -16,6 +17,35 @@ def _get_call_meta(call_sid):
             WHERE call_sid = %s
         """, (call_sid,))
         return cursor.fetchone()
+
+
+def _get_call_conversation(call_sid):
+    """
+    Helper function to get call conversation by call_sid, excluding system messages
+    
+    Args:
+        call_sid (str): The call SID to get conversation for
+        
+    Returns:
+        list: List of conversation messages (excluding system messages)
+    """
+    with get_db_cursor(dictionary=True, database='call_history') as cursor:
+        cursor.execute("""
+            SELECT 
+                call_conversation_id,
+                call_sid,
+                name,
+                role,
+                content,
+                function_call,
+                created_at,
+                updated_at
+            FROM call_conversation 
+            WHERE call_sid = %s 
+            AND role != 'system'
+            ORDER BY created_at ASC
+        """, (call_sid,))
+        return cursor.fetchall()
 
 @bp.route('/create', methods=['POST'])
 def create_or_update_call_meta():
@@ -58,6 +88,184 @@ def create_or_update_call_meta():
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/conversation', methods=['POST'])
+def get_call_conversation():
+    """
+    Get the conversation for a specific call, excluding system messages
+    
+    Request Body:
+    {
+        "call_sid": "CA123..."  // Required: The call SID to get conversation for
+    }
+    
+    Returns:
+    {
+        "call_sid": "CA123...",
+        "conversation": [
+            {
+                "call_conversation_id": 1,
+                "name": "Assistant",
+                "role": "assistant",
+                "content": "Hello, how can I help you today?",
+                "function_call": null,
+                "created_at": "2025-07-30T10:30:00",
+                "updated_at": "2025-07-30T10:30:00"
+            },
+            // ... more messages
+        ]
+    }
+    """
+    data = request.get_json() or {}
+    
+    # Validate required fields
+    if 'call_sid' not in data:
+        return jsonify({"error": "call_sid is required in the request body"}), 400
+    
+    call_sid = data['call_sid']
+    
+    try:
+        # First verify the call exists
+        call_meta = _get_call_meta(call_sid)
+        if not call_meta:
+            return jsonify({"error": "Call not found"}), 404
+        
+        # Get the conversation
+        conversation = _get_call_conversation(call_sid)
+        
+        # Convert datetime objects to strings for JSON serialization
+        for msg in conversation:
+            for field in ['created_at', 'updated_at']:
+                if msg.get(field) and isinstance(msg[field], datetime):
+                    msg[field] = msg[field].isoformat()
+            
+            # Parse function_call if it's a string
+            if 'function_call' in msg and msg['function_call'] and isinstance(msg['function_call'], str):
+                try:
+                    msg['function_call'] = json.loads(msg['function_call'])
+                except json.JSONDecodeError:
+                    pass  # Keep as string if not valid JSON
+        
+        return jsonify({
+            "call_sid": call_sid,
+            "conversation": conversation
+        })
+        
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
+@bp.route('/list', methods=['POST'])
+def list_call_meta():
+    """
+    List call metadata with optional filtering
+    
+    Request Body:
+    {
+        "business_id": 17,            # Required: Business ID to filter by
+        "customer_id": 123,           # Optional: Customer ID to filter by
+        "status": "Completed",        # Optional: Filter by call status
+        "start_date": "2025-01-01",   # Optional: Filter calls on or after this date (YYYY-MM-DD)
+        "end_date": "2025-12-31"      # Optional: Filter calls on or before this date (YYYY-MM-DD)
+    }
+    
+    Returns:
+    {
+        "calls": [list of call objects],
+        "count": number of calls
+    }
+    """
+    data = request.get_json() or {}
+    
+    # Validate required fields
+    if 'business_id' not in data:
+        return jsonify({"error": "business_id is required"}), 400
+    
+    business_id = data['business_id']
+    customer_id = data.get('customer_id')
+    status = data.get('status')
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    
+    # Build the query
+    query = """
+        SELECT 
+            call_sid,
+            business_id,
+            customer_id,
+            call_start,
+            call_end,
+            call_duration,
+            call_status,
+            created_at,
+            updated_at,
+            meta
+        FROM call_meta
+        WHERE business_id = %s
+    """
+    params = [business_id]
+    
+    # Add customer_id filter if provided
+    if customer_id is not None:
+        query += " AND customer_id = %s"
+        params.append(customer_id)
+    
+    # Add status filter if provided
+    if status:
+        query += " AND call_status = %s"
+        params.append(status)
+    
+    # Add date range filters if provided
+    if start_date:
+        try:
+            # Convert to datetime and format for SQL
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            query += " AND DATE(call_start) >= %s"
+            params.append(start_dt.strftime('%Y-%m-%d'))
+        except ValueError:
+            return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
+    
+    if end_date:
+        try:
+            # Convert to datetime, add one day, and format for SQL
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            query += " AND DATE(call_start) < %s"
+            params.append(end_dt.strftime('%Y-%m-%d'))
+        except ValueError:
+            return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
+    
+    # Add sorting
+    query += " ORDER BY created_at DESC"
+    
+    try:
+        with get_db_cursor(dictionary=True, database='call_history') as cursor:
+            cursor.execute(query, tuple(params))
+            calls = cursor.fetchall()
+            
+            # Convert datetime objects to strings for JSON serialization
+            for call in calls:
+                for field in ['call_start', 'call_end', 'created_at', 'updated_at']:
+                    if call[field] and isinstance(call[field], datetime):
+                        call[field] = call[field].isoformat()
+                # Parse meta if it's a string
+                if 'meta' in call and isinstance(call['meta'], str):
+                    try:
+                        call['meta'] = json.loads(call['meta'])
+                    except json.JSONDecodeError:
+                        pass  # Keep as string if not valid JSON
+            
+            return jsonify({
+                "calls": calls,
+                "count": len(calls)
+            })
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
 
 @bp.route('/read', methods=['POST'])
 def read_call_meta():

@@ -10,12 +10,22 @@ DROP TABLE IF EXISTS `call_meta`;
 -- Table to store call metadata
 CREATE TABLE IF NOT EXISTS `call_meta` (
     `call_sid` VARCHAR(50) NOT NULL COMMENT 'Unique identifier for the call from the telephony provider',
+    `business_id` INT NULL COMMENT 'Business ID associated with the call',
+    `customer_id` INT NULL COMMENT 'Customer ID associated with the call',
     `meta` JSON NOT NULL COMMENT 'JSON object containing call metadata',
+    `call_start` DATETIME NULL COMMENT 'When the call started',
+    `call_end` DATETIME NULL COMMENT 'When the call ended',
+    `call_duration` INT NULL COMMENT 'Call duration in seconds',
+    `call_status` VARCHAR(50) NULL COMMENT 'Status of the call (e.g., Completed, In Progress)',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the call record was first created',
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the call record was last updated',
     PRIMARY KEY (`call_sid`),
     INDEX `idx_created_at` (`created_at`),
-    INDEX `idx_updated_at` (`updated_at`)
+    INDEX `idx_updated_at` (`updated_at`),
+    INDEX `idx_business_id` (`business_id`),
+    INDEX `idx_customer_id` (`customer_id`),
+    INDEX `idx_call_start` (`call_start`),
+    INDEX `idx_call_status` (`call_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores call metadata with call_sid as primary key';
 
 CREATE TABLE IF NOT EXISTS `call_conversation` (
