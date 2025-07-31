@@ -58,7 +58,7 @@ def add_conversation_item():
                 return jsonify({"error": "function_call.arguments must be a valid JSON string"}), 400
     
     try:
-        with get_db_cursor(database='call_history', commit=True) as cursor:
+        with get_db_cursor(database='appointment_db', commit=True) as cursor:
             # Convert function_call to JSON string
             function_call_json = json.dumps(function_call) if function_call is not None else None
             
@@ -130,7 +130,7 @@ def list_conversation_items():
     has_function = request.args.get('has_function') == 'true'
     
     try:
-        with get_db_cursor(dictionary=True, database='call_history') as cursor:
+        with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
             # Build the query
             query = """
                 SELECT call_conversation_id, call_sid, name, role, content, 
@@ -228,7 +228,7 @@ def save_bulk_messages():
         return jsonify({"error": "No valid messages to save"}), 400
     
     try:
-        with get_db_cursor(commit=True, use_call_db=True, database='call_history') as cursor:
+        with get_db_cursor(commit=True, use_call_db=True, database='appointment_db') as cursor:
             # Prepare the insert query
             query = """
             INSERT INTO call_conversation (call_sid, role, content, created_at)
@@ -269,7 +269,7 @@ def update_system_prompt():
     content = data['content']
     
     try:
-        with get_db_cursor(database='call_history', commit=True) as cursor:
+        with get_db_cursor(database='appointment_db', commit=True) as cursor:
             # Check if a system prompt already exists for this call
             cursor.execute("""
                 SELECT call_conversation_id 

@@ -11,7 +11,7 @@ bp = Blueprint('call_history', __name__, url_prefix='/api/call-meta')
 
 def _get_call_meta(call_sid):
     """Helper function to get call metadata by call_sid"""
-    with get_db_cursor(dictionary=True, database='call_history') as cursor:
+    with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
         cursor.execute("""
             SELECT * FROM call_meta 
             WHERE call_sid = %s
@@ -29,7 +29,7 @@ def _get_call_conversation(call_sid):
     Returns:
         list: List of conversation messages (excluding system messages)
     """
-    with get_db_cursor(dictionary=True, database='call_history') as cursor:
+    with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
         cursor.execute("""
             SELECT 
                 call_conversation_id,
@@ -69,7 +69,7 @@ def create_or_update_call_meta():
     try:
         meta_json = json.dumps(meta) if not isinstance(meta, str) else meta
         
-        with get_db_cursor(database='call_history', commit=True) as cursor:
+        with get_db_cursor(database='appointment_db', commit=True) as cursor:
             cursor.execute("""
                 INSERT INTO call_meta (call_sid, meta)
                 VALUES (%s, %s)
@@ -126,7 +126,7 @@ def get_call_conversation():
     call_sid = data['call_sid']
     
     try:
-        with get_db_cursor(dictionary=True, database='call_history') as cursor:
+        with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
             # Query the call_conversation table directly
             cursor.execute("""
                 SELECT 
@@ -202,33 +202,80 @@ def list_call_meta():
     start_date = data.get('start_date')
     end_date = data.get('end_date')
     
-    # Build the query
-    query = """
-        SELECT 
-            call_sid,
-            business_id,
-            customer_id,
-            call_start,
-            call_end,
-            call_duration,
-            call_status,
-            communication_channel,
-            direction,
-            created_at,
-            updated_at
-        FROM call_meta
-        WHERE business_id = %s
-    """
+    try:
+        # First, try to get the customer names if we can access the customer table
+        with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
+            cursor.execute("SHOW TABLES LIKE 'customer'")
+            has_customer_access = cursor.fetchone() is not None
+            
+        if has_customer_access:
+            # If we have access to the customer table, include the customer name
+            query = """
+                SELECT 
+                    cm.call_sid,
+                    cm.business_id,
+                    cm.customer_id,
+                    cm.call_start,
+                    cm.call_end,
+                    cm.call_duration,
+                    cm.call_status,
+                    cm.communication_channel,
+                    cm.direction,
+                    cm.created_at,
+                    cm.updated_at,
+                    CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) as customer_name
+                FROM call_meta cm
+                LEFT JOIN appointment_db.customer c ON cm.customer_id = c.customer_id
+                WHERE cm.business_id = %s
+            """
+        else:
+            # Fallback query without customer name if we don't have access
+            query = """
+                SELECT 
+                    call_sid,
+                    business_id,
+                    customer_id,
+                    call_start,
+                    call_end,
+                    call_duration,
+                    call_status,
+                    communication_channel,
+                    direction,
+                    created_at,
+                    updated_at,
+                    NULL as customer_name
+                FROM call_meta
+                WHERE business_id = %s
+            """
+    except Exception as e:
+        # If we can't check the customer table, use the fallback query
+        query = """
+            SELECT 
+                call_sid,
+                business_id,
+                customer_id,
+                call_start,
+                call_end,
+                call_duration,
+                call_status,
+                communication_channel,
+                direction,
+                created_at,
+                updated_at,
+                NULL as customer_name
+            FROM call_meta
+            WHERE business_id = %s
+        """
     params = [business_id]
     
     # Add customer_id filter if provided
-    if customer_id is not None:
-        query += " AND customer_id = %s"
+    if customer_id:
+        query += " AND cm.customer_id = %s"
         params.append(customer_id)
     
     # Add status filter if provided
     if status:
-        query += " AND call_status = %s"
+        query += " AND cm.call_status = %s"
         params.append(status)
     
     # Add date range filters if provided
@@ -254,7 +301,7 @@ def list_call_meta():
     query += " ORDER BY created_at DESC"
     
     try:
-        with get_db_cursor(dictionary=True, database='call_history') as cursor:
+        with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
             cursor.execute(query, tuple(params))
             calls = cursor.fetchall()
             
@@ -396,7 +443,7 @@ def get_sms_sid():
                 conn.close()
                 
                 # Now work with call_history database
-                with get_db_connection(database='call_history') as conn_hist:
+                with get_db_connection(database='appointment_db') as conn_hist:
                     with conn_hist.cursor(dictionary=True) as cursor_hist:
                         # Check for existing valid SID
                         cursor_hist.execute("""

@@ -187,3 +187,50 @@ CREATE TABLE IF NOT EXISTS service_translation (
     INDEX idx_service_id (service_id),
     INDEX idx_language_code (language_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores translations for service names and descriptions';
+
+CREATE TABLE IF NOT EXISTS `call_meta` (
+    `call_sid` VARCHAR(50) NOT NULL COMMENT 'Unique identifier for the call from the telephony provider',
+    `business_id` INT NULL COMMENT 'Business ID associated with the call',
+    `customer_id` INT NULL COMMENT 'Customer ID associated with the call',
+    `meta` JSON NOT NULL COMMENT 'JSON object containing call metadata',
+    `call_start` DATETIME NULL COMMENT 'When the call started',
+    `call_end` DATETIME NULL COMMENT 'When the call ended',
+    `call_duration` INT NULL COMMENT 'Call duration in seconds',
+    `call_status` VARCHAR(50) NULL COMMENT 'Status of the call (e.g., Completed, In Progress)',
+    `communication_channel` VARCHAR(50) NULL DEFAULT 'phone' COMMENT 'Communication channel (e.g., phone, sms, whatsapp)',
+    `direction` VARCHAR(20) NULL DEFAULT 'inbound' COMMENT 'Call direction (inbound/outbound)',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the call record was first created',
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the call record was last updated',
+    PRIMARY KEY (`call_sid`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_updated_at` (`updated_at`),
+    INDEX `idx_business_id` (`business_id`),
+    INDEX `idx_customer_id` (`customer_id`),
+    INDEX `idx_call_start` (`call_start`),
+    INDEX `idx_call_status` (`call_status`),
+    INDEX `idx_communication_channel` (`communication_channel`),
+    INDEX `idx_direction` (`direction`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores call metadata with call_sid as primary key';
+
+CREATE TABLE IF NOT EXISTS `call_conversation` (
+    `call_conversation_id` BIGINT NOT NULL AUTO_INCREMENT,
+    `call_sid` VARCHAR(64) NOT NULL,
+    `name` VARCHAR(255) NULL,
+    `role` VARCHAR(50) NOT NULL,
+    `content` TEXT NULL,
+    `function_call` JSON NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`call_conversation_id`),
+    INDEX `idx_call_sid` (`call_sid`),
+    INDEX `idx_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table to track SMS message IDs
+CREATE TABLE IF NOT EXISTS `sms_sid` (
+    `business_id` INT NOT NULL COMMENT 'ID of the business associated with the SMS',
+    `customer_id` INT NOT NULL COMMENT 'ID of the customer associated with the SMS',
+    `sms_sid` VARCHAR(64) NOT NULL COMMENT 'Unique identifier for the SMS from the provider',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the SMS record was created',
+    PRIMARY KEY (`business_id`, `customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks SMS message IDs for business-customer communications';
