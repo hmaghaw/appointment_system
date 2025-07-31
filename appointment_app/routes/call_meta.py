@@ -180,8 +180,10 @@ def list_call_meta():
         "business_id": 17,            # Required: Business ID to filter by
         "customer_id": 123,           # Optional: Customer ID to filter by
         "status": "Completed",        # Optional: Filter by call status
-        "start_date": "2025-01-01",   # Optional: Filter calls on or after this date (YYYY-MM-DD)
-        "end_date": "2025-12-31"      # Optional: Filter calls on or before this date (YYYY-MM-DD)
+        "communication_channel": "sms", # Optional: Filter by communication channel (e.g., 'phone', 'sms', 'whatsapp')
+        "direction": "inbound",        # Optional: Filter by direction ('inbound' or 'outbound')
+        "start_date_from": "2025-01-01", # Optional: Filter calls on or after this date (YYYY-MM-DD)
+        "start_date_to": "2025-12-31"   # Optional: Filter calls on or before this date (YYYY-MM-DD)
     }
     
     Returns:
@@ -199,73 +201,33 @@ def list_call_meta():
     business_id = data['business_id']
     customer_id = data.get('customer_id')
     status = data.get('status')
-    start_date = data.get('start_date')
-    end_date = data.get('end_date')
+    communication_channel = data.get('communication_channel')
+    direction = data.get('direction')
+    start_date_from = data.get('start_date_from')
+    start_date_to = data.get('start_date_to')
     
-    try:
-        # First, try to get the customer names if we can access the customer table
-        with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
-            cursor.execute("SHOW TABLES LIKE 'customer'")
-            has_customer_access = cursor.fetchone() is not None
-            
-        if has_customer_access:
-            # If we have access to the customer table, include the customer name
-            query = """
-                SELECT 
-                    cm.call_sid,
-                    cm.business_id,
-                    cm.customer_id,
-                    cm.call_start,
-                    cm.call_end,
-                    cm.call_duration,
-                    cm.call_status,
-                    cm.communication_channel,
-                    cm.direction,
-                    cm.created_at,
-                    cm.updated_at,
-                    CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) as customer_name
-                FROM call_meta cm
-                LEFT JOIN appointment_db.customer c ON cm.customer_id = c.customer_id
-                WHERE cm.business_id = %s
-            """
-        else:
-            # Fallback query without customer name if we don't have access
-            query = """
-                SELECT 
-                    call_sid,
-                    business_id,
-                    customer_id,
-                    call_start,
-                    call_end,
-                    call_duration,
-                    call_status,
-                    communication_channel,
-                    direction,
-                    created_at,
-                    updated_at,
-                    NULL as customer_name
-                FROM call_meta
-                WHERE business_id = %s
-            """
-    except Exception as e:
-        # If we can't check the customer table, use the fallback query
-        query = """
-            SELECT 
-                call_sid,
-                business_id,
-                customer_id,
-                call_start,
-                call_end,
-                call_duration,
-                call_status,
-                communication_channel,
-                direction,
-                created_at,
-                updated_at,
-                NULL as customer_name
-            FROM call_meta
-            WHERE business_id = %s
-        """
+
+    # If we have access to the customer table, include the customer name
+    query = """
+        SELECT 
+            cm.call_sid,
+            cm.business_id,
+            cm.customer_id,
+            cm.call_start,
+            cm.call_end,
+            cm.call_duration,
+            cm.call_status,
+            cm.communication_channel,
+            cm.direction,
+            cm.created_at,
+            cm.updated_at,
+            CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) as customer_name
+        FROM call_meta cm
+        LEFT JOIN appointment_db.customer c ON cm.customer_id = c.customer_id
+        WHERE cm.business_id = %s
+    """
+
+
     params = [business_id]
     
     # Add customer_id filter if provided
@@ -277,33 +239,61 @@ def list_call_meta():
     if status:
         query += " AND cm.call_status = %s"
         params.append(status)
+        
+    # Add communication_channel filter if provided
+    if communication_channel:
+        query += " AND cm.communication_channel = %s"
+        params.append(communication_channel)
+        
+    # Add direction filter if provided
+    if direction:
+        query += " AND cm.direction = %s"
+        params.append(direction)
     
     # Add date range filters if provided
-    if start_date:
+    if start_date_from:
         try:
             # Convert to datetime and format for SQL
-            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            start_dt = datetime.strptime(start_date_from, '%Y-%m-%d')
             query += " AND DATE(call_start) >= %s"
             params.append(start_dt.strftime('%Y-%m-%d'))
         except ValueError:
-            return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
+            return jsonify({"error": "Invalid start_date_from format. Use YYYY-MM-DD"}), 400
     
-    if end_date:
+    if start_date_to:
         try:
             # Convert to datetime, add one day, and format for SQL
-            end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            end_dt = datetime.strptime(start_date_to, '%Y-%m-%d') + timedelta(days=1)
             query += " AND DATE(call_start) < %s"
             params.append(end_dt.strftime('%Y-%m-%d'))
         except ValueError:
-            return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
+            return jsonify({"error": "Invalid start_date_to format. Use YYYY-MM-DD"}), 400
     
     # Add sorting
     query += " ORDER BY created_at DESC"
+    
+    # Debug: Print the final query and parameters
+    print(f"Executing query: {query}")
+    print(f"With params: {params}")
     
     try:
         with get_db_cursor(dictionary=True, database='appointment_db') as cursor:
             cursor.execute(query, tuple(params))
             calls = cursor.fetchall()
+            
+            # Debug: Print the number of rows found
+            print(f"Found {len(calls)} records matching the query")
+            
+            # If no results, try a simpler query to check if there's any data at all
+            if not calls:
+                cursor.execute("SELECT COUNT(*) as count FROM call_meta WHERE business_id = %s", (business_id,))
+                total_count = cursor.fetchone()['count']
+                print(f"Total records in call_meta for business_id {business_id}: {total_count}")
+                
+                # Check if the table has any data at all
+                cursor.execute("SELECT COUNT(*) as count FROM call_meta")
+                total_table_count = cursor.fetchone()['count']
+                print(f"Total records in call_meta table: {total_table_count}")
             
             # Convert datetime objects to strings for JSON serialization
             for call in calls:
