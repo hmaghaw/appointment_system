@@ -161,38 +161,55 @@ def get_available_numbers():
         }), 500
 
 
-@bp.route('/purchase', methods=['POST'])
-@log_twilio_transaction('/purchase')
+@bp.route('/purchase-number', methods=['POST'])
+@log_twilio_transaction('/purchase-number')
 def purchase_number():
     """
     Purchase a Twilio phone number
-    
+
     Request body: {
         "phone_number": "+14155551234",
         "country": "US"
     }
-    
+
     Returns: Confirmation of the purchased number
     """
     try:
         data = request.get_json()
         if not data or 'phone_number' not in data or 'country' not in data:
             return jsonify({
-                "status": "error", 
+                "status": "error",
                 "message": "phone_number and country are required"
             }), 400
-            
-        # Add your implementation here
+
+        phone_number = data['phone_number']
+
+        # Initialize Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        # Purchase the number
+        purchased_number = client.incoming_phone_numbers.create(
+            phone_number=phone_number
+        )
+
         return jsonify({
-            "status": "success", 
+            "status": "success",
             "message": "Number purchased successfully",
-            "data": data
-        })
-        
+            "data": {
+                "sid": purchased_number.sid,
+                "phone_number": purchased_number.phone_number,
+                "friendly_name": purchased_number.friendly_name,
+                "capabilities": purchased_number.capabilities
+            }
+        }), 200
+
     except Exception as e:
         print(f"[purchase_number] Error: {str(e)}")
         return jsonify({
-            "status": "error", 
+            "status": "error",
             "message": "Failed to purchase number",
             "error": str(e)
         }), 500
@@ -275,8 +292,8 @@ def list_numbers():
         }), 500
 
 
-@bp.route('/configure', methods=['POST'])
-@log_twilio_transaction('/configure')
+@bp.route('/configure-number', methods=['POST'])
+@log_twilio_transaction('/configure-number')
 def configure_number():
     """
     Configure a Twilio phone number
@@ -381,36 +398,55 @@ def release_number():
             "error": str(e)
         }), 500
 
-@bp.route('/number-details', methods=['GET'])
+@bp.route('/number-details', methods=['POST'])
 @log_twilio_transaction('/number-details')
 def get_number_details():
     """
     Get details for a specific Twilio number
-    
-    Query parameters:
-    - phone_sid: The SID of the phone number to retrieve details for
-    
+
+    Request body:
+    {
+        "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+
     Returns: Details of the specified phone number
     """
     try:
-        phone_sid = request.args.get('phone_sid')
+        data = request.get_json()
+        phone_sid = data.get('phone_sid') if data else None
+
         if not phone_sid:
             return jsonify({
                 "status": "error",
-                "message": "phone_sid query parameter is required"
+                "message": "Missing required field: phone_sid"
             }), 400
-            
-        # Add your implementation here
-        
+
+        # Initialize Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        number = client.incoming_phone_numbers(phone_sid).fetch()
+
         return jsonify({
             "status": "success",
             "message": "Number details retrieved successfully",
             "data": {
-                "phone_sid": phone_sid,
-                # Add other number details here
+                "sid": number.sid,
+                "phone_number": number.phone_number,
+                "friendly_name": number.friendly_name,
+                "voice_url": number.voice_url,
+                "sms_url": number.sms_url,
+                "status_callback": number.status_callback,
+                "voice_method": number.voice_method,
+                "sms_method": number.sms_method,
+                "capabilities": number.capabilities,
+                "date_created": number.date_created.isoformat() if number.date_created else None,
+                "date_updated": number.date_updated.isoformat() if number.date_updated else None
             }
-        })
-        
+        }), 200
+
     except Exception as e:
         print(f"[get_number_details] Error: {str(e)}")
         return jsonify({
@@ -424,32 +460,48 @@ def get_number_details():
 def update_friendly_name():
     """
     Update the friendly name of a Twilio number
-    
+
     Request body: {
         "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
         "friendly_name": "Support Line - Toronto"
     }
-    
+
     Returns: Confirmation of the update
     """
     try:
         data = request.get_json()
         required_fields = ['phone_sid', 'friendly_name']
-        
+
         if not data or any(field not in data for field in required_fields):
             return jsonify({
                 "status": "error",
                 "message": f"Missing required fields. Required: {', '.join(required_fields)}"
             }), 400
-            
-        # Add your implementation here
-        
+
+        phone_sid = data['phone_sid']
+        friendly_name = data['friendly_name']
+
+        # Initialize Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        # Update the friendly name
+        updated = client.incoming_phone_numbers(phone_sid).update(
+            friendly_name=friendly_name
+        )
+
         return jsonify({
             "status": "success",
             "message": "Friendly name updated successfully",
-            "data": data
-        })
-        
+            "data": {
+                "sid": updated.sid,
+                "phone_number": updated.phone_number,
+                "friendly_name": updated.friendly_name
+            }
+        }), 200
+
     except Exception as e:
         print(f"[update_friendly_name] Error: {str(e)}")
         return jsonify({
@@ -458,43 +510,83 @@ def update_friendly_name():
             "error": str(e)
         }), 500
 
-@bp.route('/usage', methods=['GET'])
-@log_twilio_transaction('/usage')
+@bp.route('/number-usage', methods=['POST'])
+@log_twilio_transaction('/number-usage')
 def get_usage():
     """
     Get usage statistics for a Twilio number
-    
-    Query parameters:
-    - phone_sid: The SID of the phone number (required)
-    - start_date: Start date in YYYY-MM-DD format (required)
-    - end_date: End date in YYYY-MM-DD format (required)
-    
+
+    Request body:
+    {
+        "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "start_date": "2025-07-01",   # Optional
+        "end_date": "2025-07-31"      # Optional
+    }
+
     Returns: Usage statistics for the specified number and date range
     """
     try:
-        phone_sid = request.args.get('phone_sid')
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        
-        if not all([phone_sid, start_date, end_date]):
+        data = request.get_json()
+        phone_sid = data.get('phone_sid')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if not phone_sid:
             return jsonify({
                 "status": "error",
-                "message": "phone_sid, start_date, and end_date are required"
+                "message": "phone_sid is required"
             }), 400
-            
-        # Add your implementation here
-        
+
+        # Parse dates if present
+        start = datetime.strptime(start_date, "%Y-%m-%d").date() if start_date else None
+        end = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
+
+        # Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        # Fetch the actual phone number (E.164 format) from SID
+        twilio_number = client.incoming_phone_numbers(phone_sid).fetch()
+        e164_number = twilio_number.phone_number  # e.g. "+14155556666"
+
+        # Build kwargs for date filters
+        usage_kwargs = {}
+        if start:
+            usage_kwargs["start_date"] = start
+        if end:
+            usage_kwargs["end_date"] = end
+
+        # Get all usage records
+        usage_records = client.usage.records.list(limit=1000, **usage_kwargs)
+
+        # Filter by phone number in description (best-effort)
+        filtered = []
+        for record in usage_records:
+            filtered.append({
+                "category": record.category,
+                "description": record.description,
+                "usage": float(record.usage) if record.usage is not None else None,
+                "usage_unit": record.usage_unit,
+                "price": float(record.price) if record.price is not None else None,
+                "price_unit": record.price_unit,
+                "start_date": str(record.start_date),
+                "end_date": str(record.end_date)
+            })
+
         return jsonify({
             "status": "success",
             "message": "Usage statistics retrieved successfully",
             "data": {
                 "phone_sid": phone_sid,
+                "phone_number": e164_number,
                 "start_date": start_date,
                 "end_date": end_date,
-                "usage": []  # Add actual usage data here
+                "usage": filtered
             }
-        })
-        
+        }), 200
+
     except Exception as e:
         print(f"[get_usage] Error: {str(e)}")
         return jsonify({
@@ -502,3 +594,5 @@ def get_usage():
             "message": "Failed to retrieve usage statistics",
             "error": str(e)
         }), 500
+
+
