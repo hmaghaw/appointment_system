@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from database import get_db_cursor
 import mysql.connector
 from mysql.connector import Error
@@ -7,6 +7,69 @@ from datetime import datetime
 import re
 
 bp = Blueprint('customers', __name__, url_prefix='/api/customers')
+
+def get_customers_by_business(business_id: int) -> List[Dict[str, Any]]:
+    """
+    Retrieve all customers for a specific business
+    
+    Args:
+        business_id: The ID of the business to get customers for
+        
+    Returns:
+        List of customer dictionaries with their details
+    """
+    print(f"[get_customers_by_business] Fetching customers for business_id: {business_id}")
+    
+    if not isinstance(business_id, int) or business_id <= 0:
+        print(f"[get_customers_by_business] Invalid business_id: {business_id}")
+        return []
+        
+    try:
+        with get_db_cursor(dictionary=True) as cursor:
+            # First verify the business exists
+            cursor.execute("SELECT 1 FROM business WHERE business_id = %s", (business_id,))
+            if not cursor.fetchone():
+                print(f"[get_customers_by_business] Business with ID {business_id} not found")
+                return []
+                
+            query = """
+                SELECT 
+                    customer_id,
+                    business_id,
+                    customer_phone,
+                    first_name,
+                    last_name,
+                    email,
+                    language,
+                    notes,
+                    is_active,
+                    created_at,
+                    updated_at
+                FROM customer
+                WHERE business_id = %s
+                ORDER BY first_name, last_name, customer_id
+            """
+            print(f"[get_customers_by_business] Executing query: {query} with business_id: {business_id}")
+            cursor.execute(query, (business_id,))
+            customers = cursor.fetchall()
+            print(f"[get_customers_by_business] Fetched {len(customers)} customers")
+            
+            # Convert datetime objects to ISO format for JSON serialization
+            for customer in customers:
+                for key, value in customer.items():
+                    if isinstance(value, datetime):
+                        customer[key] = value.isoformat()
+            
+            return customers
+            
+    except Error as e:
+        error_msg = f"[get_customers_by_business] Database error: {str(e)}"
+        print(error_msg)
+        raise Exception(error_msg)
+    except Exception as e:
+        error_msg = f"[get_customers_by_business] Unexpected error: {str(e)}"
+        print(error_msg)
+        raise Exception(error_msg)
 
 def get_customer_by_id(customer_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -16,8 +79,11 @@ def get_customer_by_id(customer_id: int) -> Optional[Dict[str, Any]]:
         customer_id: The ID of the customer to retrieve
         
     Returns:
-        Dictionary containing customer information if found, None otherwise
+        Dictionary containing customer information if found, None otherwise or on error
     """
+    if not isinstance(customer_id, int) or customer_id <= 0:
+        return None
+        
     try:
         with get_db_cursor(dictionary=True) as cursor:
             cursor.execute("""
@@ -234,6 +300,49 @@ def update_customer():
 
     except mysql.connector.Error as err:
         return jsonify({"success": False, "message": str(err)}), 400
+
+
+
+@bp.route('/list', methods=['POST'])
+def list_customers():
+    """
+    List all customers for a specific business
+    
+    Request body should contain:
+    {
+        "business_id": 111  // Required: ID of the business
+    }
+    
+    Returns:
+        JSON object containing:
+        - customers: List of customer objects
+        - total: Total number of customers for the business
+    """
+    data = request.get_json()
+    
+    if not data or 'business_id' not in data:
+        return jsonify({"error": "business_id is required"}), 400
+        
+    try:
+        business_id = int(data['business_id'])
+        
+        # Get all customers for the business
+        customers = get_customers_by_business(business_id)
+        
+        # Get total count
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as total FROM customer WHERE business_id = %s", (business_id,))
+            total = cursor.fetchone()['total']
+        
+        return jsonify({
+            "customers": customers or [],
+            "total": total
+        })
+        
+    except ValueError:
+        return jsonify({"error": "Invalid business_id, limit, or offset format"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @bp.route('/upsert', methods=['POST'])
