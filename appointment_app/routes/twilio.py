@@ -362,16 +362,16 @@ def configure_number():
         }), 500
 
 
-@bp.route('/release', methods=['POST'])
-@log_twilio_transaction('/release')
+@bp.route('/release-number', methods=['POST'])
+@log_twilio_transaction('/release-number')
 def release_number():
     """
     Release a Twilio phone number
-    
+
     Request body: {
         "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     }
-    
+
     Returns: Confirmation of the release
     """
     try:
@@ -381,15 +381,26 @@ def release_number():
                 "status": "error",
                 "message": "phone_sid is required"
             }), 400
-            
-        # Add your implementation here
-        
+
+        phone_sid = data['phone_sid']
+
+        # Initialize Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        # Delete (release) the number
+        client.incoming_phone_numbers(phone_sid).delete()
+
         return jsonify({
             "status": "success",
             "message": "Number released successfully",
-            "data": data
-        })
-        
+            "data": {
+                "phone_sid": phone_sid
+            }
+        }), 200
+
     except Exception as e:
         print(f"[release_number] Error: {str(e)}")
         return jsonify({
@@ -397,6 +408,7 @@ def release_number():
             "message": "Failed to release number",
             "error": str(e)
         }), 500
+
 
 @bp.route('/number-details', methods=['POST'])
 @log_twilio_transaction('/number-details')
