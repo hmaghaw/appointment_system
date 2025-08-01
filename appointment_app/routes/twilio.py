@@ -280,7 +280,7 @@ def list_numbers():
 def configure_number():
     """
     Configure a Twilio phone number
-    
+
     Request body: {
         "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
         "voice_url": "https://example.com/voice",
@@ -289,27 +289,53 @@ def configure_number():
         "voice_method": "POST",
         "sms_method": "POST"
     }
-    
+
     Returns: Confirmation of the configuration
     """
     try:
         data = request.get_json()
         required_fields = ['phone_sid', 'voice_url', 'sms_url']
-        
+
         if not data or any(field not in data for field in required_fields):
             return jsonify({
                 "status": "error",
                 "message": f"Missing required fields. Required: {', '.join(required_fields)}"
             }), 400
-            
-        # Add your implementation here
-        
+
+        phone_sid = data['phone_sid']
+        update_payload = {
+            "voice_url": data['voice_url'],
+            "sms_url": data['sms_url'],
+        }
+
+        if 'status_callback' in data:
+            update_payload['status_callback'] = data['status_callback']
+        if 'voice_method' in data:
+            update_payload['voice_method'] = data['voice_method']
+        if 'sms_method' in data:
+            update_payload['sms_method'] = data['sms_method']
+
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        updated = client.incoming_phone_numbers(phone_sid).update(**update_payload)
+
         return jsonify({
             "status": "success",
             "message": "Number configured successfully",
-            "data": data
-        })
-        
+            "data": {
+                "phone_sid": updated.sid,
+                "phone_number": updated.phone_number,
+                "voice_url": updated.voice_url,
+                "sms_url": updated.sms_url,
+                "status_callback": updated.status_callback,
+                "voice_method": updated.voice_method,
+                "sms_method": updated.sms_method
+            }
+        }), 200
+
     except Exception as e:
         print(f"[configure_number] Error: {str(e)}")
         return jsonify({
@@ -317,6 +343,7 @@ def configure_number():
             "message": "Failed to configure number",
             "error": str(e)
         }), 500
+
 
 @bp.route('/release', methods=['POST'])
 @log_twilio_transaction('/release')
