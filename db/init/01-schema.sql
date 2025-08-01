@@ -234,3 +234,14 @@ CREATE TABLE IF NOT EXISTS `sms_sid` (
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the SMS record was created',
     PRIMARY KEY (`business_id`, `customer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks SMS message IDs for business-customer communications';
+
+CREATE TABLE twilio_transaction_log (
+    transaction_id       INT AUTO_INCREMENT PRIMARY KEY,
+    endpoint             VARCHAR(255) NOT NULL,
+    payload              JSON NOT NULL,
+    response             JSON,
+    success              BOOLEAN NOT NULL,
+    error_message        TEXT,
+    http_status_code     INT,
+    created_at           DATETIME DEFAULT CURRENT_TIMESTAMP
+);

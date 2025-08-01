@@ -1,0 +1,6 @@
+"FINAL COMMANDS","en","FINAL COMMANDS"
+"Keep replies short, polite, and helpful.","en","Keep replies short, polite, and helpful."
+"If booking: 'Great! May I have your name, please?'","en","If booking: 'Great! May I have your name, please?'"
+"We're open until 7 PM today. Would you like something this afternoon?","en","We're open until 7 PM today. Would you like something this afternoon?"
+"When would you like to come in?","en","When would you like to come in?"
+"Please feel free to call us on our phone:","en","Please feel free to call us on our phone:"

@@ -46,7 +46,9 @@ def create_app(config_dict=None):
     from routes.translations import bp as translations_bp
     from routes.user import bp as user_bp
     from routes.business_hours import bp as business_hours_bp
+    from routes.twilio import bp as twilio_bp
     
+    # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
     app.register_blueprint(business_bp)
@@ -55,6 +57,7 @@ def create_app(config_dict=None):
     app.register_blueprint(call_conversation_bp)
     app.register_blueprint(translations_bp)
     app.register_blueprint(business_hours_bp, url_prefix='/api')
+    app.register_blueprint(twilio_bp)  # URL prefix is defined in the Blueprint
     app.register_blueprint(user_bp, url_prefix='/api/auth')
     
     # Health check endpoint

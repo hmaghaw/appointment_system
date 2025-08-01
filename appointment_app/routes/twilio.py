@@ -1,0 +1,338 @@
+from flask import Blueprint, request, jsonify
+from database import get_db_cursor
+import mysql.connector
+from mysql.connector import Error
+from datetime import datetime
+import re
+
+bp = Blueprint('twilio', __name__, url_prefix='/api/twilio')
+
+def log_request(f):
+    """Log request details for debugging"""
+    from functools import wraps
+    
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        print(f"\n🔹 [Twilio] {request.method} {request.path}")
+        if request.is_json:
+            print("🔹 Request Data:", request.get_json())
+        return f(*args, **kwargs)
+    return wrapper
+
+@bp.route('/available-numbers', methods=['POST'])
+@log_request
+def get_available_numbers():
+    """
+    Get available Twilio phone numbers based on search criteria
+    
+    Request body: {
+        "country": "US",
+        "type": "local",
+        "sms_enabled": true,
+        "voice_enabled": true,
+        "area_code": "415",
+        "contains": "555"
+    }
+    
+    Returns: List of available phone numbers
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "No data provided"}), 400
+            
+        # Add your implementation here
+        return jsonify({
+            "status": "success", 
+            "message": "Available numbers retrieved successfully", 
+            "data": data
+        })
+        
+    except Exception as e:
+        print(f"[get_available_numbers] Error: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": "Failed to retrieve available numbers",
+            "error": str(e)
+        }), 500
+
+@bp.route('/purchase', methods=['POST'])
+@log_request
+def purchase_number():
+    """
+    Purchase a Twilio phone number
+    
+    Request body: {
+        "phone_number": "+14155551234",
+        "country": "US"
+    }
+    
+    Returns: Confirmation of the purchased number
+    """
+    try:
+        data = request.get_json()
+        if not data or 'phone_number' not in data or 'country' not in data:
+            return jsonify({
+                "status": "error", 
+                "message": "phone_number and country are required"
+            }), 400
+            
+        # Add your implementation here
+        return jsonify({
+            "status": "success", 
+            "message": "Number purchased successfully",
+            "data": data
+        })
+        
+    except Exception as e:
+        print(f"[purchase_number] Error: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": "Failed to purchase number",
+            "error": str(e)
+        }), 500
+
+@bp.route('/numbers', methods=['GET'])
+@log_request
+def list_numbers():
+    """
+    List all purchased Twilio numbers with optional filters
+    
+    Query parameters:
+    - contains: Filter numbers containing this sequence
+    - country: Filter by country code
+    - friendly_name: Filter by friendly name
+    - voice_enabled: Filter by voice capability
+    - sms_enabled: Filter by SMS capability
+    
+    Returns: List of purchased numbers
+    """
+    try:
+        filters = {
+            'contains': request.args.get('contains'),
+            'country': request.args.get('country'),
+            'friendly_name': request.args.get('friendly_name'),
+            'voice_enabled': request.args.get('voice_enabled', type=bool),
+            'sms_enabled': request.args.get('sms_enabled', type=bool)
+        }
+        
+        # Add your implementation here
+        # Example: numbers = get_purchased_numbers(filters)
+        
+        return jsonify({
+            "status": "success", 
+            "message": "Numbers retrieved successfully",
+            "data": {
+                "filters": filters,
+                "numbers": []  # Replace with actual numbers
+            }
+        })
+        
+    except Exception as e:
+        print(f"[list_numbers] Error: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": "Failed to retrieve numbers",
+            "error": str(e)
+        }), 500
+
+@bp.route('/configure', methods=['POST'])
+@log_request
+def configure_number():
+    """
+    Configure a Twilio phone number
+    
+    Request body: {
+        "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "voice_url": "https://example.com/voice",
+        "sms_url": "https://example.com/sms",
+        "status_callback": "https://example.com/status",
+        "voice_method": "POST",
+        "sms_method": "POST"
+    }
+    
+    Returns: Confirmation of the configuration
+    """
+    try:
+        data = request.get_json()
+        required_fields = ['phone_sid', 'voice_url', 'sms_url']
+        
+        if not data or any(field not in data for field in required_fields):
+            return jsonify({
+                "status": "error",
+                "message": f"Missing required fields. Required: {', '.join(required_fields)}"
+            }), 400
+            
+        # Add your implementation here
+        
+        return jsonify({
+            "status": "success",
+            "message": "Number configured successfully",
+            "data": data
+        })
+        
+    except Exception as e:
+        print(f"[configure_number] Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "Failed to configure number",
+            "error": str(e)
+        }), 500
+
+@bp.route('/release', methods=['POST'])
+@log_request
+def release_number():
+    """
+    Release a Twilio phone number
+    
+    Request body: {
+        "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+    
+    Returns: Confirmation of the release
+    """
+    try:
+        data = request.get_json()
+        if not data or 'phone_sid' not in data:
+            return jsonify({
+                "status": "error",
+                "message": "phone_sid is required"
+            }), 400
+            
+        # Add your implementation here
+        
+        return jsonify({
+            "status": "success",
+            "message": "Number released successfully",
+            "data": data
+        })
+        
+    except Exception as e:
+        print(f"[release_number] Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "Failed to release number",
+            "error": str(e)
+        }), 500
+
+@bp.route('/number-details', methods=['GET'])
+@log_request
+def get_number_details():
+    """
+    Get details for a specific Twilio number
+    
+    Query parameters:
+    - phone_sid: The SID of the phone number to retrieve details for
+    
+    Returns: Details of the specified phone number
+    """
+    try:
+        phone_sid = request.args.get('phone_sid')
+        if not phone_sid:
+            return jsonify({
+                "status": "error",
+                "message": "phone_sid query parameter is required"
+            }), 400
+            
+        # Add your implementation here
+        
+        return jsonify({
+            "status": "success",
+            "message": "Number details retrieved successfully",
+            "data": {
+                "phone_sid": phone_sid,
+                # Add other number details here
+            }
+        })
+        
+    except Exception as e:
+        print(f"[get_number_details] Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "Failed to retrieve number details",
+            "error": str(e)
+        }), 500
+
+@bp.route('/update-friendly-name', methods=['POST'])
+@log_request
+def update_friendly_name():
+    """
+    Update the friendly name of a Twilio number
+    
+    Request body: {
+        "phone_sid": "PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "friendly_name": "Support Line - Toronto"
+    }
+    
+    Returns: Confirmation of the update
+    """
+    try:
+        data = request.get_json()
+        required_fields = ['phone_sid', 'friendly_name']
+        
+        if not data or any(field not in data for field in required_fields):
+            return jsonify({
+                "status": "error",
+                "message": f"Missing required fields. Required: {', '.join(required_fields)}"
+            }), 400
+            
+        # Add your implementation here
+        
+        return jsonify({
+            "status": "success",
+            "message": "Friendly name updated successfully",
+            "data": data
+        })
+        
+    except Exception as e:
+        print(f"[update_friendly_name] Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "Failed to update friendly name",
+            "error": str(e)
+        }), 500
+
+@bp.route('/usage', methods=['GET'])
+@log_request
+def get_usage():
+    """
+    Get usage statistics for a Twilio number
+    
+    Query parameters:
+    - phone_sid: The SID of the phone number (required)
+    - start_date: Start date in YYYY-MM-DD format (required)
+    - end_date: End date in YYYY-MM-DD format (required)
+    
+    Returns: Usage statistics for the specified number and date range
+    """
+    try:
+        phone_sid = request.args.get('phone_sid')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        if not all([phone_sid, start_date, end_date]):
+            return jsonify({
+                "status": "error",
+                "message": "phone_sid, start_date, and end_date are required"
+            }), 400
+            
+        # Add your implementation here
+        
+        return jsonify({
+            "status": "success",
+            "message": "Usage statistics retrieved successfully",
+            "data": {
+                "phone_sid": phone_sid,
+                "start_date": start_date,
+                "end_date": end_date,
+                "usage": []  # Add actual usage data here
+            }
+        })
+        
+    except Exception as e:
+        print(f"[get_usage] Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "Failed to retrieve usage statistics",
+            "error": str(e)
+        }), 500
