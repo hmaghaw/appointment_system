@@ -7,6 +7,8 @@ import re
 import functools
 import traceback
 import json
+from twilio.rest import Client
+import os
 
 bp = Blueprint('twilio', __name__, url_prefix='/api/twilio')
 
@@ -95,7 +97,7 @@ def log_twilio_transaction(endpoint_name):
 def get_available_numbers():
     """
     Get available Twilio phone numbers based on search criteria
-    
+
     Request body: {
         "country": "US",
         "type": "local",
@@ -104,28 +106,60 @@ def get_available_numbers():
         "area_code": "415",
         "contains": "555"
     }
-    
+
     Returns: List of available phone numbers
     """
     try:
         data = request.get_json()
         if not data:
             return jsonify({"status": "error", "message": "No data provided"}), 400
-            
-        # Add your implementation here
+
+        country = data.get("country", "US")
+        number_type = data.get("type", "local")
+        sms_enabled = data.get("sms_enabled", None)
+        voice_enabled = data.get("voice_enabled", None)
+        area_code = data.get("area_code", None)
+        contains = data.get("contains", None)
+
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        params = {}
+        if sms_enabled is not None:
+            params["sms_enabled"] = sms_enabled
+        if voice_enabled is not None:
+            params["voice_enabled"] = voice_enabled
+        if area_code:
+            params["area_code"] = area_code
+        if contains:
+            params["contains"] = contains
+
+        number_list_method = getattr(client.available_phone_numbers(country), number_type)
+        available_numbers = number_list_method.list(limit=10, **params)
+
+        result = [
+            {
+                "friendly_name": n.friendly_name,
+                "phone_number": n.phone_number,
+                "region": n.region,
+                "capabilities": n.capabilities
+            } for n in available_numbers
+        ]
+
         return jsonify({
-            "status": "success", 
-            "message": "Available numbers retrieved successfully", 
-            "data": data
-        })
-        
+            "status": "success",
+            "message": "Available numbers retrieved successfully",
+            "data": result
+        }), 200
+
     except Exception as e:
-        print(f"[get_available_numbers] Error: {str(e)}")
         return jsonify({
-            "status": "error", 
-            "message": "Failed to retrieve available numbers",
-            "error": str(e)
+            "status": "error",
+            "message": f"Failed to retrieve available numbers: {str(e)}"
         }), 500
+
 
 @bp.route('/purchase', methods=['POST'])
 @log_twilio_transaction('/purchase')

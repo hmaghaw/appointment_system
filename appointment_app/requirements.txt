@@ -1,5 +1,6 @@
 # Core Dependencies
 Flask==2.0.1
+twilio==8.11.1
 Werkzeug==2.0.3
 flask-cors==3.0.10
 mysql-connector-python==8.0.33
