@@ -6,8 +6,43 @@ from datetime import datetime
 import re
 import functools
 import traceback
+import json
 
 bp = Blueprint('twilio', __name__, url_prefix='/api/twilio')
+
+def safe_serialize(obj):
+    """Safely serialize objects to JSON string, handling Response objects and other non-serializable types"""
+    from flask import Response as FlaskResponse
+    
+    if obj is None:
+        return None
+        
+    try:
+        # Handle Flask Response objects
+        if isinstance(obj, FlaskResponse):
+            try:
+                # Try to get JSON data from the response
+                response_data = obj.get_json()
+                return json.dumps(response_data) if response_data else None
+            except:
+                # If we can't get JSON, return the response status and data as a string
+                return json.dumps({
+                    '_type': 'flask.Response',
+                    'status_code': obj.status_code,
+                    'content_type': obj.content_type,
+                    'data': obj.data.decode('utf-8') if obj.data else None
+                })
+        
+        # Handle dictionaries and lists
+        if isinstance(obj, (dict, list, tuple, set)):
+            return json.dumps(obj)
+            
+        # For any other type, convert to string
+        return str(obj)
+        
+    except Exception as e:
+        # If anything goes wrong, return a string representation
+        return str(obj)
 
 def log_twilio_transaction(endpoint_name):
     def decorator(f):
@@ -33,26 +68,24 @@ def log_twilio_transaction(endpoint_name):
                 traceback.print_exc()
                 raise
             finally:
-                # Log to database
+                # Log to database using get_db_cursor
                 try:
-                    cursor = g.db.cursor()
-                    cursor.execute("""
-                        INSERT INTO twilio_transaction_log (
-                            endpoint, payload, response, success, error_message, http_status_code, created_at
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                        endpoint_name,
-                        json.dumps(payload),
-                        json.dumps(response_data) if response_data else None,
-                        success,
-                        error_message,
-                        http_status_code,
-                        datetime.now()
-                    ))
-                    g.db.commit()
-                    cursor.close()
+                    with get_db_cursor(commit=True) as cursor:
+                        cursor.execute("""
+                            INSERT INTO twilio_transaction_log (
+                                endpoint, payload, response, success, error_message, http_status_code, created_at
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """, (
+                            endpoint_name,
+                            safe_serialize(payload) if payload else None,
+                            safe_serialize(response_data) if response_data else None,
+                            success,
+                            error_message,
+                            http_status_code,
+                            datetime.now()
+                        ))
                 except Exception as log_err:
-                    print("❌ Failed to log Twilio transaction:", log_err)
+                    print("❌ Failed to log Twilio transaction:", str(log_err))
 
         return wrapper
     return decorator
