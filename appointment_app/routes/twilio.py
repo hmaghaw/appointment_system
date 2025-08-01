@@ -197,49 +197,83 @@ def purchase_number():
             "error": str(e)
         }), 500
 
-@bp.route('/numbers', methods=['GET'])
-@log_twilio_transaction('/numbers')
+@bp.route('/purchased-numbers', methods=['GET'])
+@log_twilio_transaction('/purchased-numbers')
 def list_numbers():
     """
     List all purchased Twilio numbers with optional filters
-    
+
     Query parameters:
     - contains: Filter numbers containing this sequence
     - country: Filter by country code
     - friendly_name: Filter by friendly name
     - voice_enabled: Filter by voice capability
     - sms_enabled: Filter by SMS capability
-    
+
     Returns: List of purchased numbers
     """
     try:
+        # Extract filters from query params
         filters = {
             'contains': request.args.get('contains'),
             'country': request.args.get('country'),
             'friendly_name': request.args.get('friendly_name'),
-            'voice_enabled': request.args.get('voice_enabled', type=bool),
-            'sms_enabled': request.args.get('sms_enabled', type=bool)
+            'voice_enabled': request.args.get('voice_enabled', type=lambda v: v.lower() == 'true'),
+            'sms_enabled': request.args.get('sms_enabled', type=lambda v: v.lower() == 'true')
         }
-        
-        # Add your implementation here
-        # Example: numbers = get_purchased_numbers(filters)
-        
+
+        # Remove None values
+        clean_filters = {k: v for k, v in filters.items() if v is not None}
+
+        # Initialize Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        # Fetch purchased numbers
+        purchased_numbers = client.incoming_phone_numbers.list()
+
+        # Apply filters manually (Twilio API has limited server-side filters)
+        filtered_numbers = []
+        for number in purchased_numbers:
+            if filters['contains'] and filters['contains'] not in number.phone_number:
+                continue
+            if filters['country'] and filters['country'].upper() != number.iso_country.upper():
+                continue
+            if filters['friendly_name'] and filters['friendly_name'].lower() not in (number.friendly_name or '').lower():
+                continue
+            if filters['voice_enabled'] is not None and filters['voice_enabled'] != number.capabilities.get('voice', False):
+                continue
+            if filters['sms_enabled'] is not None and filters['sms_enabled'] != number.capabilities.get('sms', False):
+                continue
+
+            filtered_numbers.append({
+                "sid": number.sid,
+                "phone_number": number.phone_number,
+                "friendly_name": number.friendly_name,
+                "capabilities": number.capabilities
+            })
+
         return jsonify({
-            "status": "success", 
+            "status": "success",
             "message": "Numbers retrieved successfully",
             "data": {
-                "filters": filters,
-                "numbers": []  # Replace with actual numbers
+                "filters": clean_filters,
+                "numbers": filtered_numbers,
+                "date_created": number.date_created.isoformat() if number.date_created else None,
+                "date_updated": number.date_updated.isoformat() if number.date_updated else None
             }
-        })
-        
+        }), 200
+
     except Exception as e:
         print(f"[list_numbers] Error: {str(e)}")
         return jsonify({
-            "status": "error", 
+            "status": "error",
             "message": "Failed to retrieve numbers",
             "error": str(e)
         }), 500
+
 
 @bp.route('/configure', methods=['POST'])
 @log_twilio_transaction('/configure')
