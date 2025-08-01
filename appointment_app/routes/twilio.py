@@ -4,23 +4,61 @@ import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
 import re
+import functools
+import traceback
 
 bp = Blueprint('twilio', __name__, url_prefix='/api/twilio')
 
-def log_request(f):
-    """Log request details for debugging"""
-    from functools import wraps
-    
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        print(f"\n🔹 [Twilio] {request.method} {request.path}")
-        if request.is_json:
-            print("🔹 Request Data:", request.get_json())
-        return f(*args, **kwargs)
-    return wrapper
+def log_twilio_transaction(endpoint_name):
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            payload = request.get_json() or {}
+            response_data = None
+            success = False
+            error_message = None
+            http_status_code = 500
+
+            try:
+                result = f(*args, **kwargs)
+                if isinstance(result, tuple):
+                    response_data, http_status_code = result
+                else:
+                    response_data = result
+                    http_status_code = 200
+                success = True
+                return result
+            except Exception as e:
+                error_message = str(e)
+                traceback.print_exc()
+                raise
+            finally:
+                # Log to database
+                try:
+                    cursor = g.db.cursor()
+                    cursor.execute("""
+                        INSERT INTO twilio_transaction_log (
+                            endpoint, payload, response, success, error_message, http_status_code, created_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        endpoint_name,
+                        json.dumps(payload),
+                        json.dumps(response_data) if response_data else None,
+                        success,
+                        error_message,
+                        http_status_code,
+                        datetime.now()
+                    ))
+                    g.db.commit()
+                    cursor.close()
+                except Exception as log_err:
+                    print("❌ Failed to log Twilio transaction:", log_err)
+
+        return wrapper
+    return decorator
 
 @bp.route('/available-numbers', methods=['POST'])
-@log_request
+@log_twilio_transaction('/available-numbers')
 def get_available_numbers():
     """
     Get available Twilio phone numbers based on search criteria
@@ -57,7 +95,7 @@ def get_available_numbers():
         }), 500
 
 @bp.route('/purchase', methods=['POST'])
-@log_request
+@log_twilio_transaction('/purchase')
 def purchase_number():
     """
     Purchase a Twilio phone number
@@ -93,7 +131,7 @@ def purchase_number():
         }), 500
 
 @bp.route('/numbers', methods=['GET'])
-@log_request
+@log_twilio_transaction('/numbers')
 def list_numbers():
     """
     List all purchased Twilio numbers with optional filters
@@ -137,7 +175,7 @@ def list_numbers():
         }), 500
 
 @bp.route('/configure', methods=['POST'])
-@log_request
+@log_twilio_transaction('/configure')
 def configure_number():
     """
     Configure a Twilio phone number
@@ -180,7 +218,7 @@ def configure_number():
         }), 500
 
 @bp.route('/release', methods=['POST'])
-@log_request
+@log_twilio_transaction('/release')
 def release_number():
     """
     Release a Twilio phone number
@@ -216,7 +254,7 @@ def release_number():
         }), 500
 
 @bp.route('/number-details', methods=['GET'])
-@log_request
+@log_twilio_transaction('/number-details')
 def get_number_details():
     """
     Get details for a specific Twilio number
@@ -254,7 +292,7 @@ def get_number_details():
         }), 500
 
 @bp.route('/update-friendly-name', methods=['POST'])
-@log_request
+@log_twilio_transaction('/update-friendly-name')
 def update_friendly_name():
     """
     Update the friendly name of a Twilio number
@@ -293,7 +331,7 @@ def update_friendly_name():
         }), 500
 
 @bp.route('/usage', methods=['GET'])
-@log_request
+@log_twilio_transaction('/usage')
 def get_usage():
     """
     Get usage statistics for a Twilio number
