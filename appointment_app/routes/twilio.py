@@ -151,8 +151,7 @@ def get_available_numbers():
                     "phone_number": number.phone_number,
                     "iso_country": number.iso_country,
                     "region": number.region,
-                    "locality": number.locality,
-                    "capabilities": number.capabilities
+                    "locality": number.locality
                 })
 
             return jsonify({
@@ -584,11 +583,11 @@ def purchase_and_configure_number():
 
         # Step 1: Purchase the number
         try:
-            # purchased_number = client.incoming_phone_numbers.create(
-            #     phone_number=phone_number
-            # )
-            # phone_sid = purchased_number.sid
-            phone_sid = "PN24750ba794490ea518c81724bd6cf2d3"
+            purchased_number = client.incoming_phone_numbers.create(
+                phone_number=phone_number
+            )
+            phone_sid = purchased_number.sid
+            #phone_sid = "PNffa8fcee2b4588139cff0fa4395c6f72"
         except Exception as e:
             return jsonify({
                 "status": "error",
@@ -691,7 +690,7 @@ def delete_phone_number():
 
         # Step 1: Delete the Twilio number
         try:
-            #client.incoming_phone_numbers(phone_sid).delete()
+            client.incoming_phone_numbers(phone_sid).delete()
             pass
         except Exception as e:
             return jsonify({
