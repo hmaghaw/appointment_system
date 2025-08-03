@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import mysql.connector
 from database import get_db_cursor
 from functools import wraps
+from typing import List, Dict, Any, Optional
 
 # Map day numbers to day names
 DAY_NAMES = {
@@ -559,9 +560,73 @@ def get_working_hours():
             return jsonify({
                 "business_id": business_id,
                 "working_hours": working_hours
-            })
-            
+            }), 200
+        
     except mysql.connector.Error as err:
-        return jsonify({"error": f"Database error: {str(err)}"}), 500
+        return jsonify({"error": f"Database error: {err}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+    
+    return jsonify({"error": "Method not allowed"}), 405
+
+@bp.route('/phones', methods=['POST'])
+def list_business_phones():
+    """
+    List all phone numbers for a business
+    
+    Request body: {
+        "business_id": 1  # ID of the business
+    }
+    
+    Returns: List of phone numbers associated with the business
+    """
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            if not data or 'business_id' not in data:
+                return jsonify({"error": "Missing required field: business_id"}), 400
+            
+            business_id = data['business_id']
+            
+            # Get database connection and cursor
+            with get_db_cursor(dictionary=True) as cursor:
+                # Check if business exists
+                cursor.execute("SELECT 1 FROM business WHERE business_id = %s", (business_id,))
+                if not cursor.fetchone():
+                    return jsonify({"error": f"Business with ID {business_id} not found"}), 404
+                
+                # Query business phones
+                query = """
+                    SELECT 
+                        business_phone_id,
+                        business_id,
+                        phone_sid,
+                        friendly_name,
+                        business_phone,
+                        is_primary,
+                        created_at,
+                        updated_at
+                    FROM business_phone
+                    WHERE business_id = %s
+                    ORDER BY is_primary DESC, created_at ASC
+                """
+                
+                cursor.execute(query, (business_id,))
+                phones = cursor.fetchall()
+            
+            # Convert datetime objects to string for JSON serialization
+            for phone in phones:
+                phone['created_at'] = phone['created_at'].isoformat() if phone['created_at'] else None
+                phone['updated_at'] = phone['updated_at'].isoformat() if phone['updated_at'] else None
+            
+            return jsonify({
+                "business_id": business_id,
+                "phones": phones
+            }), 200
+            
+        except mysql.connector.Error as err:
+            return jsonify({"error": f"Database error: {err}"}), 500
+        except Exception as e:
+            return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+    
+    return jsonify({"error": "Method not allowed"}), 405

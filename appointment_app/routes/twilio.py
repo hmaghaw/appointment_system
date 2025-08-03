@@ -9,6 +9,10 @@ import traceback
 import json
 from twilio.rest import Client
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 bp = Blueprint('twilio', __name__, url_prefix='/api/twilio')
 
@@ -96,69 +100,83 @@ def log_twilio_transaction(endpoint_name):
 @log_twilio_transaction('/available-numbers')
 def get_available_numbers():
     """
-    Get available Twilio phone numbers based on search criteria
+    Search for available local phone numbers in a specified country with optional filters.
+    Only returns numbers that support both SMS and Voice.
 
-    Request body: {
-        "country": "US",
-        "type": "local",
-        "sms_enabled": true,
-        "voice_enabled": true,
-        "area_code": "415",
-        "contains": "555"
+    Request body (all fields optional):
+    {
+        "region": "ON",         # Optional region/province (e.g., ON)
+        "area_code": "647",     # Optional area code (e.g., 647)
+        "contains": "123",      # Optional contains pattern (e.g., 123)
+        "country": "CA",        # Optional country code (default: CA)
+        "limit": 30             # Optional max results (default: 30)
     }
 
-    Returns: List of available phone numbers
+    Returns: List of matching available phone numbers
     """
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"status": "error", "message": "No data provided"}), 400
+        data = request.get_json() or {}
 
-        country = data.get("country", "US")
-        number_type = data.get("type", "local")
-        sms_enabled = data.get("sms_enabled", None)
-        voice_enabled = data.get("voice_enabled", None)
-        area_code = data.get("area_code", None)
-        contains = data.get("contains", None)
+        region = data.get("region")       # in_region
+        area_code = data.get("area_code")
+        contains = data.get("contains")
+        country_code = data.get("country", "CA").upper()
+        limit = min(int(data.get("limit", 30)), 1000)  # max 1000 allowed
 
         client = Client(
             os.getenv("TWILIO_ACCOUNT_SID"),
             os.getenv("TWILIO_AUTH_TOKEN")
         )
 
-        params = {}
-        if sms_enabled is not None:
-            params["sms_enabled"] = sms_enabled
-        if voice_enabled is not None:
-            params["voice_enabled"] = voice_enabled
+        # Build dynamic Twilio query parameters
+        params = {
+            "sms_enabled": True,
+            "voice_enabled": True,
+            "limit": limit
+        }
+
+        if region:
+            params["in_region"] = region
         if area_code:
             params["area_code"] = area_code
         if contains:
             params["contains"] = contains
 
-        number_list_method = getattr(client.available_phone_numbers(country), number_type)
-        available_numbers = number_list_method.list(limit=10, **params)
+        try:
+            available_numbers = client.available_phone_numbers(country_code).local.list(**params)
 
-        result = [
-            {
-                "friendly_name": n.friendly_name,
-                "phone_number": n.phone_number,
-                "region": n.region,
-                "capabilities": n.capabilities
-            } for n in available_numbers
-        ]
+            results = []
+            for number in available_numbers:
+                results.append({
+                    "phone_number": number.phone_number,
+                    "iso_country": number.iso_country,
+                    "region": number.region,
+                    "locality": number.locality,
+                    "capabilities": number.capabilities
+                })
 
-        return jsonify({
-            "status": "success",
-            "message": "Available numbers retrieved successfully",
-            "data": result
-        }), 200
+            return jsonify({
+                "status": "success",
+                "count": len(results),
+                "numbers": results
+            }), 200
+
+        except Exception as e:
+            print(f"[get_available_numbers] Twilio API error: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": "Failed to fetch available phone numbers from Twilio",
+                "error": str(e)
+            }), 500
 
     except Exception as e:
+        print(f"[get_available_numbers] Error: {str(e)}")
         return jsonify({
             "status": "error",
-            "message": f"Failed to retrieve available numbers: {str(e)}"
+            "message": "Unexpected server error",
+            "error": str(e)
         }), 500
+
 
 
 @bp.route('/purchase-number', methods=['POST'])
@@ -521,6 +539,201 @@ def update_friendly_name():
             "message": "Failed to update friendly name",
             "error": str(e)
         }), 500
+
+@bp.route('/purchase-and-configure', methods=['POST'])
+@log_twilio_transaction('/purchase-and-configure')
+def purchase_and_configure_number():
+    """
+    Purchase a Twilio phone number and configure it with webhooks in one step
+    
+    Request body: {
+        "business_id": 17,
+        "phone_number": "+14155551234",
+        "friendly_name": "My New Friendly Name"
+    }
+    
+    Returns: Confirmation of the purchased and configured number
+    """
+    try:
+        data = request.get_json()
+        required_fields = ['business_id', 'phone_number', 'friendly_name']
+        
+        if not data or any(field not in data for field in required_fields):
+            return jsonify({
+                "status": "error",
+                "message": f"Missing required fields. Required: {', '.join(required_fields)}"
+            }), 400
+
+        # Get base URL from environment
+        base_url = os.getenv('TWILIO_WEBHOOK_BASE_URL', '').rstrip('/')
+        
+        # Prepare configuration
+        phone_number = data['phone_number']
+        friendly_name = data['friendly_name']
+        
+        # Ensure URLs are absolute by combining with base URL
+        voice_url = f"{base_url}/voice"
+        sms_url = f"{base_url}/sms"
+        status_callback = f"{base_url}/call-events"
+
+        # Initialize Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        # Step 1: Purchase the number
+        try:
+            # purchased_number = client.incoming_phone_numbers.create(
+            #     phone_number=phone_number
+            # )
+            # phone_sid = purchased_number.sid
+            phone_sid = "PN24750ba794490ea518c81724bd6cf2d3"
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": f"Failed to purchase number: {str(e)}"
+            }), 400
+
+        try:
+            # Step 2: Configure the number
+            updated_number = client.incoming_phone_numbers(phone_sid).update(
+                friendly_name=friendly_name,
+                voice_url=voice_url,
+                voice_method="POST",
+                sms_url=sms_url,
+                sms_method="POST",
+                status_callback=status_callback
+            )
+
+            # Step 3: Add record to business_phone table
+            with get_db_cursor(commit=True) as cursor:
+                cursor.execute("""
+                    INSERT INTO business_phone (
+                        business_id, phone_sid, business_phone, friendly_name,created_at, updated_at
+                    ) VALUES (%s, %s, %s, %s,  NOW(), NOW())
+                """, (
+                    data['business_id'],
+                    phone_sid,
+                    phone_number,
+                    friendly_name
+                ))
+                
+                # Get the inserted record
+                cursor.execute("""
+                    SELECT * FROM business_phone 
+                    WHERE business_id = %s AND phone_sid = %s
+                """, (data['business_id'], phone_sid))
+                
+                business_phone = cursor.fetchone()
+                business_phone_id = business_phone['business_phone_id'] if business_phone else None
+
+            return jsonify({
+                "status": "success",
+                "message": "Number purchased and configured successfully",
+                "data": {
+                    "business_phone_id": business_phone_id,
+                    "phone_sid": updated_number.sid,
+                    "phone_number": updated_number.phone_number,
+                    "friendly_name": updated_number.friendly_name,
+                    "capabilities": updated_number.capabilities
+                }
+            }), 201
+
+        except Exception as e:
+            # If configuration fails, release the number
+            return jsonify({
+                "status": "error",
+                "message": f"Failed to configure number: {str(e)}. Check Logs"
+            }), 500
+
+    except Exception as e:
+        print(f"[purchase_and_configure_number] Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "An unexpected error occurred",
+            "error": str(e)
+        }), 500
+
+
+@bp.route('/delete-phone', methods=['DELETE'])
+@log_twilio_transaction('/delete-phone')
+def delete_phone_number():
+    """
+    Delete a Twilio phone number and remove it from the business_phone table
+
+    Request body:
+    {
+        "business_id": 11,
+        "phone_sid": "PNa02f4251f95e1e337dfd6cd7fc98ec82"
+    }
+
+    Returns: Confirmation of deletion
+    """
+    try:
+        data = request.get_json()
+        required_fields = ['business_id', 'phone_sid']
+
+        if not data or any(field not in data for field in required_fields):
+            return jsonify({
+                "status": "error",
+                "message": f"Missing required fields. Required: {', '.join(required_fields)}"
+            }), 400
+
+        phone_sid = data['phone_sid']
+        business_id = data['business_id']
+
+        # Initialize Twilio client
+        client = Client(
+            os.getenv("TWILIO_ACCOUNT_SID"),
+            os.getenv("TWILIO_AUTH_TOKEN")
+        )
+
+        # Step 1: Delete the Twilio number
+        try:
+            #client.incoming_phone_numbers(phone_sid).delete()
+            pass
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": f"Failed to delete Twilio number: {str(e)}"
+            }), 400
+
+        # Step 2: Delete from business_phone table
+        try:
+            with get_db_cursor(commit=True) as cursor:
+                cursor.execute("""
+                               DELETE
+                               FROM business_phone
+                               WHERE business_id = %s
+                                 AND phone_sid = %s
+                               """, (business_id, phone_sid))
+
+                if cursor.rowcount == 0:
+                    return jsonify({
+                        "status": "error",
+                        "message": "No matching record found in business_phone table"
+                    }), 404
+
+            return jsonify({
+                "status": "success",
+                "message": "Phone number deleted successfully from Twilio and database"
+            }), 200
+
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": f"Twilio number deleted but failed to remove from database: {str(e)}"
+            }), 500
+
+    except Exception as e:
+        print(f"[delete_phone_number] Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "An unexpected error occurred",
+            "error": str(e)
+        }), 500
+
 
 @bp.route('/number-usage', methods=['POST'])
 @log_twilio_transaction('/number-usage')

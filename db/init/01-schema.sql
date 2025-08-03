@@ -69,11 +69,16 @@ CREATE TABLE IF NOT EXISTS business_messages (
 CREATE TABLE IF NOT EXISTS business_phone (
     business_phone_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
+    phone_sid VARCHAR(34) NOT NULL COMMENT 'Twilio Phone Number SID (starts with PN)',
+    friendly_name VARCHAR(255) NOT NULL COMMENT 'User-friendly name for the phone number',
     business_phone VARCHAR(20) NOT NULL,
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_business_phone (business_phone),
-    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE
+    UNIQUE KEY unique_phone_sid (phone_sid),
+    FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
+    INDEX idx_phone_sid (phone_sid)
 ) ENGINE=InnoDB;
 
 -- Customer table
