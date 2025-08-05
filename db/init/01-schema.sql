@@ -250,3 +250,31 @@ CREATE TABLE twilio_transaction_log (
     http_status_code     INT,
     created_at           DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE subscription_plan (
+    subscription_plan_id INT AUTO_INCREMENT PRIMARY KEY,
+    plan_name VARCHAR(100) NOT NULL,
+    plan_description TEXT,
+    billing_cycle ENUM('monthly', 'yearly') NOT NULL DEFAULT 'monthly',
+    original_price DECIMAL(10,2),         -- e.g., 99.00
+    final_price DECIMAL(10,2) NOT NULL,   -- e.g., 79.00
+    annual_savings DECIMAL(10,2),         -- e.g., 240.00
+    estimated_monthly_roi DECIMAL(10,2),  -- e.g., 24921.00
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    display_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE subscription_plan_feature (
+    subscription_plan_feature_id INT AUTO_INCREMENT PRIMARY KEY,
+    subscription_plan_id INT NOT NULL,
+    feature_name VARCHAR(100) NOT NULL,
+    feature_value TEXT,
+    display_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(subscription_plan_id)
+        ON DELETE CASCADE
+);

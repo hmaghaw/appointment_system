@@ -48,6 +48,7 @@ def create_app(config_dict=None):
     from routes.business_hours import bp as business_hours_bp
     from routes.twilio import bp as twilio_bp
     from routes.stripe import bp as stripe_bp
+    from routes.subscription import bp as subscription_bp
     
     # Register blueprints
     app.register_blueprint(appointments_bp)
@@ -61,6 +62,7 @@ def create_app(config_dict=None):
     app.register_blueprint(twilio_bp)  # URL prefix is defined in the Blueprint
     app.register_blueprint(user_bp, url_prefix='/api/auth')
     app.register_blueprint(stripe_bp)  # Stripe webhook and payment endpoints
+    app.register_blueprint(subscription_bp, url_prefix='/api')  # Subscription plan endpoints
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
