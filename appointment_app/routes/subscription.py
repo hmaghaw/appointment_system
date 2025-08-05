@@ -19,19 +19,18 @@ def get_subscription_plans():
     """
     try:
         data = request.get_json() or {}
-        customer_id = data.get('customer_id')
+        business_id = data.get('business_id')
         
-        if not customer_id:
-            return jsonify({"error": "customer_id is required in the request body"}), 400
+        if not business_id:
+            return jsonify({"error": "business_id is required in the request body"}), 400
             
         with get_db_cursor(dictionary=True) as cursor:
             # Get the customer's business and current subscription plan
             cursor.execute("""
-                SELECT b.subscription_plan_id 
-                FROM business b
-                JOIN customer c ON b.business_id = c.business_id
-                WHERE c.customer_id = %s
-            """, (customer_id,))
+                SELECT subscription_plan_id 
+                FROM business 
+                WHERE business_id = %s
+            """, (business_id,))
             
             business = cursor.fetchone()
             if not business:
@@ -67,7 +66,9 @@ def get_subscription_plans():
             
             # Process the results
             plans = {}
+            button_prefix = "Change to"
             for row in cursor.fetchall():
+                button_title = f"{button_prefix} {row['plan_name']}"
                 plan_id = row['subscription_plan_id']
                 billing_cycle = row['billing_cycle']
                 
@@ -77,6 +78,11 @@ def get_subscription_plans():
                 
                 # Initialize the plan if it doesn't exist
                 if plan_id not in plans[billing_cycle]:
+                    if plan_id == current_plan_id:
+                        is_current_plan = True
+                        button_title = "Current Plan"
+                    else:
+                        is_current_plan = False
                     plans[billing_cycle][plan_id] = {
                         'subscription_plan_id': plan_id,
                         'plan_name': row['plan_name'],
@@ -84,10 +90,13 @@ def get_subscription_plans():
                         'original_price': float(row['original_price']) if row['original_price'] is not None else None,
                         'final_price': float(row['final_price']) if row['final_price'] is not None else None,
                         'estimated_monthly_roi': float(row['estimated_monthly_roi']) if row['estimated_monthly_roi'] is not None else None,
-                        'is_current_plan': (plan_id == current_plan_id) if current_plan_id is not None else False,
+                        'is_current_plan': is_current_plan,
+                        'button_title': button_title,
+
                         'features': []
                     }
-                    
+                    if is_current_plan:
+                        button_prefix = "Change to"
                     # Add annual_savings only if it's not None
                     if row['annual_savings'] is not None:
                         plans[billing_cycle][plan_id]['annual_savings'] = float(row['annual_savings'])
