@@ -717,3 +717,59 @@ INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, featu
 (6, 'Analytics & Reporting', 'Custom analytics & white-label reporting', 5),
 (6, 'Support', '24/7 dedicated support hotline', 6),
 (6, 'Security & Compliance', 'Enterprise-grade security & compliance', 7);
+
+INSERT INTO subscription_plan (
+    plan_name,
+    plan_description,
+    billing_cycle,
+    original_price,
+    final_price,
+    estimated_monthly_roi,
+    is_active,
+    display_order
+) VALUES (
+    'Voxxell Free',
+    'Best for testing the platform — manage customers and calendar without making calls or using voice AI.',
+    'monthly',
+    0.00,
+    0.00,
+    0.00,
+    TRUE,
+    0
+);
+
+INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, feature_value, display_order) VALUES
+(7, 'Call Limit', 'No calls allowed', 1),
+(7, 'Voice AI Integrations', 'Not included', 2),
+(7, 'Analytics', 'Not included', 3),
+(7, 'Support', 'Community forum only', 4),
+(7, 'Calendar Access', 'Basic calendar management', 5),
+(7, 'Customer Management', 'Unlimited customers', 6);
+
+INSERT INTO subscription_plan (
+    plan_name,
+    plan_description,
+    billing_cycle,
+    original_price,
+    final_price,
+    estimated_monthly_roi,
+    is_active,
+    display_order
+) VALUES (
+    'Voxxell Free',
+    'Best for testing the platform — manage customers and calendar without making calls or using voice AI.',
+    'yearly',
+    0.00,
+    0.00,
+    0.00,
+    TRUE,
+    0
+);
+
+INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, feature_value, display_order) VALUES
+(8, 'Call Limit', 'No calls allowed', 1),
+(8, 'Voice AI Integrations', 'Not included', 2),
+(8, 'Analytics', 'Not included', 3),
+(8, 'Support', 'Community forum only', 4),
+(8, 'Calendar Access', 'Basic calendar management', 5),
+(8, 'Customer Management', 'Unlimited customers', 6);

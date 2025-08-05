@@ -1,18 +1,44 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from database import get_db_cursor
 
 # Create blueprint
 bp = Blueprint('subscription', __name__)
 
-@bp.route('/subscription-plans', methods=['GET'])
+@bp.route('/subscription-plans', methods=['POST'])
 def get_subscription_plans():
     """
     Get all subscription plans with their features, grouped by billing cycle
     
-    Returns: JSON object with 'monthly' and 'yearly' arrays of plans
+    Request Body (JSON):
+    {
+        "customer_id": 17  # ID of the customer
+    }
+    
+    Returns: JSON object with 'monthly' and 'yearly' arrays of plans,
+             with is_current_plan flag set for the customer's current plan
     """
     try:
+        data = request.get_json() or {}
+        customer_id = data.get('customer_id')
+        
+        if not customer_id:
+            return jsonify({"error": "customer_id is required in the request body"}), 400
+            
         with get_db_cursor(dictionary=True) as cursor:
+            # Get the customer's business and current subscription plan
+            cursor.execute("""
+                SELECT b.subscription_plan_id 
+                FROM business b
+                JOIN customer c ON b.business_id = c.business_id
+                WHERE c.customer_id = %s
+            """, (customer_id,))
+            
+            business = cursor.fetchone()
+            if not business:
+                return jsonify({"error": "Customer or business not found"}), 404
+                
+            current_plan_id = business.get('subscription_plan_id')
+            
             # Query to get all active subscription plans with their features
             cursor.execute("""
                 SELECT 
@@ -58,6 +84,7 @@ def get_subscription_plans():
                         'original_price': float(row['original_price']) if row['original_price'] is not None else None,
                         'final_price': float(row['final_price']) if row['final_price'] is not None else None,
                         'estimated_monthly_roi': float(row['estimated_monthly_roi']) if row['estimated_monthly_roi'] is not None else None,
+                        'is_current_plan': (plan_id == current_plan_id) if current_plan_id is not None else False,
                         'features': []
                     }
                     

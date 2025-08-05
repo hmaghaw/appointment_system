@@ -11,8 +11,12 @@ CREATE TABLE IF NOT EXISTS business (
     name VARCHAR(255) NOT NULL,
     timezone VARCHAR(50) NOT NULL DEFAULT 'UTC',
     status VARCHAR(20) NOT NULL DEFAULT 'active',
+    subscription_plan_id INT DEFAULT 7,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(subscription_plan_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- Users table for authentication and user management
