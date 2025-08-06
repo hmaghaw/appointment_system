@@ -1,7 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 from contextlib import contextmanager
-from config import Config
+from appointment_app.config import Config
 
 def _get_connection(config, database=None):
     """Internal function to create a database connection."""

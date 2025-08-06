@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from config import Config
+from appointment_app.config import Config
 import os
 
 def create_app(config_dict=None):
@@ -37,18 +37,18 @@ def create_app(config_dict=None):
     #      })
     
     # Import and register blueprints
-    from routes.appointments import bp as appointments_bp
-    from routes.availability import bp as availability_bp
-    from routes.business import bp as business_bp
-    from routes.customers import bp as customers_bp
-    from routes.call_meta import bp as call_history_bp
-    from routes.call_conversation import bp as call_conversation_bp
-    from routes.translations import bp as translations_bp
-    from routes.user import bp as user_bp
-    from routes.business_hours import bp as business_hours_bp
-    from routes.twilio import bp as twilio_bp
-    from routes.stripe import bp as stripe_bp
-    from routes.subscription import bp as subscription_bp
+    from appointment_app.routes.appointments import bp as appointments_bp
+    from appointment_app.routes.availability import bp as availability_bp
+    from appointment_app.routes.business import bp as business_bp
+    from appointment_app.routes.customers import bp as customers_bp
+    from appointment_app.routes.call_meta import bp as call_history_bp
+    from appointment_app.routes.call_conversation import bp as call_conversation_bp
+    from appointment_app.routes.translations import bp as translations_bp
+    from appointment_app.routes.user import bp as user_bp
+    from appointment_app.routes.business_hours import bp as business_hours_bp
+    from appointment_app.routes.twilio import bp as twilio_bp
+    from appointment_app.routes.stripe import bp as stripe_bp
+    from appointment_app.routes.subscription import bp as subscription_bp
     
     # Register blueprints
     app.register_blueprint(appointments_bp)
