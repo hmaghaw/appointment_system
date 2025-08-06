@@ -5,6 +5,22 @@ CREATE DATABASE IF NOT EXISTS appointment_db;
 
 USE appointment_db;
 
+-- Subscription plan tables (must come first due to foreign key references)
+CREATE TABLE IF NOT EXISTS subscription_plan (
+    subscription_plan_id INT AUTO_INCREMENT PRIMARY KEY,
+    plan_name VARCHAR(100) NOT NULL,
+    plan_description TEXT,
+    billing_cycle ENUM('monthly', 'yearly') NOT NULL DEFAULT 'monthly',
+    original_price DECIMAL(10,2),         -- e.g., 99.00
+    final_price DECIMAL(10,2) NOT NULL,   -- e.g., 79.00
+    annual_savings DECIMAL(10,2),         -- e.g., 240.00
+    estimated_monthly_roi DECIMAL(10,2),  -- e.g., 24921.00
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    display_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 -- Business table
 CREATE TABLE IF NOT EXISTS business (
     business_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -38,17 +54,17 @@ CREATE TABLE IF NOT EXISTS users (
     email_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
     -- Ensure either password or social login exists
     CONSTRAINT check_auth_method CHECK (
         (auth_provider = 'email' AND password_hash IS NOT NULL) OR
         (auth_provider != 'email' AND social_id IS NOT NULL) OR
         (auth_provider LIKE 'email,%' AND password_hash IS NOT NULL AND social_id IS NOT NULL)
     ),
-    
+
     -- Foreign key to business
     FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
-    
+
     -- Indexes for performance
     INDEX idx_email (email),
     INDEX idx_business_id (business_id),
@@ -181,9 +197,6 @@ CREATE TABLE IF NOT EXISTS translations (
 
 -- Service Translations
 CREATE TABLE IF NOT EXISTS service_translation (
-
--- Service Translations
-CREATE TABLE IF NOT EXISTS service_translation (
     translation_id INT AUTO_INCREMENT PRIMARY KEY,
     service_id INT NOT NULL,
     language_code VARCHAR(10) NOT NULL COMMENT 'ISO 639-1 language code (e.g., en, es, fr)',
@@ -255,22 +268,7 @@ CREATE TABLE twilio_transaction_log (
     created_at           DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE subscription_plan (
-    subscription_plan_id INT AUTO_INCREMENT PRIMARY KEY,
-    plan_name VARCHAR(100) NOT NULL,
-    plan_description TEXT,
-    billing_cycle ENUM('monthly', 'yearly') NOT NULL DEFAULT 'monthly',
-    original_price DECIMAL(10,2),         -- e.g., 99.00
-    final_price DECIMAL(10,2) NOT NULL,   -- e.g., 79.00
-    annual_savings DECIMAL(10,2),         -- e.g., 240.00
-    estimated_monthly_roi DECIMAL(10,2),  -- e.g., 24921.00
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    display_order INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE subscription_plan_feature (
+CREATE TABLE IF NOT EXISTS subscription_plan_feature (
     subscription_plan_feature_id INT AUTO_INCREMENT PRIMARY KEY,
     subscription_plan_id INT NOT NULL,
     feature_name VARCHAR(100) NOT NULL,

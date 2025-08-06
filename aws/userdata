@@ -1,0 +1,49 @@
+sudo dnf update -y
+sudo dnf install -y dnf-plugins-core
+sudo dnf config-manager --set-enabled fedora
+sudo dnf clean all
+sudo dnf install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+# DO NOT do: sudo chmod 666 /var/run/docker.sock  # Avoid this for security reasons
+docker-compose --version
+
+## CERTBOT
+
+# Install python3-pip if not installed
+sudo dnf install -y python3-pip
+
+# Install certbot and route53 plugin using pip
+pip3 install --user certbot certbot-dns-route53
+
+# Run certbot with full path
+~/.local/bin/certbot --version
+
+# Obtain certificate (replace with your domain)
+~/.local/bin/certbot certonly --dns-route53 -d "*.halalcooking.ca" -d "halalcooking.ca" \
+  --config-dir ~/.certbot/config \
+  --work-dir ~/.certbot/work \
+  --logs-dir ~/.certbot/logs
+
+Saving debug log to /home/ec2-user/.certbot/logs/letsencrypt.log
+Requesting a certificate for *.halalcooking.ca and halalcooking.ca
+
+Successfully received certificate.
+Certificate is saved at: /home/ec2-user/.certbot/config/live/halalcooking.ca/fullchain.pem
+Key is saved at:         /home/ec2-user/.certbot/config/live/halalcooking.ca/privkey.pem
+This certificate expires on 2025-10-15.
+These files will be updated when the certificate renews.
+
+NEXT STEPS:
+- The certificate will need to be renewed before it expires. Certbot can automatically renew the certificate in the background, but you may need to take steps to enable that functionality. See https://certbot.org/renewal-setup for instructions.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+If you like Certbot, please consider supporting our work by:
+ * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+ * Donating to EFF:                    https://eff.org/donate-le
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
