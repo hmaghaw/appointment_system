@@ -1,6 +1,3 @@
--- Initial data for Windsurf Appointment System
-
--- Make sure we're using the correct database
 USE appointment_db;
 
 -- First, insert subscription plans since other tables reference them
@@ -243,25 +240,3 @@ INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, featu
 (6, 'Analytics & Reporting', 'Custom analytics & white-label reporting', 5),
 (6, 'Support', '24/7 dedicated support hotline', 6),
 (6, 'Security & Compliance', 'Enterprise-grade security & compliance', 7);
-
--- Now insert businesses with proper subscription_plan_id (default is 7 for Voxxell Free)
-INSERT INTO business (name, timezone, status, subscription_plan_id) VALUES
-('Luxe Hair Studio', 'America/New_York', 'active', 1),
-('TechGadgets Inc.', 'America/Los_Angeles', 'active', 1),
-('Wellness Medical Center', 'America/Chicago', 'active', 3),
-('IdeationMax', 'America/New_York', 'active', 5),
-('CodeCraft Solutions', 'America/Chicago', 'active', 5),
-('Digital Innovators', 'America/Los_Angeles', 'active', 5);
-
--- Rest of the original data follows...
--- [Previous content from 02-data.sql after the initial business insert]
-
--- Set business IDs for reference
-SET @hair_salon_id = 1;
-SET @tech_store_id = 2;
-SET @clinic_id = 3;
-SET @ideationmax_id = 4;
-SET @codecraft_id = 5;
-SET @digital_innovators_id = 6;
-
--- Continue with the rest of the original 02-data.sql content...
