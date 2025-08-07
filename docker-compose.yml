@@ -42,9 +42,11 @@ services:
     working_dir: /app
     ports:
       - "5000:5000"
+    env_file:
+      - ./.env
     environment:
       - PYTHONPATH=/app
-      - DB_HOST=db
+      - DB_HOST=db  # Override DB_HOST to use the service name in Docker
       - DB_USER=user
       - DB_PASSWORD=password
       - DB_NAME=appointment_db
