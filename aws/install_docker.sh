@@ -12,3 +12,12 @@ sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.2/docker
 sudo chmod +x /usr/local/bin/docker-compose
 # DO NOT do: sudo chmod 666 /var/run/docker.sock  # Avoid this for security reasons
 docker-compose --version
+
+
+sudo dnf install -y git
+
+ssh-keygen -t ed25519 -C "hanyelgaml@ideationmax.com"
+
+cd ~
+git clone git@github.com:hmaghaw/appointment_system.git
+git clone git@github.com:hmaghaw/twilio_agent.git
