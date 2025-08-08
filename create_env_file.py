@@ -3,7 +3,7 @@ import json
 from botocore.exceptions import ClientError
 from pathlib import Path
 
-PROD_TEMPLATE = """# NGROK Configuration
+PROD_TEMPLATE = """"
 ENVIRONMENT=production
 DEBUG=True
 
