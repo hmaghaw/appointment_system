@@ -56,7 +56,7 @@ def oauth2_callback():
                 'success': True,
                 'message': 'OAuth2 callback received successfully',
                 'code_received': True,
-                'state': request_data.get('state')
+                'request_data': request_data
             })
             
         return jsonify({

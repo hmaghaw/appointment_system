@@ -3,8 +3,7 @@ import json
 from botocore.exceptions import ClientError
 from pathlib import Path
 
-PROD_TEMPLATE = """"
-ENVIRONMENT=production
+PROD_TEMPLATE = """ENVIRONMENT=production
 DEBUG=True
 
 # Stripe Configuration
@@ -38,6 +37,13 @@ DB_POOL_RECYCLE=3600
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
+
+# Gmail
+GMAIL_CLIENT_ID=
+GMAIL_CLIENT_SECRET=
+GMAIL_REFRESH_TOKEN=
+GMAIL_USER=hanyelgaml@ideationmax.com
+EMAIL_FROM=hanyelgaml@ideationmax.com
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
@@ -75,6 +81,13 @@ DB_POOL_RECYCLE=3600
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
+
+# Gmail
+GMAIL_CLIENT_ID=
+GMAIL_CLIENT_SECRET=
+GMAIL_REFRESH_TOKEN=
+GMAIL_USER=hanyelgaml@ideationmax.com
+EMAIL_FROM=hanyelgaml@ideationmax.com
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """
