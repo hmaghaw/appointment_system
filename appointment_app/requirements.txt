@@ -1,22 +1,45 @@
 # Core Dependencies
-Flask==2.0.1
-twilio==8.11.1
-Werkzeug==2.0.3
-flask-cors==3.0.10
-mysql-connector-python==8.0.33
+Flask==2.3.3
+Flask-Cors==4.0.0
+Werkzeug==2.3.7
+PyJWT==2.8.0
 python-dotenv==1.0.0
 python-dateutil==2.8.2
-gunicorn==20.1.0
-PyJWT==2.8.0
 requests==2.31.0
-PyMySQL==1.1.0
+PyYAML==6.0.1
 cryptography==41.0.7
 
-# Development Dependencies
+# Database (pick ONE driver; remove the other if unused)
+mysql-connector-python==8.1.0
+# PyMySQL==1.1.0
+
+# Payment Processing
+stripe==9.0.0
+
+# Google API (do not pin transitive deps like rsa/cachetools/pyasn1/etc.)
+google-api-python-client==2.178.0
+google-auth-oauthlib==1.2.2
+google-auth-httplib2==0.2.0
+google-auth==2.40.0
+google-api-core==2.25.1
+googleapis-common-protos==1.70.0
+
+# AWS SDK
+boto3==1.34.0
+botocore==1.34.0
+
+# SMS/Communication
+twilio==8.11.1
+
+# Production
+gunicorn==20.1.0
+
+# Development
 pytest==8.0.0
 pytest-cov==4.1.0
 black==23.11.0
 flake8==6.1.0
-stripe>=9.0.0
-boto3>=1.34.0
-botocore>=1.34.0
+pylint==3.0.3
+
+# Compatibility pin for mysql-connector-python 8.1.0
+protobuf==4.21.12
