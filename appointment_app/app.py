@@ -49,7 +49,6 @@ def create_app(config_dict=None):
     from appointment_app.routes.twilio import bp as twilio_bp
     from appointment_app.routes.stripe import bp as stripe_bp
     from appointment_app.routes.subscription import bp as subscription_bp
-    from appointment_app.routes.google import bp as google_bp
     
     # Register blueprints
     app.register_blueprint(appointments_bp)
@@ -64,7 +63,6 @@ def create_app(config_dict=None):
     app.register_blueprint(user_bp, url_prefix='/api/auth')
     app.register_blueprint(stripe_bp)  # Stripe webhook and payment endpoints
     app.register_blueprint(subscription_bp, url_prefix='/api')  # Subscription plan endpoints
-    app.register_blueprint(google_bp)  # Google OAuth2 callback endpoints
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
@@ -77,4 +75,5 @@ def create_app(config_dict=None):
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    #app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
