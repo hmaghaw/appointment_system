@@ -23,9 +23,9 @@ bp = Blueprint('google', __name__, url_prefix='/rest/oauth2-credential')
 logger = logging.getLogger(__name__)
 
 # OAuth2 Configuration
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5000/rest/oauth2-credential/callback')
+GOOGLE_CLIENT_ID = os.getenv('GMAIL_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GMAIL_CLIENT_SECRET')
+REDIRECT_URI = os.getenv('GMAIL_REDIRECT_URI', 'https://api.halalcooking.ca/rest/oauth2-credential/callback')
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.send',
     'https://www.googleapis.com/auth/userinfo.email',
@@ -37,6 +37,11 @@ token_storage = {}
 
 def get_flow():
     """Create and return a Flow instance for OAuth2"""
+    # Get redirect URI from environment variable
+    redirect_uri = os.getenv('GMAIL_REDIRECT_URI')
+    if not redirect_uri:
+        raise ValueError("GMAIL_REDIRECT_URI environment variable is not set")
+        
     return Flow.from_client_config(
         {
             'web': {
@@ -44,11 +49,11 @@ def get_flow():
                 'client_secret': GOOGLE_CLIENT_SECRET,
                 'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
                 'token_uri': 'https://oauth2.googleapis.com/token',
-                'redirect_uris': [REDIRECT_URI]
+                'redirect_uris': [redirect_uri]
             }
         },
         scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
+        redirect_uri=redirect_uri
     )
 
 class GmailService:
