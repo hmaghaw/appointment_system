@@ -1,0 +1,129 @@
+import boto3
+import json
+from botocore.exceptions import ClientError
+from pathlib import Path
+
+TEMPLATE = """# NGROK Configuration
+NGROK_AUTH_TOKEN=
+
+# Stripe Configuration
+STRIPE_API_KEY=
+STRIPE_ENDPOINT_SECRET=
+
+# Database Configuration
+DB_HOST=localhost
+DB_USER=
+DB_PASSWORD=
+DB_NAME=appointment_db
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# JWT Configuration
+JWT_SECRET_KEY=
+
+# Flask Configuration
+FLASK_APP=app.py
+FLASK_ENV=development
+# SECRET_KEY=your-secret-key-here  # Uncomment and set for production
+# DEBUG=False  # Set to False in production
+
+# Database Connection Pool Settings
+DB_POOL_NAME=appointment_pool
+DB_POOL_SIZE=5
+DB_POOL_RECYCLE=3600
+
+# Twilio Configuration
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
+"""
+
+
+def create_env_from_template(secret_data, output_file=".env"):
+    """
+    Create a .env file from a fixed template, filling in values from secret_data if available.
+
+    Args:
+        secret_data (dict): Secrets retrieved from AWS Secrets Manager or another source.
+        output_file (str): Path to the .env file to create.
+    """
+    lines = []
+    for line in TEMPLATE.splitlines():
+        if "=" in line and not line.strip().startswith("#"):
+            key, sep, default_val = line.partition("=")
+            key = key.strip()
+            new_val = secret_data.get(key, default_val)
+            lines.append(f"{key}={new_val}")
+        else:
+            # Keep comments and blank lines intact
+            lines.append(line)
+
+    Path(output_file).write_text("\n".join(lines))
+    print(f"✅ .env file created at {output_file}")
+
+
+def get_secret(secret_name, region_name="us-east-1"):
+    """
+    Retrieve a secret from AWS Secrets Manager.
+
+    Args:
+        secret_name (str): The name of the secret in Secrets Manager.
+        region_name (str): The AWS region where the secret is stored.
+
+    Returns:
+        dict: The secret as a Python dictionary if JSON, otherwise a string.
+    """
+    # Create a Secrets Manager client
+    client = boto3.client("secretsmanager", region_name=region_name)
+
+    try:
+        # Fetch the secret value
+        response = client.get_secret_value(SecretId=secret_name)
+
+        # Secrets can be either string or binary
+        if "SecretString" in response:
+            secret_value = response["SecretString"]
+            try:
+                return json.loads(secret_value)  # Return as dict if JSON
+            except json.JSONDecodeError:
+                return secret_value  # Return as raw string
+        else:
+            # Binary secret
+            return response["SecretBinary"]
+
+    except ClientError as e:
+        print(f"Error retrieving secret '{secret_name}': {e}")
+        raise
+
+def write_env_from_secret(secret_data, env_file=".env"):
+    """
+    Writes secret key/value pairs to a .env file.
+
+    Args:
+        secret_data (dict | str): Secret data as dict or JSON string.
+        env_file (str): Path to the .env file.
+    """
+    # Convert JSON string to dict if needed
+    if isinstance(secret_data, str):
+        try:
+            secret_data = json.loads(secret_data)
+        except json.JSONDecodeError:
+            raise ValueError("Secret data must be a dict or valid JSON string")
+
+    if not isinstance(secret_data, dict):
+        raise ValueError("Secret data must be a dictionary")
+
+    # Create .env file content
+    lines = [f"{key}={value}" for key, value in secret_data.items()]
+
+    # Write to file
+    Path(env_file).write_text("\n".join(lines))
+    print(f"✅ .env file created at: {env_file}")
+
+
+if __name__ == "__main__":
+    secret_data = get_secret("voxxel-keys", "us-east-1")
+    print(secret_data)
+    create_env_from_template(secret_data,"my_env")

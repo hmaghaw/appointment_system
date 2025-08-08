@@ -42,8 +42,6 @@ services:
     working_dir: /app
     ports:
       - "5000:5000"
-    env_file:
-      - ./.env
     environment:
       - PYTHONPATH=/app
       - DB_HOST=db  # Override DB_HOST to use the service name in Docker
@@ -51,7 +49,7 @@ services:
       - DB_PASSWORD=password
       - DB_NAME=appointment_db
       - FLASK_APP=appointment_app.app:app
-      - FLASK_ENV=development
+      - FLASK_ENV=production
     volumes:
       - .:/app
     command: >
@@ -59,6 +57,7 @@ services:
              pip install -e . &&
              pip install -r appointment_app/requirements.txt &&
              pip install gunicorn &&
+             python create_env_file.py &&
              cd /app/appointment_app && gunicorn --bind 0.0.0.0:5000 app:app"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
