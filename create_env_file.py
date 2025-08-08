@@ -126,4 +126,4 @@ def write_env_from_secret(secret_data, env_file=".env"):
 if __name__ == "__main__":
     secret_data = get_secret("voxxel-keys", "us-east-1")
     print(secret_data)
-    create_env_from_template(secret_data,"my_env")
+    create_env_from_template(secret_data,".env")
