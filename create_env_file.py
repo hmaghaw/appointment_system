@@ -44,6 +44,7 @@ GMAIL_CLIENT_SECRET=
 GMAIL_REFRESH_TOKEN=
 GMAIL_USER=hanyelgaml@ideationmax.com
 EMAIL_FROM=hanyelgaml@ideationmax.com
+GMAIL_REDIRECT_URI=https://api.halalcooking.ca/rest/oauth2-credential/callback
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
@@ -88,6 +89,7 @@ GMAIL_CLIENT_SECRET=
 GMAIL_REFRESH_TOKEN=
 GMAIL_USER=hanyelgaml@ideationmax.com
 EMAIL_FROM=hanyelgaml@ideationmax.com
+GMAIL_REDIRECT_URI=https://api.halalcooking.ca/rest/oauth2-credential/callback
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """
