@@ -3,7 +3,44 @@ import json
 from botocore.exceptions import ClientError
 from pathlib import Path
 
-TEMPLATE = """# NGROK Configuration
+PROD_TEMPLATE = """# NGROK Configuration
+ENVIRONMENT=production
+DEBUG=True
+
+# Stripe Configuration
+STRIPE_API_KEY=
+STRIPE_ENDPOINT_SECRET=
+
+# Database Configuration
+DB_HOST=localhost
+DB_USER=
+DB_PASSWORD=
+DB_NAME=appointment_db
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# JWT Configuration
+JWT_SECRET_KEY=
+
+# Flask Configuration
+FLASK_APP=app.py
+FLASK_ENV=production
+# DEBUG=False  # Set to False in production
+
+# Database Connection Pool Settings
+DB_POOL_NAME=appointment_pool
+DB_POOL_SIZE=5
+DB_POOL_RECYCLE=3600
+
+# Twilio Configuration
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
+"""
+
+DEV_TEMPLATE = """# NGROK Configuration
 NGROK_AUTH_TOKEN=
 
 # Stripe Configuration
@@ -39,9 +76,7 @@ TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
 """
-
-
-def create_env_from_template(secret_data, output_file=".env"):
+def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """
     Create a .env file from a fixed template, filling in values from secret_data if available.
 
@@ -49,8 +84,12 @@ def create_env_from_template(secret_data, output_file=".env"):
         secret_data (dict): Secrets retrieved from AWS Secrets Manager or another source.
         output_file (str): Path to the .env file to create.
     """
+    if environment == "production":
+        template = PROD_TEMPLATE
+    else:
+        template = DEV_TEMPLATE
     lines = []
-    for line in TEMPLATE.splitlines():
+    for line in template.splitlines():
         if "=" in line and not line.strip().startswith("#"):
             key, sep, default_val = line.partition("=")
             key = key.strip()
@@ -97,6 +136,7 @@ def get_secret(secret_name, region_name="us-east-1"):
         print(f"Error retrieving secret '{secret_name}': {e}")
         raise
 
+
 def write_env_from_secret(secret_data, env_file=".env"):
     """
     Writes secret key/value pairs to a .env file.
@@ -124,5 +164,29 @@ def write_env_from_secret(secret_data, env_file=".env"):
 
 
 if __name__ == "__main__":
-    secret_data = get_secret("voxxel-keys", "us-east-1")
-    create_env_from_template(secret_data,".env")
+    import sys
+
+    # Default values
+    environment = "development"
+    output_file = ".env"
+
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        env_arg = sys.argv[1].lower()
+        if env_arg in ["production", "prod"]:
+            environment = "production"
+            print("Using production environment configuration")
+        elif env_arg in ["development", "dev"]:
+            print("Using development environment configuration")
+        else:
+            print(f"Warning: Unknown environment '{env_arg}'. Using development environment by default.")
+    else:
+        print("No environment specified. Using development environment by default.")
+
+    # Get secrets and create .env file
+    try:
+        secret_data = get_secret("voxxel-keys", "us-east-1")
+        create_env_from_template(secret_data, environment, output_file)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
