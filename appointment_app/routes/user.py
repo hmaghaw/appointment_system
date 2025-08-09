@@ -15,11 +15,32 @@ import json
 import mysql.connector
 from mysql.connector import Error
 import logging
+import smtplib
+import base64
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
+from ..services.send_email_notification import send_email_notification
+import time
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info("User blueprint loaded.")  # You must call this
+logger.info("User blueprint loaded.")
+
 # Create Blueprint
 bp = Blueprint('user', __name__, url_prefix='')
+
+# Password reset token expiration (24 hours)
+RESET_TOKEN_EXPIRATION = 24 * 60 * 60  # 24 hours in seconds
+
+# Email configuration
+SMTP_SERVER = 'smtp.gmail.com'
+SMTP_PORT = 587
+GMAIL_CLIENT_ID = os.getenv('GMAIL_CLIENT_ID')
+GMAIL_CLIENT_SECRET = os.getenv('GMAIL_CLIENT_SECRET')
+GMAIL_REFRESH_TOKEN = os.getenv('GMAIL_REFRESH_TOKEN')
+GMAIL_USER = os.getenv('GMAIL_USER')
+EMAIL_FROM = os.getenv('EMAIL_FROM', GMAIL_USER or 'noreply@elitewellnessspa.com')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
 # Configure logging
 
@@ -95,8 +116,8 @@ def generate_jwt_token(user):
         'email': user['email'],
         'business_id': user['business_id'],
         'role': user['role'],
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
-        'iat': datetime.datetime.utcnow()
+        'exp': int(time.time()) + 24 * 3600,  # expires in 24 hours
+        'iat': int(time.time())
     }
     return jwt.encode(payload, secret_key, algorithm='HS256')
 
@@ -143,25 +164,101 @@ def create_weekly_business_hours(business_id):
         {"day_of_week": 6, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True}  # Sunday (closed)
     ]
 
+
+def create_password_reset_token(user_id):
+    """Create and store a password reset token"""
+    # Generate a secure random token
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(seconds=RESET_TOKEN_EXPIRATION)
+    
+    # Store the token in the database
+    query = """
+    INSERT INTO password_reset_tokens 
+    (user_id, token, expires_at) 
+    VALUES (%s, %s, %s)
+    """
+    execute_query(query, (user_id, token, expires_at))
+    return token
+
+
+def validate_reset_token(token):
+    """Validate a password reset token and return the user if valid"""
+    query = """
+    SELECT user_id, expires_at, used 
+    FROM password_reset_tokens 
+    WHERE token = %s AND used = 0 AND expires_at > UTC_TIMESTAMP()
+    LIMIT 1
+    """
+    result = execute_query(query, (token,), fetch=True)
+    
+    if not result:
+        return None
+    
+    return result[0][0]  # Return user_id
+
+
+def mark_token_used(token):
+    """Mark a reset token as used"""
+    query = """
+    UPDATE password_reset_tokens 
+    SET used = 1 
+    WHERE token = %s
+    """
+    execute_query(query, (token,))
+
+
+def send_password_reset_email(email, token):
+    """Send a password reset email with the reset token"""
     try:
-        # Insert default hours for each day
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        for day in default_hours:
-            cursor.execute("""
-                           INSERT INTO business_hours
-                               (business_id, day_of_week, open_time, close_time, is_closed)
-                           VALUES (%s, %s, %s, %s, %s)
-                           """, (
-                               business_id,
-                               day['day_of_week'],
-                               day['open_time'],
-                               day['close_time'],
-                               False
-                           ))
-        conn.commit()
-    except mysql.connector.Error as err:
-        return jsonify({"success": False, "error": f"Database error: {str(err)}"}), 500
+        # Import here to avoid circular imports
+
+        
+        # Get user by email to include their name in the email
+        query = "SELECT id, first_name, last_name FROM users WHERE email = %s"
+        result = execute_query(query, (email,), fetch=True)
+        
+        if not result:
+            logger.warning(f"Attempted to send reset email to non-existent email: {email}")
+            return True  # Don't reveal if email exists or not
+            
+        user_id, first_name, last_name = result[0]
+        reset_url = f"{FRONTEND_URL}/reset-password?token={token}"
+        
+        # Create email content
+        subject = "Password Reset Request"
+        body = f"""
+        <html>
+            <body>
+                <p>Hello {first_name} {last_name},</p>
+                <p>You have requested to reset your password. Please click the button below to set a new password:</p>
+                <p style="margin: 25px 0;">
+                    <a href="{reset_url}" 
+                       style="background-color: #4CAF50; color: white; padding: 12px 24px; 
+                              text-align: center; text-decoration: none; display: inline-block; 
+                              border-radius: 4px; font-size: 16px; font-weight: bold;">
+                        Reset Password
+                    </a>
+                </p>
+                <p>Or copy and paste this link into your browser:<br>
+                <code>{reset_url}</code></p>
+                <p>This link will expire in 24 hours. If you didn't request this, please ignore this email.</p>
+                <p>Best regards,<br>Elite Wellness Spa Team</p>
+            </body>
+        </html>
+        """
+        
+        # Send the email using the EmailService
+        return email_service.send_email(
+            to_email=email,
+            subject=subject,
+            body=body,
+            is_html=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Error preparing password reset email: {str(e)}", exc_info=True)
+        return False
+
 
 @bp.route('/signup', methods=['POST', 'OPTIONS'])
 def signup():
@@ -184,15 +281,16 @@ def signup():
 
         # Extract and validate signup data
         business_name = data.get('businessName')
-        admin_name = data.get('adminName')
+        first_name = data.get('adminFirstName')
+        last_name = data.get('adminLastName')
         email = data.get('email')
         password = data.get('password')
         admin_phone = data.get('adminPhone')
 
-        logger.info(f"Parsed data - Email: {email}, Business: {business_name}, Admin: {admin_name}")
+        logger.info(f"Parsed data - Email: {email}, Business: {business_name}, Admin: {first_name} {last_name}")
 
         # Validate required fields
-        if not all([business_name, admin_name, email, password]):
+        if not all([business_name, first_name, last_name, email, password]):
             return jsonify({
                 'success': False,
                 'error': 'missing_fields',
@@ -277,7 +375,6 @@ def signup():
             create_weekly_business_hours(business_id)
             # Commit the transaction
             conn.commit()
-            
         except Exception as e:
             # Rollback in case of error
             if 'conn' in locals() and conn:
@@ -296,30 +393,18 @@ def signup():
             if 'conn' in locals() and conn:
                 conn.close()
         logger.info(f"Business created successfully with ID: {business_id}")
-        
-        # Add admin phone to business_phone table if provided
-        if admin_phone:
-            phone_insert = """
-                          INSERT INTO business_phone (business_id, business_phone, is_primary)
-                          VALUES (%s, %s, TRUE)
-                          """
-            execute_query(phone_insert, (business_id, admin_phone))
 
         # Create new user account
         user_id = f"user_{secrets.token_hex(8)}"
         password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
         # Parse admin name
-        name_parts = admin_name.strip().split(' ', 1)
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
-
         user_insert = """
                       INSERT INTO users (
                           id, email, password_hash, first_name, last_name, 
                           role, business_id, auth_provider, permissions, 
-                          phone, active, email_verified, created_at, updated_at
-                      ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                          phone, active, email_verified
+                      ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                       """
 
         permissions = json.dumps(['read', 'write', 'delete', 'manage_staff', 'manage_appointments', 'manage_business'])
@@ -336,9 +421,7 @@ def signup():
             permissions,
             admin_phone,
             True,
-            False,  # Email verification required
-            datetime.datetime.utcnow(),
-            datetime.datetime.utcnow()
+            False
         ))
 
         # Fetch the created user
@@ -363,6 +446,12 @@ def signup():
 
         logger.info(f"User successfully created: {email}")
 
+        send_email_notification(
+            trigger_event="user_signed_up",
+            to=email,
+            first_name=first_name,
+            business_name=business_name,
+        )
         return jsonify({
             'success': True,
             'access_token': token,
@@ -678,7 +767,121 @@ def create_social_user(social_data, provider):
         return None
 
 
+@bp.route('/request-password-reset', methods=['POST'])
+def request_password_reset():
+    """Request a password reset email"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({
+                'success': False,
+                'error': 'missing_email',
+                'message': 'Email is required'
+            }), 400
+            
+        # Check if user exists
+        user = execute_query(
+            "SELECT id, email FROM users WHERE email = %s",
+            (email,),
+            fetch='one'
+        )
+        
+        if not user:
+            # Don't reveal if the email exists or not
+            logger.info(f"Password reset requested for non-existent email: {email}")
+            return jsonify({
+                'success': True,
+                'message': 'If an account with this email exists, a password reset link has been sent.'
+            })
+            
+        # Generate and store reset token
+        token = create_password_reset_token(user['id'])
+        
+        # Send password reset email
+        email_sent = send_password_reset_email(user['email'], token)
+        
+        if not email_sent:
+            logger.error(f"Failed to send password reset email to {email}")
+            return jsonify({
+                'success': False,
+                'error': 'email_send_failed',
+                'message': 'Failed to send password reset email. Please try again later.'
+            }), 500
+            
+        return jsonify({
+            'success': True,
+            'message': 'If an account with this email exists, a password reset link has been sent.'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in request_password_reset: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'server_error',
+            'message': 'An error occurred while processing your request.'
+        }), 500
 
+
+@bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    """Reset user password with a valid token"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        new_password = data.get('new_password')
+        
+        if not all([token, new_password]):
+            return jsonify({
+                'success': False,
+                'error': 'missing_fields',
+                'message': 'Token and new password are required'
+            }), 400
+            
+        # Validate password strength
+        if len(new_password) < 8:
+            return jsonify({
+                'success': False,
+                'error': 'weak_password',
+                'message': 'Password must be at least 8 characters long'
+            }), 400
+            
+        # Validate token and get user ID
+        user_id = validate_reset_token(token)
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'error': 'invalid_token',
+                'message': 'Invalid or expired password reset token.'
+            }), 400
+            
+        # Hash the new password
+        password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
+        
+        # Update user's password
+        update_query = """
+        UPDATE users 
+        SET password_hash = %s, updated_at = UTC_TIMESTAMP()
+        WHERE id = %s
+        """
+        execute_query(update_query, (password_hash, user_id))
+        
+        # Mark token as used
+        mark_token_used(token)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Your password has been successfully reset.'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in reset_password: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'server_error',
+            'message': 'An error occurred while resetting your password.'
+        }), 500
 
 
 @bp.route('/health', methods=['GET'])
