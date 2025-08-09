@@ -39,7 +39,7 @@ SEND_EMAIL_WEBHOOK=
 FROM_EMAIL=
 FROM_NAME=
 
-FRONTEND_URL=https://halalcooking.ca/
+FRONTEND_URL=https://halalcooking.ca
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
