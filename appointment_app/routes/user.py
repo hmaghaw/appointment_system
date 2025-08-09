@@ -7,7 +7,6 @@ Handles both email/password and Google OAuth authentication
 from flask import Blueprint, request, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 import jwt
-import datetime
 import secrets
 import requests
 import os
@@ -40,7 +39,7 @@ GMAIL_CLIENT_SECRET = os.getenv('GMAIL_CLIENT_SECRET')
 GMAIL_REFRESH_TOKEN = os.getenv('GMAIL_REFRESH_TOKEN')
 GMAIL_USER = os.getenv('GMAIL_USER')
 EMAIL_FROM = os.getenv('EMAIL_FROM', GMAIL_USER or 'noreply@elitewellnessspa.com')
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://1b508cc8-944c-4d37-9ed6-0934fa85b53c-00-2jwasb0kbfe30.spock.replit.dev')
 
 # Configure logging
 
@@ -131,9 +130,11 @@ def format_user_response(user):
         'last_name': user['last_name'],
         'full_name': f"{user['first_name']} {user['last_name']}",
         'role': user['role'],
-        'permissions': json.loads(user['permissions']) if user['permissions'] else [],
-        'avatar_url': user['profile_picture_url'],
-        'auth_provider': user['auth_provider']
+        'permissions': json.loads(user['permissions']) if user.get('permissions') else [],
+        'avatar_url': user.get('profile_picture_url'),
+        'auth_provider': user.get('auth_provider', 'email'),
+        'email_verified': bool(user.get('email_verified')),
+        'active': bool(user.get('active', False))
     }
 
 
@@ -163,6 +164,33 @@ def create_weekly_business_hours(business_id):
         {"day_of_week": 5, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True},  # Saturday (closed)
         {"day_of_week": 6, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True}  # Sunday (closed)
     ]
+
+
+def create_email_verification_token(user_id, expiration_hours=24):
+    """Create and store an email verification token"""
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=expiration_hours)
+    
+    # Store the token in the database
+    query = """
+    INSERT INTO email_verification_tokens 
+    (user_id, token, expires_at) 
+    VALUES (%s, %s, %s)
+    """
+    execute_query(query, (user_id, token, expires_at))
+    return token
+
+
+def send_verification_email(email, token, first_name, last_name):
+    """Send an email with the verification link using the centralized email service"""
+    verification_url = f"{FRONTEND_URL}/verify-email?token={token}"
+    return send_email_notification(
+        trigger_event="email_verification",
+        to=email,
+        first_name=first_name,
+        verify_url=verification_url,
+        expires_minutes=1440  # 24 hours
+    )
 
 
 def create_password_reset_token(user_id):
@@ -208,55 +236,36 @@ def mark_token_used(token):
 
 
 def send_password_reset_email(email, token):
-    """Send a password reset email with the reset token"""
+    """Send a password reset email with the reset token using the centralized email service"""
     try:
-        # Import here to avoid circular imports
-
-        
         # Get user by email to include their name in the email
-        query = "SELECT id, first_name, last_name FROM users WHERE email = %s"
+        query = "SELECT id, first_name, last_name, email_verified FROM users WHERE email = %s"
         result = execute_query(query, (email,), fetch=True)
         
         if not result:
             logger.warning(f"Attempted to send reset email to non-existent email: {email}")
             return True  # Don't reveal if email exists or not
             
-        user_id, first_name, last_name = result[0]
+        user_id, first_name, last_name, email_verified = result[0]
+        
+        # Don't allow password reset for unverified emails
+        if not email_verified:
+            logger.warning(f"Attempted password reset for unverified email: {email}")
+            return True  # Still return success to avoid email enumeration
+            
         reset_url = f"{FRONTEND_URL}/reset-password?token={token}"
         
-        # Create email content
-        subject = "Password Reset Request"
-        body = f"""
-        <html>
-            <body>
-                <p>Hello {first_name} {last_name},</p>
-                <p>You have requested to reset your password. Please click the button below to set a new password:</p>
-                <p style="margin: 25px 0;">
-                    <a href="{reset_url}" 
-                       style="background-color: #4CAF50; color: white; padding: 12px 24px; 
-                              text-align: center; text-decoration: none; display: inline-block; 
-                              border-radius: 4px; font-size: 16px; font-weight: bold;">
-                        Reset Password
-                    </a>
-                </p>
-                <p>Or copy and paste this link into your browser:<br>
-                <code>{reset_url}</code></p>
-                <p>This link will expire in 24 hours. If you didn't request this, please ignore this email.</p>
-                <p>Best regards,<br>Elite Wellness Spa Team</p>
-            </body>
-        </html>
-        """
-        
-        # Send the email using the EmailService
-        return email_service.send_email(
-            to_email=email,
-            subject=subject,
-            body=body,
-            is_html=True
+        # Send the email using the centralized email service
+        return send_email_notification(
+            trigger_event="password_reset_request",
+            to=email,
+            first_name=first_name,
+            reset_url=reset_url,
+            ttl_minutes=1440  # 24 hours
         )
         
     except Exception as e:
-        logger.error(f"Error preparing password reset email: {str(e)}", exc_info=True)
+        logger.error(f"Error sending password reset email: {str(e)}", exc_info=True)
         return False
 
 
@@ -394,73 +403,70 @@ def signup():
                 conn.close()
         logger.info(f"Business created successfully with ID: {business_id}")
 
-        # Create new user account
+        # Create new user account (initially inactive)
         user_id = f"user_{secrets.token_hex(8)}"
         password_hash = generate_password_hash(password, method='pbkdf2:sha256')
-
-        # Parse admin name
-        user_insert = """
-                      INSERT INTO users (
-                          id, email, password_hash, first_name, last_name, 
-                          role, business_id, auth_provider, permissions, 
-                          phone, active, email_verified
-                      ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                      """
-
         permissions = json.dumps(['read', 'write', 'delete', 'manage_staff', 'manage_appointments', 'manage_business'])
 
-        execute_query(user_insert, (
-            user_id,
-            email,
-            password_hash,
-            first_name,
-            last_name,
-            'admin',  # New signups are business admins
-            business_id,
-            'email',
-            permissions,
-            admin_phone,
-            True,
-            False
-        ))
-
-        # Fetch the created user
-        new_user = execute_query(
-            "SELECT * FROM users WHERE id = %s",
-            (user_id,),
-            fetch='one'
-        )
-
-        if not new_user:
+        try:
+            # Get a new connection and cursor for user creation
+            user_conn = get_db_connection()
+            user_cursor = user_conn.cursor(dictionary=True)
+            
+            # Insert the user (initially inactive)
+            user_cursor.execute(
+                """
+                INSERT INTO users 
+                (id, email, password_hash, first_name, last_name, role, business_id, 
+                 auth_provider, active, email_verified, permissions, phone, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                """,
+                (user_id, email, password_hash, first_name, last_name, 'admin', 
+                 business_id, 'email', False, False, permissions, admin_phone)
+            )
+            
+            # Commit the transaction
+            user_conn.commit()
+            
+            # Return success response with user data (user is inactive until email is verified)
+            user = {
+                'id': user_id,
+                'email': email,
+                'first_name': first_name,
+                'last_name': last_name,
+                'role': 'admin',
+                'business_id': business_id,
+                'auth_provider': 'email',
+                'active': False,
+                'email_verified': False,
+                'permissions': json.loads(permissions)
+            }
+            
+            # Generate and send verification email (this also sends a welcome email)
+            verification_token = create_email_verification_token(user_id)
+            send_verification_email(email, verification_token, first_name, last_name)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Registration successful! Please check your email to verify your account.',
+                'user': user
+            }), 200
+            
+        except Exception as e:
+            if 'user_conn' in locals() and user_conn:
+                user_conn.rollback()
+            logger.error(f"Failed to create user: {str(e)}", exc_info=True)
             return jsonify({
                 'success': False,
                 'error': 'user_creation_failed',
-                'message': 'Failed to create user account'
+                'message': 'Failed to create user account. Please try again.'
             }), 500
-
-        # Generate JWT token
-        token = generate_jwt_token(new_user)
-
-        # Get business info
-        business = get_business_info(business_id)
-
-        logger.info(f"User successfully created: {email}")
-
-        send_email_notification(
-            trigger_event="user_signed_up",
-            to=email,
-            first_name=first_name,
-            business_name=business_name,
-        )
-        return jsonify({
-            'success': True,
-            'access_token': token,
-            'token_type': 'Bearer',
-            'expires_in': 86400,
-            'admin': format_user_response(new_user),
-            'business': business,
-            'message': 'Account created successfully'
-        }), 201
+            
+        finally:
+            if 'user_cursor' in locals() and user_cursor:
+                user_cursor.close()
+            if 'user_conn' in locals() and user_conn:
+                user_conn.close()
 
     except Exception as e:
         logger.error(f"Signup error: {e}")
@@ -471,6 +477,78 @@ def signup():
             'error': 'internal_error',
             'message': f'Failed to create account: {str(e)}'
         }), 500
+
+@bp.route('/verify-email', methods=['POST'])
+def verify_email():
+    """Verify user's email using the verification token"""
+    token = request.args.get('token')
+    if not token:
+        return jsonify({
+            'success': False,
+            'error': 'missing_token',
+            'message': 'Verification token is required'
+        }), 400
+
+    # Check if token is valid and not expired
+    query = """
+    SELECT user_id 
+    FROM email_verification_tokens 
+    WHERE token = %s 
+      AND used = FALSE 
+      AND expires_at > UTC_TIMESTAMP()
+    """
+    result = execute_query(query, (token,), fetch='one')
+    
+    if not result:
+        return jsonify({
+            'success': False,
+            'error': 'invalid_token',
+            'message': 'Invalid or expired verification token'
+        }), 400
+    
+    user_id = result['user_id']
+    
+    try:
+        # Mark the token as used
+        execute_query(
+            "UPDATE email_verification_tokens SET used = TRUE WHERE token = %s",
+            (token,)
+        )
+        
+        # Activate the user and mark email as verified
+        execute_query(
+            "UPDATE users SET active = TRUE, email_verified = TRUE WHERE id = %s",
+            (user_id,)
+        )
+        
+        # Get user data to generate JWT
+        user = execute_query(
+            "SELECT * FROM users WHERE id = %s",
+            (user_id,),
+            fetch='one'
+        )
+        
+        if not user:
+            raise Exception("User not found after verification")
+            
+        # Generate JWT token
+        jwt_token = generate_jwt_token(user)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Email verified successfully',
+            'token': jwt_token,
+            'user': format_user_response(user)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error verifying email: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'verification_failed',
+            'message': 'Failed to verify email. Please try again.'
+        }), 500
+
 
 @bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
@@ -522,7 +600,7 @@ def login():
 
         # Update last login
         update_query = "UPDATE users SET last_login = %s WHERE id = %s"
-        execute_query(update_query, (datetime.datetime.utcnow(), user['id']))
+        execute_query(update_query, (datetime.utcnow(), user['id']))
 
         # Generate JWT token
         token = generate_jwt_token(user)
@@ -707,13 +785,13 @@ def find_or_create_social_user(social_data, provider):
                 execute_query(update_query, (
                     social_data['id'],
                     social_data['picture'],
-                    datetime.datetime.utcnow(),
+                    datetime.utcnow(),
                     existing_user['id']
                 ))
             else:
                 # Update last login time
                 update_query = "UPDATE users SET last_login = %s WHERE id = %s"
-                execute_query(update_query, (datetime.datetime.utcnow(), existing_user['id']))
+                execute_query(update_query, (datetime.utcnow(), existing_user['id']))
 
             # Return updated user
             return execute_query(query, (social_data['email'],), fetch='one')
@@ -754,8 +832,8 @@ def create_social_user(social_data, provider):
             permissions,
             True,
             social_data.get('verified_email', False),
-            datetime.datetime.utcnow(),
-            datetime.datetime.utcnow()
+            datetime.utcnow(),
+            datetime.utcnow()
         ))
 
         # Return the created user
@@ -781,12 +859,26 @@ def request_password_reset():
                 'message': 'Email is required'
             }), 400
             
-        # Check if user exists
+        # Check if user exists, password is correct, and email is verified
         user = execute_query(
-            "SELECT id, email FROM users WHERE email = %s",
+            "SELECT * FROM users WHERE email = %s",
             (email,),
             fetch='one'
         )
+        
+        if user and not user.get('email_verified'):
+            return jsonify({
+                'success': False,
+                'error': 'email_not_verified',
+                'message': 'Please verify your email before logging in. Check your email for the verification link.'
+            }), 403
+            
+        if user and not user.get('active'):
+            return jsonify({
+                'success': False,
+                'error': 'account_inactive',
+                'message': 'Your account is not active. Please contact support.'
+            }), 403
         
         if not user:
             # Don't reveal if the email exists or not
@@ -889,7 +981,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'timestamp': datetime.datetime.utcnow().isoformat(),
+        'timestamp': datetime.utcnow().isoformat(),
         'version': '1.0.0'
     }), 200
 

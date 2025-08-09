@@ -72,6 +72,21 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_active (active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Password reset tokens for user authentication
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_token (token),
+    INDEX idx_token (token),
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Business Messages
 CREATE TABLE IF NOT EXISTS business_messages (
     business_message_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -280,3 +295,18 @@ CREATE TABLE IF NOT EXISTS subscription_plan_feature (
     FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(subscription_plan_id)
         ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_token (token),
+    INDEX idx_token (token),
+    INDEX idx_user_id (user_id),
+    INDEX idx_expires_at (expires_at),
+    INDEX idx_used (used)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

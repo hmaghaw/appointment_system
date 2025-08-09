@@ -37,7 +37,7 @@ class EmailMessage():
         }
 
     def email_verification(self, first_name, verify_url, expires_minutes=60):
-        subject = f"Verify your email for {self.business_name}"
+        subject = f"Verify your email for {self.our_business_name}"
         html = self._wrap(
             f"<h1>Verify your email</h1>"
             f"<p>Hi {first_name}, please confirm your email to finish setting up your account.</p>"
@@ -47,7 +47,7 @@ class EmailMessage():
             f'<a href="{self.dashboard_url}">{self.dashboard_url}</a></p>'
         )
         text = (
-            f"Hi {first_name}, confirm your email for {self.business_name}.\n"
+            f"Hi {first_name}, confirm your email for {self.our_business_name}.\n"
             f"Link (expires in {expires_minutes} minutes): {verify_url}\n"
             f"Dashboard: {self.dashboard_url}"
         )
@@ -59,7 +59,7 @@ class EmailMessage():
         return result
 
     def password_reset_request(self, first_name, reset_url, ttl_minutes=60):
-        subject = f"Reset your {self.business_name} password"
+        subject = f"Reset your {self.our_business_name} password"
         html = self._wrap(
             f"<h1>Password reset</h1>"
             f"<p>Hi {first_name}, click the link below to reset your password.</p>"
@@ -67,7 +67,7 @@ class EmailMessage():
             f'<p><a href="{reset_url}">{reset_url}</a></p>'
         )
         text = (
-            f"Hi {first_name}, reset your {self.business_name} password.\n"
+            f"Hi {first_name}, reset your {self.our_business_name} password.\n"
             f"Link (expires in {ttl_minutes} minutes): {reset_url}"
         )
         result = {
@@ -78,7 +78,7 @@ class EmailMessage():
         return result
 
     def password_changed(self, first_name):
-        subject = f"Your {self.business_name} password was changed"
+        subject = f"Your {self.our_business_name} password was changed"
         html = self._wrap(
             f"<h1>Password changed</h1>"
             f"<p>Hi {first_name}, your password was just changed.</p>"
@@ -86,7 +86,7 @@ class EmailMessage():
             f'<p>Go to your dashboard: <a href="{self.dashboard_url}">{self.dashboard_url}</a></p>'
         )
         text = (
-            f"Hi {first_name}, your {self.business_name} password was changed.\n"
+            f"Hi {first_name}, your {self.our_business_name} password was changed.\n"
             f"If this wasn’t you, reset it immediately.\n"
             f"Dashboard: {self.dashboard_url}"
         )
