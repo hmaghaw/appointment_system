@@ -1,6 +1,6 @@
 from inspect import signature
-from n8n_email_client import EmailClient
-from email_message import EmailMessage  # has methods like user_signed_up(), email_verification(), etc.
+from .n8n_email_client import EmailClient
+from .email_message import EmailMessage  # has methods like user_signed_up(), email_verification(), etc.
 
 def send_email_notification(trigger_event: str, to: str, **kwargs):
     """

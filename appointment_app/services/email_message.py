@@ -2,7 +2,7 @@ class EmailMessage():
     def __init__(self, business_name="YourApp", support_url="https://example.com/support"):
         self.business_name = business_name
         self.support_url = support_url
-        self.dashboard_url = "dashboard_url"
+        self.dashboard_url = "halalcooking.ca"
         self.our_business_name = "Voxxel"
 
     def _wrap(self, body_html):
