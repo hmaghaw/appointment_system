@@ -16,10 +16,6 @@ DB_USER=
 DB_PASSWORD=
 DB_NAME=appointment_db
 
-# Google OAuth
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-
 # JWT Configuration
 JWT_SECRET_KEY=
 
@@ -38,13 +34,10 @@ TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
 
-# Gmail
-GMAIL_CLIENT_ID=
-GMAIL_CLIENT_SECRET=
-GMAIL_REFRESH_TOKEN=
-GMAIL_USER=hanyelgaml@ideationmax.com
-EMAIL_FROM=hanyelgaml@ideationmax.com
-GMAIL_REDIRECT_URI=https://api.halalcooking.ca/rest/oauth2-credential/callback
+# Email
+SEND_EMAIL_WEBHOOK=
+FROM_EMAIL=
+FROM_NAME=
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
@@ -59,10 +52,6 @@ DB_HOST=localhost
 DB_USER=
 DB_PASSWORD=
 DB_NAME=appointment_db
-
-# Google OAuth
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
 
 # JWT Configuration
 JWT_SECRET_KEY=
@@ -83,13 +72,10 @@ TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
 
-# Gmail
-GMAIL_CLIENT_ID=
-GMAIL_CLIENT_SECRET=
-GMAIL_REFRESH_TOKEN=
-GMAIL_USER=hanyelgaml@ideationmax.com
-EMAIL_FROM=hanyelgaml@ideationmax.com
-GMAIL_REDIRECT_URI=https://api.halalcooking.ca/rest/oauth2-credential/callback
+# Email
+SEND_EMAIL_WEBHOOK=
+FROM_EMAIL=
+FROM_NAME=
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """
