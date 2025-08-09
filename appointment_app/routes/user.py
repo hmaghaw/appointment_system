@@ -222,7 +222,7 @@ def validate_reset_token(token):
     if not result:
         return None
     
-    return result[0][0]  # Return user_id
+    return result['user_id']  # Return user_id
 
 
 def mark_token_used(token):
@@ -246,8 +246,12 @@ def send_password_reset_email(email, token):
             logger.warning(f"Attempted to send reset email to non-existent email: {email}")
             return True  # Don't reveal if email exists or not
             
-        user_id, first_name, last_name, email_verified = result[0]
-        
+        #user_id, first_name, last_name, email_verified = result[0]
+        user_id= result['id']
+        first_name= result['first_name']
+        last_name= result['last_name']
+        email_verified= result['email_verified']
+
         # Don't allow password reset for unverified emails
         if not email_verified:
             logger.warning(f"Attempted password reset for unverified email: {email}")
@@ -922,7 +926,7 @@ def reset_password():
     try:
         data = request.get_json()
         token = data.get('token')
-        new_password = data.get('new_password')
+        new_password = data.get('password')
         
         if not all([token, new_password]):
             return jsonify({
