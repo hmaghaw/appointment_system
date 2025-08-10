@@ -2,8 +2,11 @@ from flask import Blueprint, jsonify, request, current_app
 from database import get_db_cursor, get_db_connection
 import mysql.connector
 import logging
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 from functools import wraps
+
+# Type aliases
+BusinessVoicesResponse = List[Dict[str, Any]]
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -243,6 +246,84 @@ def set_default_language():
     except Exception as e:
         logger.error(f"Unexpected error in set_default_language: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to set default language: {str(e)}"}), 500
+
+@bp.route('/business/language_voices', methods=['POST'])
+@business_required
+def get_business_language_voices() -> tuple[jsonify, int]:
+    """
+    Get all language voices for a business.
+    
+    Request Body:
+        {
+            "business_id": 22
+        }
+        
+    Returns:
+        JSON response with list of language voices for the business
+        [
+            {
+                "language_voice_id": 11,
+                "voice_name": "poly.kjhjh",
+                "language_code": "en",
+                "region_code": "US",
+                "voice_provider": "aws",
+                "is_default": true
+            },
+            ...
+        ]
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+        
+    business_id = data.get('business_id')
+    
+    if not business_id:
+        return jsonify({"error": "business_id is required"}), 400
+    
+    logger.info(f"Fetching language voices for business ID: {business_id}")
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(dictionary=True) as cursor:
+                # Get all language voices for the business's languages
+                cursor.execute("""
+                    SELECT 
+                        lv.language_voice_id,
+                        lv.voice_name,
+                        lv.language_code,
+                        lv.region_code,
+                        lv.voice_provider,
+                        lv.is_default
+                    FROM language_voice lv
+                    JOIN business_languages bl ON lv.language_code = bl.language_code
+                    WHERE bl.business_id = %s
+                    ORDER BY 
+                        lv.is_default DESC,
+                        lv.language_code,
+                        lv.region_code
+                """, (business_id,))
+                
+                voices = cursor.fetchall()
+                
+                # Convert to the required response format
+                result = [{
+                    "language_voice_id": v["language_voice_id"],
+                    "voice_name": v["voice_name"],
+                    "language_code": v["language_code"],
+                    "region_code": v["region_code"],
+                    "voice_provider": v["voice_provider"],
+                    "is_default": bool(v["is_default"])
+                } for v in voices]
+                
+                return jsonify(result)
+                
+    except mysql.connector.Error as e:
+        logger.error(f"Database error in get_business_language_voices: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error in get_business_language_voices: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch language voices: {str(e)}"}), 500
 
 @bp.route('/list_supported_languages', methods=['GET'])
 def list_supported_languages():
