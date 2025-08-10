@@ -286,17 +286,19 @@ def get_business_language_voices() -> tuple[jsonify, int]:
     try:
         with get_db_connection() as conn:
             with conn.cursor(dictionary=True) as cursor:
-                # Get all language voices for the business's languages
+                # Get all language voices for the business's languages with language names
                 cursor.execute("""
                     SELECT 
                         lv.language_voice_id,
                         lv.voice_name,
                         lv.language_code,
+                        l.language_name,
                         lv.region_code,
                         lv.voice_provider,
                         lv.is_default
                     FROM language_voice lv
                     JOIN business_languages bl ON lv.language_code = bl.language_code
+                    JOIN language l ON lv.language_code = l.language_code
                     WHERE bl.business_id = %s
                     ORDER BY 
                         lv.is_default DESC,
@@ -311,6 +313,7 @@ def get_business_language_voices() -> tuple[jsonify, int]:
                     "language_voice_id": v["language_voice_id"],
                     "voice_name": v["voice_name"],
                     "language_code": v["language_code"],
+                    "language_name": v["language_name"],
                     "region_code": v["region_code"],
                     "voice_provider": v["voice_provider"],
                     "is_default": bool(v["is_default"])

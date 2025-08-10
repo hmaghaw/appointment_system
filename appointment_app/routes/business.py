@@ -595,7 +595,7 @@ def list_business_phones():
                 if not cursor.fetchone():
                     return jsonify({"error": f"Business with ID {business_id} not found"}), 404
                 
-                # Query business phones with language_voice_id
+                # Query business phones with language_voice_id and language details
                 query = """
                     SELECT 
                         bp.business_phone_id,
@@ -609,9 +609,11 @@ def list_business_phones():
                         bp.updated_at,
                         lv.voice_name,
                         lv.language_code,
-                        lv.region_code
+                        lv.region_code,
+                        l.language_name
                     FROM business_phone bp
                     LEFT JOIN language_voice lv ON bp.language_voice_id = lv.language_voice_id
+                    LEFT JOIN language l ON lv.language_code = l.language_code
                     WHERE bp.business_id = %s
                     ORDER BY bp.is_primary DESC, bp.created_at ASC
                 """
