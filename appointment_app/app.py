@@ -44,6 +44,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.call_meta import bp as call_history_bp
     from appointment_app.routes.call_conversation import bp as call_conversation_bp
     from appointment_app.routes.translations import bp as translations_bp
+    from appointment_app.routes.languages import bp as languages_bp
     from appointment_app.routes.user import bp as user_bp
     from appointment_app.routes.business_hours import bp as business_hours_bp
     from appointment_app.routes.twilio import bp as twilio_bp
@@ -58,6 +59,7 @@ def create_app(config_dict=None):
     app.register_blueprint(call_history_bp)
     app.register_blueprint(call_conversation_bp)
     app.register_blueprint(translations_bp)
+    app.register_blueprint(languages_bp)
     app.register_blueprint(business_hours_bp, url_prefix='/api')
     app.register_blueprint(twilio_bp)  # URL prefix is defined in the Blueprint
     app.register_blueprint(user_bp, url_prefix='/api/auth')

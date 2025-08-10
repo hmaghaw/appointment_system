@@ -100,6 +100,45 @@ CREATE TABLE IF NOT EXISTS business_messages (
     INDEX idx_business_id (business_id)
 ) ENGINE=InnoDB;
 
+-- Languages
+CREATE TABLE IF NOT EXISTS language (
+    language_code VARCHAR(10) NOT NULL,
+    language_name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (language_code)
+) ENGINE=InnoDB;
+
+-- Language voices with surrogate PK and unique constraint
+CREATE TABLE IF NOT EXISTS language_voice (
+    language_voice_id INT AUTO_INCREMENT NOT NULL,
+    language_code     VARCHAR(10) NOT NULL,
+    region_code       VARCHAR(20) NOT NULL,
+    voice_provider    VARCHAR(100) NOT NULL,
+    voice_name        VARCHAR(120) NOT NULL,
+    is_default BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (language_voice_id),
+    CONSTRAINT fk_language_voice_language FOREIGN KEY (language_code)
+        REFERENCES language (language_code)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT uq_language_voice UNIQUE (language_code, region_code, voice_provider, voice_name)
+) ENGINE=InnoDB;
+
+-- Business Languages
+CREATE TABLE IF NOT EXISTS business_languages (
+    business_id INT NOT NULL,
+    language_code VARCHAR(10) NOT NULL DEFAULT 'en',
+    is_default BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (business_id, language_code),
+    CONSTRAINT fk_bl_business FOREIGN KEY (business_id)
+        REFERENCES business (business_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_bl_language FOREIGN KEY (language_code)
+        REFERENCES language (language_code)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- Business Phone Numbers
 CREATE TABLE IF NOT EXISTS business_phone (
     business_phone_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -107,12 +146,14 @@ CREATE TABLE IF NOT EXISTS business_phone (
     phone_sid VARCHAR(34) NOT NULL COMMENT 'Twilio Phone Number SID (starts with PN)',
     friendly_name VARCHAR(255) NOT NULL COMMENT 'User-friendly name for the phone number',
     business_phone VARCHAR(20) NOT NULL,
+    language_voice_id INT,
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_business_phone (business_phone),
     UNIQUE KEY unique_phone_sid (phone_sid),
     FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
+    FOREIGN KEY (language_voice_id) REFERENCES language_voice(language_voice_id) ON DELETE SET NULL,
     INDEX idx_phone_sid (phone_sid)
 ) ENGINE=InnoDB;
 
@@ -310,3 +351,4 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
     INDEX idx_expires_at (expires_at),
     INDEX idx_used (used)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

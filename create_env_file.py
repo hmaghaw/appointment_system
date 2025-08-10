@@ -11,7 +11,7 @@ STRIPE_API_KEY=
 STRIPE_ENDPOINT_SECRET=
 
 # Database Configuration
-DB_HOST=localhost
+DB_HOST=db
 DB_USER=
 DB_PASSWORD=
 DB_NAME=appointment_db
