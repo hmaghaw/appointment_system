@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, current_app
 from database import get_db_cursor, get_db_connection
 import mysql.connector
 import logging
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Tuple, Optional, Union
 from functools import wraps
 
 # Type aliases
@@ -324,6 +324,87 @@ def get_business_language_voices() -> tuple[jsonify, int]:
     except Exception as e:
         logger.error(f"Unexpected error in get_business_language_voices: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to fetch language voices: {str(e)}"}), 500
+
+@bp.route('/business/phone/language_voice', methods=['PUT'])
+def update_business_phone_voice() -> tuple[jsonify, int]:
+    """
+    Update the language voice for a business phone.
+    
+    Request Body:
+        {
+            "business_phone_id": 32,
+            "language_voice_id": 3
+        }
+        
+    Returns:
+        JSON response with success or error message
+        {
+            "message": "Successfully updated language voice for phone",
+            "business_phone_id": 32,
+            "language_voice_id": 3
+        }
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+        
+    business_phone_id = data.get('business_phone_id')
+    language_voice_id = data.get('language_voice_id')
+    
+    if not business_phone_id or language_voice_id is None:
+        return jsonify({"error": "Both business_phone_id and language_voice_id are required"}), 400
+    
+    logger.info(f"Updating language voice for business_phone_id: {business_phone_id} to language_voice_id: {language_voice_id}")
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(dictionary=True) as cursor:
+                # Check if the phone exists and get its business_id for verification
+                cursor.execute(
+                    "SELECT business_id FROM business_phone WHERE business_phone_id = %s",
+                    (business_phone_id,)
+                )
+                phone = cursor.fetchone()
+                
+                if not phone:
+                    return jsonify({"error": "Business phone not found"}), 404
+                
+                # If language_voice_id is provided, verify it exists
+                if language_voice_id is not None:
+                    cursor.execute(
+                        "SELECT 1 FROM language_voice WHERE language_voice_id = %s",
+                        (language_voice_id,)
+                    )
+                    if not cursor.fetchone():
+                        return jsonify({"error": f"Language voice with ID {language_voice_id} not found"}), 404
+                
+                # Update the language_voice_id
+                cursor.execute(
+                    """
+                    UPDATE business_phone 
+                    SET language_voice_id = %s 
+                    WHERE business_phone_id = %s
+                    """,
+                    (language_voice_id, business_phone_id)
+                )
+                
+                if cursor.rowcount == 0:
+                    return jsonify({"error": "No changes made or phone not found"}), 404
+                
+                conn.commit()
+                
+                return jsonify({
+                    "message": "Successfully updated language voice for phone",
+                    "business_phone_id": business_phone_id,
+                    "language_voice_id": language_voice_id
+                })
+                
+    except mysql.connector.Error as e:
+        logger.error(f"Database error in update_business_phone_voice: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error in update_business_phone_voice: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to update phone language voice: {str(e)}"}), 500
 
 @bp.route('/list_supported_languages', methods=['GET'])
 def list_supported_languages():
