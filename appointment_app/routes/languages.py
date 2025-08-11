@@ -543,11 +543,25 @@ def add_business_language():
                     VALUES (%s, %s, %s)
                 """, (business_id, language_code, is_default))
                 
-                conn.commit()
-                return jsonify({
-                    "message": f"Language '{language_code}' added successfully",
-                    "is_default": is_default
-                }), 201
+                # If we get here, the operation was successful
+                # Now translate all existing services to the new language
+                try:
+                    # Pass the existing cursor to maintain the transaction
+                    translate_existing_services(business_id, language_code, cursor)
+                    conn.commit()
+                    logger.info(f"Successfully translated services to {language_code} for business {business_id}")
+                    return jsonify({
+                        "message": f"Language '{language_code}' added and services translated successfully",
+                        "is_default": is_default
+                    }), 201
+                except Exception as e:
+                    logger.error(f"Error translating services to {language_code}: {str(e)}", exc_info=True)
+                    conn.rollback()
+                    return jsonify({
+                        "message": f"Language '{language_code}' added but failed to translate existing services",
+                        "error": str(e),
+                        "is_default": is_default
+                    }), 207  # 207 Multi-Status
                 
     except mysql.connector.Error as e:
         logger.error(f"Database error in add_business_language: {str(e)}", exc_info=True)
@@ -555,6 +569,128 @@ def add_business_language():
     except Exception as e:
         logger.error(f"Unexpected error in add_business_language: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to add language: {str(e)}"}), 500
+
+def translate_existing_services(business_id: int, language_code: str, cursor=None) -> None:
+    """
+    Translate all services for a business into a new language.
+    
+    Args:
+        business_id: The ID of the business
+        language_code: The target language code to translate to
+        cursor: Optional database cursor (will create one if not provided)
+        
+    Raises:
+        ValueError: If business has no default language set
+        Exception: For database or translation errors
+    """
+    from appointment_app.services.ai_translate import AITranslate
+    from appointment_app.routes.create_service_endpoint import insert_service_translation
+    
+    trans = AITranslate()
+    close_connection = False
+    
+    try:
+        # Use provided cursor or create a new one
+        if cursor is None:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            close_connection = True
+            
+        # 1. Get the default language for the business
+        cursor.execute("""
+            SELECT language_code 
+            FROM business_languages 
+            WHERE business_id = %s AND is_default = TRUE
+            LIMIT 1
+        """, (business_id,))
+        
+        default_lang_result = cursor.fetchone()
+        if not default_lang_result:
+            raise ValueError(f"No default language set for business {business_id}")
+            
+        default_language_code = default_lang_result['language_code']
+        
+        # If target language is same as default, nothing to do
+        if language_code == default_language_code:
+            return
+            
+        # 2. Get all services in the default language
+        cursor.execute("""
+            SELECT s.service_id, st.name, st.description
+            FROM service s
+            JOIN service_translation st ON s.service_id = st.service_id
+            WHERE s.business_id = %s 
+            AND st.language_code = %s
+        """, (business_id, default_language_code))
+        
+        services = cursor.fetchall()
+        
+        if not services:
+            logger.info(f"No services found for business {business_id} in default language {default_language_code}")
+            return
+            
+        # 3. Translate each service to the target language
+        for service in services:
+            service_id = service['service_id']
+            
+            # Check if translation already exists
+            cursor.execute("""
+                SELECT 1 
+                FROM service_translation 
+                WHERE service_id = %s AND language_code = %s
+                LIMIT 1
+            """, (service_id, language_code))
+            
+            if cursor.fetchone():
+                logger.debug(f"Translation for service {service_id} in {language_code} already exists, skipping")
+                continue
+                
+            # Translate name and description
+            try:
+                translated_name = trans.translate(
+                    default_language_code, 
+                    language_code, 
+                    service['name']
+                )
+                
+                translated_description = ""
+                if service['description']:
+                    translated_description = trans.translate(
+                        default_language_code,
+                        language_code,
+                        service['description']
+                    )
+                
+                # Insert the translation
+                insert_service_translation(
+                    cursor,
+                    service_id,
+                    language_code,
+                    translated_name,
+                    translated_description
+                )
+                
+                logger.info(f"Translated service {service_id} to {language_code}")
+                
+            except Exception as e:
+                logger.error(f"Error translating service {service_id} to {language_code}: {str(e)}")
+                continue
+                
+        # Commit the transaction if we created the connection
+        if close_connection and conn:
+            conn.commit()
+            
+    except Exception as e:
+        logger.error(f"Error in translate_existing_services: {str(e)}", exc_info=True)
+        if close_connection and conn:
+            conn.rollback()
+        raise
+        
+    finally:
+        if close_connection and 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+
 
 @bp.route('/business/language', methods=['DELETE'])
 @business_required
@@ -610,6 +746,15 @@ def remove_business_language():
                     "DELETE FROM business_languages WHERE business_id = %s AND language_code = %s",
                     (business_id, language_code)
                 )
+
+                cursor.execute(
+                    """DELETE st
+                        FROM service_translation st
+                        JOIN service s ON s.service_id = st.service_id
+                        WHERE s.business_id = %s
+                          AND st.language_code = %s""",
+                    (business_id, language_code)
+                )
                 
                 # If we deleted the default language, set another one as default
                 if cursor.rowcount > 0:
@@ -620,7 +765,8 @@ def remove_business_language():
                         ORDER BY language_code = 'en' DESC, language_code
                         LIMIT 1
                     """, (business_id,))
-                
+
+
                 conn.commit()
                 return jsonify({"message": f"Language '{language_code}' removed successfully"})
                 

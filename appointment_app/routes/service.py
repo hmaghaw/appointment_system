@@ -87,7 +87,7 @@ def list_services():
                 query += " AND s.is_active = TRUE"
                 
             # Add ordering
-            query += " ORDER BY name"
+            query += " ORDER BY s.business_id"
             
             # Execute the query with parameters
             cursor.execute(query, (language, business_id))

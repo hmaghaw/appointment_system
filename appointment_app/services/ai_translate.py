@@ -42,25 +42,26 @@ class AITranslate:
         Returns only the translated text (no extra commentary).
         """
         system_prompt = self._build_system_prompt(from_language, to_language, text)
+        for i in range(1,5):
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": text},
+                ],
+                temperature=0,  # deterministic for translations
+            )
+            # Grab the assistant's message content safely
+            content: Optional[str] = None
+            if resp.choices and resp.choices[0].message:
+                content = resp.choices[0].message.content
+            if content:
+                return content.strip()
 
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": text},
-            ],
-            temperature=0,  # deterministic for translations
-        )
+        # if not content:
+        #     raise RuntimeError("No translation returned by the model.")
 
-        # Grab the assistant's message content safely
-        content: Optional[str] = None
-        if resp.choices and resp.choices[0].message:
-            content = resp.choices[0].message.content
-
-        if not content:
-            raise RuntimeError("No translation returned by the model.")
-
-        return content.strip()
+        return text
 
 
 # # Example usage:
