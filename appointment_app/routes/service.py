@@ -71,10 +71,11 @@ def list_services():
                     s.buffer_after_minutes,
                     s.is_active,
                     s.created_at,
-                    s.updated_at
+                    s.updated_at,
+                    st.translation_id
                 FROM service s
                 LEFT JOIN (
-                    SELECT service_id, name, description 
+                    SELECT service_id, translation_id, name, description 
                     FROM service_translation 
                     WHERE language_code = %s
                 ) st ON s.service_id = st.service_id
@@ -142,6 +143,76 @@ def list_services():
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/translation', methods=['PUT'])
+def update_service_translation():
+    """
+    Update a service translation by translation_id.
+
+    Request body: {
+        "translation_id": 54,         # Required: ID of the translation to update
+        "name": "Updated Name",       # Optional: New name for the service in this language
+        "description": "New desc"     # Optional: New description for the service in this language
+    }
+
+    Returns: Success message or error
+    """
+    data = request.get_json() or {}
+    translation_id = data.get('translation_id')
+    name = data.get('name')
+    description = data.get('description')
+
+    if not translation_id:
+        return jsonify({"error": "translation_id is required"}), 400
+
+    if not name and not description:
+        return jsonify({"error": "At least one of 'name' or 'description' must be provided"}), 400
+
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            # Check if translation exists
+            cursor.execute(
+                "SELECT translation_id FROM service_translation WHERE translation_id = %s",
+                (translation_id,)
+            )
+            if not cursor.fetchone():
+                return jsonify({"error": "Service translation not found"}), 404
+
+            # Build dynamic SET clause
+            fields = []
+            values = []
+
+            if name is not None:
+                fields.append("name = %s")
+                values.append(name)
+
+            if description is not None:
+                fields.append("description = %s")
+                values.append(description)
+
+            values.append(translation_id)  # For WHERE clause
+
+            update_query = f"""
+                UPDATE service_translation
+                SET {', '.join(fields)}
+                WHERE translation_id = %s
+            """
+            cursor.execute(update_query, tuple(values))
+
+            return jsonify({
+                "status": "success",
+                "message": f"Service translation {translation_id} has been updated",
+                "translation_id": translation_id
+            })
+
+    except mysql.connector.Error as err:
+        error_msg = f"Database error: {str(err)}"
+        print(error_msg)
+        return jsonify({"error": error_msg}), 500
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        print(error_msg)
+        return jsonify({"error": error_msg}), 500
 
 @bp.route('', methods=['DELETE'])
 def delete_service():
