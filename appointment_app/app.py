@@ -57,7 +57,7 @@ def create_app(config_dict=None):
     app.register_blueprint(availability_bp)
     app.register_blueprint(business_bp)
     app.register_blueprint(customers_bp)
-    app.register_blueprint(service_bp)
+    app.register_blueprint(service_bp, url_prefix='/api/services')
     app.register_blueprint(call_history_bp)
     app.register_blueprint(call_conversation_bp)
     app.register_blueprint(translations_bp)
