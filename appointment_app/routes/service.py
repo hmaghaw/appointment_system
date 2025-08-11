@@ -277,128 +277,83 @@ def delete_service():
         print(error_msg)  # Log the error for debugging
         return jsonify({"error": error_msg}), 500
 
-@bp.route('', methods=['POST', 'PUT'])
-@validate_business_id
-def upsert_service():
+@bp.route('', methods=['PUT', 'OPTIONS'])
+def update_service():
     """
-    Create or update a service
-    
-    Request body: {
-        "service_id": 1,              # Required for update, omit for create
-        "business_id": 123,           # Required, validated by decorator
-        "name": "Haircut",            # Required
-        "description": "Basic haircut service",
-        "duration_minutes": 30,       # Required
-        "price": 25.00,
-        "buffer_before_minutes": 5,
-        "buffer_after_minutes": 5,
-        "is_active": true             # Optional, defaults to true
+    Update a service record by service_id.
+
+    Request body example:
+    {
+        "service_id": 11,                 # Required
+        "duration_minutes": 30,           # Optional
+        "price": 100,                      # Optional
+        "buffer_before_minutes": 10,      # Optional
+        "is_active": true                  # Optional
     }
-    
-    Returns: The created/updated service
+
+    Returns: Success message or error
     """
-    data = request.get_json() or {}
-    business_id = data.get('business_id')
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    data = request.get_json(silent=True) or {}
     service_id = data.get('service_id')
-    
-    # Validate required fields
-    required_fields = ['name', 'duration_minutes']
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return jsonify({
-            "error": f"Missing required fields: {', '.join(missing_fields)}"
-        }), 400
-    
-    # Prepare service data
-    service_data = {
-        'business_id': business_id,
-        'name': data['name'],
-        'description': data.get('description', ''),
-        'duration_minutes': data['duration_minutes'],
-        'price': data.get('price'),
-        'buffer_before_minutes': data.get('buffer_before_minutes', 0),
-        'buffer_after_minutes': data.get('buffer_after_minutes', 0),
-        'is_active': data.get('is_active', True) if service_id is None else data.get('is_active', True)
-    }
-    
+    duration_minutes = data.get('duration_minutes')
+    price = data.get('price')
+    buffer_before_minutes = data.get('buffer_before_minutes')
+    is_active = data.get('is_active')
+
+    if not service_id:
+        return jsonify({"error": "service_id is required"}), 400
+
+    if all(v is None for v in [duration_minutes, price, buffer_before_minutes, is_active]):
+        return jsonify({"error": "At least one field to update must be provided"}), 400
+
     try:
         with get_db_cursor(commit=True) as cursor:
-            if service_id:
-                # Update existing service
-                # First verify the service belongs to the business
-                cursor.execute(
-                    "SELECT service_id FROM service WHERE service_id = %s AND business_id = %s",
-                    (service_id, business_id)
-                )
-                if not cursor.fetchone():
-                    return jsonify({"error": "Service not found or access denied"}), 404
-                
-                # Build the update query
-                set_clause = ", ".join([f"{k} = %s" for k in service_data.keys()])
-                values = list(service_data.values()) + [service_id]
-                
-                # Build the query with parameter placeholders
-                query = f"""
-                    UPDATE service 
-                    SET {set_clause}, updated_at = CURRENT_TIMESTAMP
-                    WHERE service_id = %s
-                """
-                
-                # Execute with all parameters in the correct order
-                cursor.execute(query, values)
-                
-                action = "updated"
-            else:
-                # Create new service
-                columns = ", ".join(service_data.keys())
-                placeholders = ", ".join(["%s"] * len(service_data))
-                
-                cursor.execute(
-                    f"""
-                    INSERT INTO service ({columns})
-                    VALUES ({placeholders})
-                    """,
-                    list(service_data.values())
-                )
-                service_id = cursor.lastrowid
-                action = "created"
-            
-            # Get the created/updated service
+            # Check if service exists
             cursor.execute(
-                """
-                SELECT 
-                    service_id, name, description, duration_minutes, 
-                    price, buffer_before_minutes, buffer_after_minutes, is_active
-                FROM service 
-                WHERE service_id = %s
-                """,
+                "SELECT service_id FROM service WHERE service_id = %s",
                 (service_id,)
             )
+            if not cursor.fetchone():
+                return jsonify({"error": "Service not found"}), 404
 
-            # Get the column names from the cursor
-            column_names = cursor.column_names
+            # Build dynamic SET clause
+            fields, values = [], []
+            if duration_minutes is not None:
+                fields.append("duration_minutes = %s")
+                values.append(duration_minutes)
+            if price is not None:
+                fields.append("price = %s")
+                values.append(price)
+            if buffer_before_minutes is not None:
+                fields.append("buffer_before_minutes = %s")
+                values.append(buffer_before_minutes)
+            if is_active is not None:
+                fields.append("is_active = %s")
+                values.append(is_active)
 
-            # Fetch one row of results
-            row_data = cursor.fetchone()
+            values.append(service_id)
 
-            # Create an empty dictionary to store the result
-            service = {}
+            update_query = f"""
+                UPDATE service
+                SET {', '.join(fields)}
+                WHERE service_id = %s
+            """
+            cursor.execute(update_query, tuple(values))
 
-            # Pair each column name with its corresponding value and add to the dictionary
-            for i, column_name in enumerate(column_names):
-                service[column_name] = row_data[column_name]
-            
-            # Convert decimal to float for JSON serialization
-            if 'price' in service and service['price'] is not None:
-                service['price'] = float(service['price'])
-            
             return jsonify({
                 "status": "success",
-                "message": f"Service {action} successfully",
-                "service": service
+                "message": f"Service {service_id} has been updated",
+                "service_id": service_id
             })
-            
+
     except mysql.connector.Error as err:
-        return jsonify({"error": f"Database error: {str(err)}"}), 500
+        error_msg = f"Database error: {str(err)}"
+        print(error_msg)
+        return jsonify({"error": error_msg}), 500
     except Exception as e:
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+        error_msg = f"Unexpected error: {str(e)}"
+        print(error_msg)
+        return jsonify({"error": error_msg}), 500
