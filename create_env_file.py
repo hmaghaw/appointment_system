@@ -40,6 +40,8 @@ FROM_EMAIL=
 FROM_NAME=
 
 FRONTEND_URL=https://halalcooking.ca
+
+OPENAI_API_KEY=
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
@@ -80,6 +82,8 @@ FROM_EMAIL=
 FROM_NAME=
 
 FRONTEND_URL=https://1b508cc8-944c-4d37-9ed6-0934fa85b53c-00-2jwasb0kbfe30.spock.replit.dev
+
+OPENAI_API_KEY=
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """

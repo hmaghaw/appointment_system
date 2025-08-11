@@ -40,6 +40,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.appointments import bp as appointments_bp
     from appointment_app.routes.availability import bp as availability_bp
     from appointment_app.routes.business import bp as business_bp
+    from appointment_app.routes.service import bp as service_bp
     from appointment_app.routes.customers import bp as customers_bp
     from appointment_app.routes.call_meta import bp as call_history_bp
     from appointment_app.routes.call_conversation import bp as call_conversation_bp
@@ -56,6 +57,7 @@ def create_app(config_dict=None):
     app.register_blueprint(availability_bp)
     app.register_blueprint(business_bp)
     app.register_blueprint(customers_bp)
+    app.register_blueprint(service_bp)
     app.register_blueprint(call_history_bp)
     app.register_blueprint(call_conversation_bp)
     app.register_blueprint(translations_bp)
@@ -64,7 +66,7 @@ def create_app(config_dict=None):
     app.register_blueprint(twilio_bp)  # URL prefix is defined in the Blueprint
     app.register_blueprint(user_bp, url_prefix='/api/auth')
     app.register_blueprint(stripe_bp)  # Stripe webhook and payment endpoints
-    app.register_blueprint(subscription_bp, url_prefix='/api')  # Subscription plan endpoints
+    app.register_blueprint(subscription_bp, url_prefix='/api/subscriptions')  # Subscription plan endpoints
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
