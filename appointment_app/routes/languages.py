@@ -151,16 +151,18 @@ def get_language_data() -> Dict[str, Any]:
         print(f"Database error in get_language_data: {e}")
         raise
 
-@bp.route('/business/set_default_language', methods=['POST'])
+@bp.route('/business/update_language', methods=['POST'])
 @business_required
-def set_default_language():
+def update_business_language():
     """
-    Set a language as default for a business.
+    Update business language settings including default language and voice.
     
     Request Body:
         {
-            "business_id": 32,
-            "language_code": "fr"
+            "business_id": 19,
+            "language_code": "am",
+            "language_voice_id": 12,
+            "is_default": true
         }
         
     Returns:
@@ -172,63 +174,88 @@ def set_default_language():
         
     business_id = data.get('business_id')
     language_code = data.get('language_code')
+    language_voice_id = data.get('language_voice_id')
+    is_default = data.get('is_default', False)  # Default to False if not provided
     
-    logger.info(f"Received request to set default language. Business ID: {business_id}, Language: {language_code}")
-    
-    if not language_code:
-        return jsonify({"error": "language_code is required"}), 400
+    if not business_id or not language_code:
+        return jsonify({"error": "Both business_id and language_code are required"}), 400
         
     try:
         with get_db_connection() as conn:
             with conn.cursor(dictionary=True) as cursor:
-                # Check if the language exists for this business
-                cursor.execute("""
-                    SELECT 1 FROM business_languages 
-                    WHERE business_id = %s AND language_code = %s
-                """, (business_id, language_code))
-                
+                # Check if the business exists
+                cursor.execute("SELECT 1 FROM business WHERE business_id = %s", (business_id,))
                 if not cursor.fetchone():
-                    return jsonify({
-                        "error": f"Language '{language_code}' not found for this business"
-                    }), 404
+                    return jsonify({"error": "Business not found"}), 404
                 
+                # Check if the language is already added for this business
+                cursor.execute(
+                    "SELECT 1 FROM business_languages WHERE business_id = %s AND language_code = %s",
+                    (business_id, language_code)
+                )
+                if not cursor.fetchone():
+                    return jsonify({"error": f"Language {language_code} is not added for this business"}), 400
+                
+                # If language_voice_id is provided, verify it exists and matches the language_code
+                if language_voice_id is not None:
+                    cursor.execute(
+                        """
+                        SELECT 1 FROM language_voice 
+                        WHERE language_voice_id = %s AND language_code = %s
+                        """,
+                        (language_voice_id, language_code)
+                    )
+                    if not cursor.fetchone():
+                        return jsonify({
+                            "error": f"Invalid language_voice_id {language_voice_id} for language {language_code}"
+                        }), 400
+                
+                # Start transaction
                 try:
-                    # Start transaction if not already in one
-                    if not conn.in_transaction:
-                        conn.start_transaction()
+                    update_params = []
+                    update_fields = []
                     
-                    # Set all languages to not default for this business
-                    cursor.execute("""
-                        UPDATE business_languages 
-                        SET is_default = FALSE 
-                        WHERE business_id = %s
-                    """, (business_id,))
+                    # If making this the default language, update all other languages first
+                    if is_default:
+                        cursor.execute(
+                            "UPDATE business_languages SET is_default = FALSE WHERE business_id = %s",
+                            (business_id,)
+                        )
+                        update_fields.append("is_default = TRUE")
                     
-                    # Set the specified language as default
-                    cursor.execute("""
-                        UPDATE business_languages 
-                        SET is_default = TRUE 
-                        WHERE business_id = %s AND language_code = %s
-                    """, (business_id, language_code))
+                    # Add language_voice_id to update if provided
+                    if language_voice_id is not None:
+                        update_fields.append("language_voice_id = %s")
+                        update_params.append(language_voice_id)
                     
-                    # Verify the update
-                    cursor.execute("""
-                        SELECT COUNT(*) as updated 
-                        FROM business_languages 
-                        WHERE business_id = %s AND language_code = %s AND is_default = TRUE
-                    """, (business_id, language_code))
+                    # Only proceed with the update if we have fields to update
+                    if update_fields:
+                        update_query = f"""
+                            UPDATE business_languages 
+                            SET {', '.join(update_fields)}
+                            WHERE business_id = %s AND language_code = %s
+                        """
+                        update_params.extend([business_id, language_code])
+                        cursor.execute(update_query, tuple(update_params))
                     
-                    updated = cursor.fetchone()['updated']
+                    # Update the business record with the new default language if needed
+                    if is_default:
+                        cursor.execute(
+                            """
+                            UPDATE business 
+                            SET default_language = %s
+                            WHERE business_id = %s
+                            """,
+                            (language_code, business_id)
+                        )
                     
-                    if updated == 0:
-                        if conn.in_transaction:
-                            conn.rollback()
-                        return jsonify({"error": "Failed to set default language"}), 500
-                        
-                    if conn.in_transaction:
-                        conn.commit()
+                    # Commit the transaction
+                    conn.commit()
                     return jsonify({
-                        "message": f"Successfully set '{language_code}' as default language"
+                        "message": f"Successfully updated language settings for business {business_id}",
+                        "language_code": language_code,
+                        "language_voice_id": language_voice_id,
+                        "is_default": is_default
                     })
                     
                 except Exception as e:
@@ -471,9 +498,19 @@ def list_business_languages():
                 
             # Get all languages for the business
             cursor.execute("""
-                SELECT bl.language_code, l.language_name, bl.is_default
+                SELECT 
+                    bl.language_code, 
+                    l.language_name, 
+                    bl.is_default, 
+                    bl.language_voice_id,
+                    lv.voice_name,
+                    lv.region_code,
+                    lv.voice_provider,
+                    lv.is_default as voice_is_default,
+                    CONCAT(bl.language_code, '-', lv.region_code, ' ', lv.voice_name) as display_name
                 FROM business_languages bl
                 JOIN language l ON bl.language_code = l.language_code
+                LEFT JOIN language_voice lv ON bl.language_voice_id = lv.language_voice_id
                 WHERE bl.business_id = %s
                 ORDER BY bl.is_default DESC, l.language_name
             """, (business_id,))
@@ -536,12 +573,19 @@ def add_business_language():
                 )
                 count = cursor.fetchone()['count']
                 is_default = count == 0  # First language will be default
-                
+
+                cursor.execute(
+                    "SELECT language_voice_id FROM language_voice WHERE language_code = %s LIMIT 1",
+                    (language_code, )
+                )
+                result = cursor.fetchone()
+                default_voice_id = result['language_voice_id']
+
                 # Add the language
                 cursor.execute("""
-                    INSERT INTO business_languages (business_id, language_code, is_default)
-                    VALUES (%s, %s, %s)
-                """, (business_id, language_code, is_default))
+                    INSERT INTO business_languages (business_id, language_code, language_voice_id, is_default)
+                    VALUES (%s, %s, %s, %s)
+                """, (business_id, language_code,default_voice_id, is_default))
                 
                 # If we get here, the operation was successful
                 # Now translate all existing services to the new language
@@ -690,6 +734,68 @@ def translate_existing_services(business_id: int, language_code: str, cursor=Non
         if close_connection and 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
+
+
+@bp.route('/language/voices', methods=['POST'])
+def list_language_voices():
+    """
+    List all available voices for a specific language.
+    
+    Request Body:
+        {
+            "language_code": "ar"  # ISO 639-1 language code (e.g., "en", "es", "fr")
+        }
+        
+    Returns:
+        JSON response with list of available voices for the language
+        [
+            {
+                "language_voice_id": 1,
+                "language_code": "ar",
+                "region_code": "SA",
+                "voice_provider": "aws",
+                "voice_name": "Hala",
+                "is_default": true
+            },
+            ...
+        ]
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+        
+    language_code = data.get('language_code')
+    if not language_code:
+        return jsonify({"error": "language_code is required"}), 400
+    
+    try:
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute("""
+                SELECT 
+                    language_voice_id,
+                    language_code,
+                    region_code,
+                    voice_provider,
+                    voice_name,
+                    is_default
+                FROM language_voice
+                WHERE language_code = %s
+                ORDER BY is_default DESC, region_code, voice_name
+            """, (language_code,))
+            
+            voices = cursor.fetchall()
+            
+            if not voices:
+                return jsonify({"message": f"No voices found for language: {language_code}"}), 404
+                
+            return jsonify(voices)
+            
+    except mysql.connector.Error as e:
+        logger.error(f"Database error in list_language_voices: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error in list_language_voices: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch language voices: {str(e)}"}), 500
 
 
 @bp.route('/business/language', methods=['DELETE'])

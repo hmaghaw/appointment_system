@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS business_languages (
     business_id INT NOT NULL,
     language_code VARCHAR(10) NOT NULL DEFAULT 'en',
     is_default BOOLEAN NOT NULL DEFAULT TRUE,
+    language_voice_id INT,
     PRIMARY KEY (business_id, language_code),
     CONSTRAINT fk_bl_business FOREIGN KEY (business_id)
         REFERENCES business (business_id)

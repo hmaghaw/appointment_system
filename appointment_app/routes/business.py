@@ -161,16 +161,22 @@ def get_business_by_phone():
         with get_db_cursor() as cursor:
             # Search for business by phone number
             cursor.execute("""
-                SELECT 
-                    b.business_id, 
-                    b.name, 
+                SELECT
+                    b.business_id,
+                    b.name,
                     b.timezone,
                     b.status,
                     b.created_at,
                     b.updated_at,
-                    bp.business_phone
+                    bp.business_phone,
+                    lv.language_voice_id,
+                    lv.language_code,
+                    lv.region_code,
+                    CONCAT(lv.language_code, '-', lv.region_code) AS voice_language,
+                    lv.voice_name
                 FROM business b
                 JOIN business_phone bp ON b.business_id = bp.business_id
+                LEFT JOIN language_voice lv ON bp.language_voice_id = lv.language_voice_id
                 WHERE bp.business_phone = %s
                 LIMIT 1
             """, (phone.strip(),))
