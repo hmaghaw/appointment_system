@@ -169,14 +169,11 @@ def get_business_by_phone():
                     b.created_at,
                     b.updated_at,
                     bp.business_phone,
-                    lv.language_voice_id,
-                    lv.language_code,
-                    lv.region_code,
-                    CONCAT(lv.language_code, '-', lv.region_code) AS voice_language,
-                    lv.voice_name
+                    bp.language_code,
+                    l.language_name
                 FROM business b
                 JOIN business_phone bp ON b.business_id = bp.business_id
-                LEFT JOIN language_voice lv ON bp.language_voice_id = lv.language_voice_id
+                LEFT JOIN language l ON bp.language_code = l.language_code
                 WHERE bp.business_phone = %s
                 LIMIT 1
             """, (phone.strip(),))
@@ -308,7 +305,7 @@ def list_business_phones():
                 if not cursor.fetchone():
                     return jsonify({"error": f"Business with ID {business_id} not found"}), 404
                 
-                # Query business phones with language_voice_id and language details
+                # Query business phones with language_code and language details
                 query = """
                     SELECT 
                         bp.business_phone_id,
@@ -316,17 +313,13 @@ def list_business_phones():
                         bp.phone_sid,
                         bp.friendly_name,
                         bp.business_phone,
-                        bp.language_voice_id,
+                        bp.language_code,
                         bp.is_primary,
                         bp.created_at,
                         bp.updated_at,
-                        lv.voice_name,
-                        lv.language_code,
-                        lv.region_code,
                         l.language_name
                     FROM business_phone bp
-                    LEFT JOIN language_voice lv ON bp.language_voice_id = lv.language_voice_id
-                    LEFT JOIN language l ON lv.language_code = l.language_code
+                    LEFT JOIN language l ON bp.language_code = l.language_code
                     WHERE bp.business_id = %s
                     ORDER BY bp.is_primary DESC, bp.created_at ASC
                 """

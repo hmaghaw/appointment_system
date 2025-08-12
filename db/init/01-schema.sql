@@ -147,14 +147,14 @@ CREATE TABLE IF NOT EXISTS business_phone (
     phone_sid VARCHAR(34) NOT NULL COMMENT 'Twilio Phone Number SID (starts with PN)',
     friendly_name VARCHAR(255) NOT NULL COMMENT 'User-friendly name for the phone number',
     business_phone VARCHAR(20) NOT NULL,
-    language_voice_id INT,
+    language_code VARCHAR(10),
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_business_phone (business_phone),
     UNIQUE KEY unique_phone_sid (phone_sid),
     FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
-    FOREIGN KEY (language_voice_id) REFERENCES language_voice(language_voice_id) ON DELETE SET NULL,
+    FOREIGN KEY (language_code) REFERENCES language(language_code) ON DELETE SET NULL,
     INDEX idx_phone_sid (phone_sid)
 ) ENGINE=InnoDB;
 

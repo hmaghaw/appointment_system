@@ -237,18 +237,7 @@ def update_business_language():
                         """
                         update_params.extend([business_id, language_code])
                         cursor.execute(update_query, tuple(update_params))
-                    
-                    # Update the business record with the new default language if needed
-                    if is_default:
-                        cursor.execute(
-                            """
-                            UPDATE business 
-                            SET default_language = %s
-                            WHERE business_id = %s
-                            """,
-                            (language_code, business_id)
-                        )
-                    
+
                     # Commit the transaction
                     conn.commit()
                     return jsonify({
@@ -363,7 +352,7 @@ def update_business_phone_voice() -> tuple[jsonify, int]:
     Request Body:
         {
             "business_phone_id": 32,
-            "language_voice_id": 3
+            "language_code": "ar"
         }
         
     Returns:
@@ -371,7 +360,7 @@ def update_business_phone_voice() -> tuple[jsonify, int]:
         {
             "message": "Successfully updated language voice for phone",
             "business_phone_id": 32,
-            "language_voice_id": 3
+            "language_code": 3
         }
     """
     data = request.get_json()
@@ -379,12 +368,12 @@ def update_business_phone_voice() -> tuple[jsonify, int]:
         return jsonify({"error": "No JSON data provided"}), 400
         
     business_phone_id = data.get('business_phone_id')
-    language_voice_id = data.get('language_voice_id')
+    language_code = data.get('language_code')
     
-    if not business_phone_id or language_voice_id is None:
-        return jsonify({"error": "Both business_phone_id and language_voice_id are required"}), 400
+    if not language_code or language_code is None:
+        return jsonify({"error": "Both business_phone_id and language_code are required"}), 400
     
-    logger.info(f"Updating language voice for business_phone_id: {business_phone_id} to language_voice_id: {language_voice_id}")
+    logger.info(f"Updating language voice for business_phone_id: {business_phone_id} to language_code: {language_code}")
     
     try:
         with get_db_connection() as conn:
@@ -398,24 +387,15 @@ def update_business_phone_voice() -> tuple[jsonify, int]:
                 
                 if not phone:
                     return jsonify({"error": "Business phone not found"}), 404
-                
-                # If language_voice_id is provided, verify it exists
-                if language_voice_id is not None:
-                    cursor.execute(
-                        "SELECT 1 FROM language_voice WHERE language_voice_id = %s",
-                        (language_voice_id,)
-                    )
-                    if not cursor.fetchone():
-                        return jsonify({"error": f"Language voice with ID {language_voice_id} not found"}), 404
-                
+
                 # Update the language_voice_id
                 cursor.execute(
                     """
                     UPDATE business_phone 
-                    SET language_voice_id = %s 
+                    SET language_code = %s 
                     WHERE business_phone_id = %s
                     """,
-                    (language_voice_id, business_phone_id)
+                    (language_code, business_phone_id)
                 )
                 
                 if cursor.rowcount == 0:
@@ -424,9 +404,9 @@ def update_business_phone_voice() -> tuple[jsonify, int]:
                 conn.commit()
                 
                 return jsonify({
-                    "message": "Successfully updated language voice for phone",
+                    "message": "Successfully updated language for phone",
                     "business_phone_id": business_phone_id,
-                    "language_voice_id": language_voice_id
+                    "language_voice_id": language_code
                 })
                 
     except mysql.connector.Error as e:
