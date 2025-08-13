@@ -33,6 +33,56 @@ services:
       retries: 10
     restart: unless-stopped
 
+  postgres:
+    image: postgres:latest
+    # container_name: postgres   # (optional) remove to let Compose manage DNS/aliases
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: always
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    user: root
+    ports:
+      - "5678:5678"   # If you want HTTPS on 443 externally, use "443:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      - N8N_PROTOCOL=http
+      - N8N_HOST=halalcooking.ca
+      - N8N_PORT=5678
+      - WEBHOOK_URL=https://halalcooking.ca
+      - N8N_SSL_KEY=/certs/privkey.pem
+      - N8N_SSL_CERT=/certs/fullchain.pem
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=postgres_db
+      - DB_POSTGRESDB_USER=user
+      - DB_POSTGRESDB_PASSWORD=password
+      - DB_POSTGRESDB_SCHEMA=public
+      - N8N_ENCRYPTION_KEY=hjgkjhsagkdfhgskdgsfiuroinzxhjsgf
+      - N8N_SECURE_COOKIE=false
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - /home/ec2-user/.certbot/config/live/halalcooking.ca/:/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
   api:
     depends_on:
       db:
@@ -57,7 +107,7 @@ services:
              pip install -e . &&
              pip install -r appointment_app/requirements.txt &&
              pip install gunicorn &&
-             python create_env_file.py production &&
+             python create_env_file.py development &&
              cd /app/appointment_app && gunicorn --bind 0.0.0.0:5000 app:app"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
@@ -69,3 +119,5 @@ services:
 
 volumes:
   db_data:
+  n8n_data:
+  postgres_data:
