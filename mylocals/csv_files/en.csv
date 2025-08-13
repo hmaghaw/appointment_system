@@ -1,0 +1,48 @@
+Monday,en,Monday
+Tuesday,en,Tuesday
+Wednesday,en,Wednesday
+Thursday,en,Thursday
+Friday,en,Friday
+Saturday,en,Saturday
+Sunday,en,Sunday
+CURRENT DATE & TIME,en,CURRENT DATE & TIME
+CUSTOMER INFORMATION,en,CUSTOMER INFORMATION
+BUSINESS INFORMATION,en,BUSINESS INFORMATION
+BUSINESS WORKING HOURS,en,BUSINESS WORKING HOURS
+SERVICES,en,SERVICES
+EXAMPLES OF CONCISE RESPONSES,en,EXAMPLES OF CONCISE RESPONSES
+FUNCTION INSTRUCTIONS,en,FUNCTION INSTRUCTIONS
+AM,en,AM
+PM,en,PM
+Minute,en,Minute
+Business Name,en,Business Name
+Business Phone,en,Business Phone
+Closed,en,Closed
+January,en,January
+February,en,February
+March,en,March
+April,en,April
+May,en,May
+June,en,June
+July,en,July
+August,en,August
+September,en,September
+October,en,October
+November,en,November
+December,en,December
+you_are,en,you_are
+intro,en,intro
+current_date_and_time,en,current_date_and_time
+unknown_customer,en,unknown_customer
+known_customer,en,known_customer
+thanks_for_calling,en,thanks_for_calling
+how_can_i_help,en,how_can_i_help
+APPOINTMENTS FOR CUSTOMER,en,APPOINTMENTS FOR CUSTOMER
+no_appointments,en,no_appointments
+functions_calling_instructions,en,functions_calling_instructions
+FINAL COMMANDS,en,FINAL COMMANDS
+"Keep replies short, polite, and helpful.",en,"Keep replies short, polite, and helpful."
+"If booking: 'Great! May I have your name, please?'",en,"If booking: 'Great! May I have your name, please?'"
+We're open until 7 PM today. Would you like something this afternoon?,en,We're open until 7 PM today. Would you like something this afternoon?
+When would you like to come in?,en,When would you like to come in?
+Please feel free to call us on our phone:,en,Please feel free to call us on our phone:

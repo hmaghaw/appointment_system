@@ -1,0 +1,48 @@
+Monday,de,Montag
+Tuesday,de,Dienstag
+Wednesday,de,Mittwoch
+Thursday,de,Donnerstag
+Friday,de,Freitag
+Saturday,de,Samstag
+Sunday,de,Sonntag
+CURRENT DATE & TIME,de,AKTUELLES DATUM UND UHRZEIT
+CUSTOMER INFORMATION,de,KUNDENINFORMATIONEN
+BUSINESS INFORMATION,de,UNTERNEHMENSINFORMATIONEN
+BUSINESS WORKING HOURS,de,ÖFFNUNGSZEITEN DES UNTERNEHMENS
+SERVICES,de,DIENSTLEISTUNGEN
+EXAMPLES OF CONCISE RESPONSES,de,BEISPIELE FÜR KNAPPE ANTWORTEN
+FUNCTION INSTRUCTIONS,de,FUNKTIONSANWEISUNGEN
+AM,de,vorm.
+PM,de,nachm.
+Minute,de,Minute
+Business Name,de,Firmenname
+Business Phone,de,Firmentelefon
+Closed,de,Geschlossen
+January,de,Januar
+February,de,Februar
+March,de,März
+April,de,April
+May,de,Mai
+June,de,Juni
+July,de,Juli
+August,de,August
+September,de,September
+October,de,Oktober
+November,de,November
+December,de,Dezember
+you_are,de,Sie sind
+intro,de,Einführung
+current_date_and_time,de,aktuelles Datum und Uhrzeit
+unknown_customer,de,unbekannter Kunde
+known_customer,de,bekannter Kunde
+thanks_for_calling,de,danke für Ihren Anruf
+how_can_i_help,de,wie kann ich helfen?
+APPOINTMENTS FOR CUSTOMER,de,TERMINE FÜR KUNDEN
+no_appointments,de,keine Termine
+functions_calling_instructions,de,Anweisungen zum Aufrufen von Funktionen
+FINAL COMMANDS,de,FINALE BEFEHLE
+"Keep replies short, polite, and helpful.",de,"Halten Sie die Antworten kurz, höflich und hilfreich."
+"If booking: 'Great! May I have your name, please?'",de,Wenn Sie buchen: „Großartig! Darf ich bitte Ihren Namen haben?“
+We're open until 7 PM today. Would you like something this afternoon?,de,Heute haben wir bis 19 Uhr geöffnet. Möchten Sie heute Nachmittag etwas vereinbaren?
+When would you like to come in?,de,Wann möchten Sie vorbeikommen?
+Please feel free to call us on our phone:,de,Rufen Sie uns gerne unter folgender Nummer an:
