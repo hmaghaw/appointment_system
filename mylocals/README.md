@@ -1,6 +1,7 @@
 # PolyLang SQL Generator
 
 ## Overview
+The csv files are generated with this ChatGPT Prompt: https://chatgpt.com/share/689ca8cb-d704-8009-b860-af308f81ee6d
 This Python script reads all CSV files from a specified **source folder** and generates a single SQL file (`polylang.sql`) containing `INSERT` statements for the `appointment_db.translations` table.  
 
 Each CSV file should:
