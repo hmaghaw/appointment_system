@@ -1,0 +1,48 @@
+Monday,pl,Poniedziałek
+Tuesday,pl,Wtorek
+Wednesday,pl,Środa
+Thursday,pl,Czwartek
+Friday,pl,Piątek
+Saturday,pl,Sobota
+Sunday,pl,Niedziela
+CURRENT DATE & TIME,pl,AKTUALNA DATA I GODZINA
+CUSTOMER INFORMATION,pl,INFORMACJE O KLIENCIE
+BUSINESS INFORMATION,pl,INFORMACJE O FIRMIE
+BUSINESS WORKING HOURS,pl,GODZINY OTWARCIA FIRMY
+SERVICES,pl,USŁUGI
+EXAMPLES OF CONCISE RESPONSES,pl,PRZYKŁADY ZWIĘZŁYCH ODPOWIEDZI
+FUNCTION INSTRUCTIONS,pl,INSTRUKCJE DOTYCZĄCE FUNKCJI
+AM,pl,AM
+PM,pl,PM
+Minute,pl,Minuta
+Business Name,pl,Nazwa firmy
+Business Phone,pl,Telefon firmowy
+Closed,pl,Nieczynne
+January,pl,Styczeń
+February,pl,Luty
+March,pl,Marzec
+April,pl,Kwiecień
+May,pl,Maj
+June,pl,Czerwiec
+July,pl,Lipiec
+August,pl,Sierpień
+September,pl,Wrzesień
+October,pl,Październik
+November,pl,Listopad
+December,pl,Grudzień
+you_are,pl,jesteś
+intro,pl,wprowadzenie
+current_date_and_time,pl,aktualna data i godzina
+unknown_customer,pl,nieznany klient
+known_customer,pl,znany klient
+thanks_for_calling,pl,dziękujemy za telefon
+how_can_i_help,pl,w czym mogę pomóc?
+APPOINTMENTS FOR CUSTOMER,pl,WIZYTY KLIENTA
+no_appointments,pl,brak wizyt
+functions_calling_instructions,pl,instrukcje wywoływania funkcji
+FINAL COMMANDS,pl,POLECENIA KOŃCOWE
+"Keep replies short, polite, and helpful.",pl,"Utrzymuj odpowiedzi krótkie, uprzejme i pomocne."
+"If booking: 'Great! May I have your name, please?'",pl,Jeśli rezerwujesz: „Świetnie! Czy mogę prosić o imię?”
+We're open until 7 PM today. Would you like something this afternoon?,pl,Dziś mamy otwarte do 19:00. Czy pasuje coś dziś po południu?
+When would you like to come in?,pl,Kiedy chciałbyś przyjść?
+Please feel free to call us on our phone:,pl,Prosimy dzwonić pod numer:

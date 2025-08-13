@@ -1,0 +1,48 @@
+Monday,cy,Dydd Llun
+Tuesday,cy,Dydd Mawrth
+Wednesday,cy,Dydd Mercher
+Thursday,cy,Dydd Iau
+Friday,cy,Dydd Gwener
+Saturday,cy,Dydd Sadwrn
+Sunday,cy,Dydd Sul
+CURRENT DATE & TIME,cy,DYDDIAD AC AMSER PRESENNOL
+CUSTOMER INFORMATION,cy,GWYBODAETH CWSMER
+BUSINESS INFORMATION,cy,GWYBODAETH BUSNES
+BUSINESS WORKING HOURS,cy,ORIAU AGOR Y BUSNES
+SERVICES,cy,GWASANAETHAU
+EXAMPLES OF CONCISE RESPONSES,cy,ENGHREIFFTIAU O YMATEBION CRYNO
+FUNCTION INSTRUCTIONS,cy,CYFARWYDDIADAU SWYDDOGAETHAU
+AM,cy,yb
+PM,cy,yp
+Minute,cy,Munud
+Business Name,cy,Enw'r busnes
+Business Phone,cy,Ffôn y busnes
+Closed,cy,Ar gau
+January,cy,Ionawr
+February,cy,Chwefror
+March,cy,Mawrth
+April,cy,Ebrill
+May,cy,Mai
+June,cy,Mehefin
+July,cy,Gorffennaf
+August,cy,Awst
+September,cy,Medi
+October,cy,Hydref
+November,cy,Tachwedd
+December,cy,Rhagfyr
+you_are,cy,rydych chi
+intro,cy,cyflwyniad
+current_date_and_time,cy,dyddiad ac amser presennol
+unknown_customer,cy,cwsmer anhysbys
+known_customer,cy,cwsmer hysbys
+thanks_for_calling,cy,diolch am ffonio
+how_can_i_help,cy,sut alla i helpu?
+APPOINTMENTS FOR CUSTOMER,cy,APWYNTIADAU'R CWSMER
+no_appointments,cy,dim apwyntiadau
+functions_calling_instructions,cy,cyfarwyddiadau galw swyddogaethau
+FINAL COMMANDS,cy,GORCHMYNION TERFYNOL
+"Keep replies short, polite, and helpful.",cy,"Cadwch yr ymatebion yn fyr, yn gwrtais ac yn ddefnyddiol."
+"If booking: 'Great! May I have your name, please?'",cy,"Os ydych yn archebu: 'Gwych! A gaf i eich enw, os gwelwch yn dda?'"
+We're open until 7 PM today. Would you like something this afternoon?,cy,Rydym ar agor tan 7 yp heddiw. Hoffech chi rywbeth y prynhawn hwn?
+When would you like to come in?,cy,Pryd hoffech chi ddod i mewn?
+Please feel free to call us on our phone:,cy,Mae croeso i chi ein ffonio ar:

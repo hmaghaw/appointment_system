@@ -1,0 +1,48 @@
+Monday,sv,måndag
+Tuesday,sv,tisdag
+Wednesday,sv,onsdag
+Thursday,sv,torsdag
+Friday,sv,fredag
+Saturday,sv,lördag
+Sunday,sv,söndag
+CURRENT DATE & TIME,sv,AKTUELLT DATUM OCH TID
+CUSTOMER INFORMATION,sv,KUNDINFORMATION
+BUSINESS INFORMATION,sv,FÖRETAGSINFORMATION
+BUSINESS WORKING HOURS,sv,FÖRETAGETS ÖPPETTIDER
+SERVICES,sv,TJÄNSTER
+EXAMPLES OF CONCISE RESPONSES,sv,EXEMPEL PÅ KORTA SVAR
+FUNCTION INSTRUCTIONS,sv,INSTRUKTIONER FÖR FUNKTIONER
+AM,sv,fm
+PM,sv,em
+Minute,sv,Minut
+Business Name,sv,Företagsnamn
+Business Phone,sv,Företagets telefon
+Closed,sv,Stängt
+January,sv,januari
+February,sv,februari
+March,sv,mars
+April,sv,april
+May,sv,maj
+June,sv,juni
+July,sv,juli
+August,sv,augusti
+September,sv,september
+October,sv,oktober
+November,sv,november
+December,sv,december
+you_are,sv,du är
+intro,sv,introduktion
+current_date_and_time,sv,aktuellt datum och tid
+unknown_customer,sv,okänd kund
+known_customer,sv,känd kund
+thanks_for_calling,sv,tack för att du ringde
+how_can_i_help,sv,hur kan jag hjälpa till?
+APPOINTMENTS FOR CUSTOMER,sv,KUNDENS BOKNINGAR
+no_appointments,sv,inga bokningar
+functions_calling_instructions,sv,instruktioner för att anropa funktioner
+FINAL COMMANDS,sv,SLUTLIGA KOMMANDON
+"Keep replies short, polite, and helpful.",sv,"Håll svaren korta, artiga och hjälpsamma."
+"If booking: 'Great! May I have your name, please?'",sv,"Om du vill boka: ”Toppen! Kan jag få ditt namn, tack?”"
+We're open until 7 PM today. Would you like something this afternoon?,sv,Vi har öppet till kl. 19 i dag. Vill du ha något i eftermiddag?
+When would you like to come in?,sv,När skulle du vilja komma?
+Please feel free to call us on our phone:,sv,Ring oss gärna på telefon:

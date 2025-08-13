@@ -1,0 +1,48 @@
+Monday,vi,Thứ Hai
+Tuesday,vi,Thứ Ba
+Wednesday,vi,Thứ Tư
+Thursday,vi,Thứ Năm
+Friday,vi,Thứ Sáu
+Saturday,vi,Thứ Bảy
+Sunday,vi,Chủ Nhật
+CURRENT DATE & TIME,vi,NGÀY GIỜ HIỆN TẠI
+CUSTOMER INFORMATION,vi,THÔNG TIN KHÁCH HÀNG
+BUSINESS INFORMATION,vi,THÔNG TIN DOANH NGHIỆP
+BUSINESS WORKING HOURS,vi,GIỜ HOẠT ĐỘNG CỦA DOANH NGHIỆP
+SERVICES,vi,DỊCH VỤ
+EXAMPLES OF CONCISE RESPONSES,vi,VÍ DỤ VỀ CÂU TRẢ LỜI NGẮN GỌN
+FUNCTION INSTRUCTIONS,vi,HƯỚNG DẪN CHỨC NĂNG
+AM,vi,SA
+PM,vi,CH
+Minute,vi,Phút
+Business Name,vi,Tên doanh nghiệp
+Business Phone,vi,Số điện thoại doanh nghiệp
+Closed,vi,Đóng cửa
+January,vi,Tháng Một
+February,vi,Tháng Hai
+March,vi,Tháng Ba
+April,vi,Tháng Tư
+May,vi,Tháng Năm
+June,vi,Tháng Sáu
+July,vi,Tháng Bảy
+August,vi,Tháng Tám
+September,vi,Tháng Chín
+October,vi,Tháng Mười
+November,vi,Tháng Mười một
+December,vi,Tháng Mười hai
+you_are,vi,bạn là
+intro,vi,giới thiệu
+current_date_and_time,vi,ngày giờ hiện tại
+unknown_customer,vi,khách hàng không xác định
+known_customer,vi,khách hàng đã biết
+thanks_for_calling,vi,cảm ơn bạn đã gọi
+how_can_i_help,vi,tôi có thể giúp gì cho bạn?
+APPOINTMENTS FOR CUSTOMER,vi,LỊCH HẸN CỦA KHÁCH HÀNG
+no_appointments,vi,không có lịch hẹn
+functions_calling_instructions,vi,hướng dẫn gọi chức năng
+FINAL COMMANDS,vi,CÁC LỆNH CUỐI CÙNG
+"Keep replies short, polite, and helpful.",vi,"Giữ câu trả lời ngắn gọn, lịch sự và hữu ích."
+"If booking: 'Great! May I have your name, please?'",vi,Nếu đặt lịch: 'Tuyệt vời! Cho tôi xin tên của bạn được không?'
+We're open until 7 PM today. Would you like something this afternoon?,vi,Hôm nay chúng tôi mở cửa đến 7 giờ tối. Bạn có muốn đặt gì cho chiều nay không?
+When would you like to come in?,vi,Bạn muốn đến khi nào?
+Please feel free to call us on our phone:,vi,Vui lòng gọi cho chúng tôi theo số:

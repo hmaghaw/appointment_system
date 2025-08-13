@@ -1,0 +1,48 @@
+Monday,ml,തിങ്കളാഴ്ച
+Tuesday,ml,ചൊവ്വാഴ്ച
+Wednesday,ml,ബുധനാഴ്ച
+Thursday,ml,വ്യാഴാഴ്ച
+Friday,ml,വെള്ളിയാഴ്ച
+Saturday,ml,ശനിയാഴ്ച
+Sunday,ml,ഞായറാഴ്ച
+CURRENT DATE & TIME,ml,നിലവിലെ തീയതിയും സമയവും
+CUSTOMER INFORMATION,ml,ഉപഭോക്തൃ വിവരങ്ങൾ
+BUSINESS INFORMATION,ml,ബിസിനസ് വിവരങ്ങൾ
+BUSINESS WORKING HOURS,ml,ബിസിനസിന്റെ പ്രവർത്തന സമയം
+SERVICES,ml,സേവനങ്ങൾ
+EXAMPLES OF CONCISE RESPONSES,ml,സംക്ഷിപ്ത മറുപടികളുടെ ഉദാഹരണങ്ങൾ
+FUNCTION INSTRUCTIONS,ml,ഫംഗ്ഷൻ നിർദേശങ്ങൾ
+AM,ml,AM
+PM,ml,PM
+Minute,ml,മിനിറ്റ്
+Business Name,ml,ബിസിനസിന്റെ പേര്
+Business Phone,ml,ബിസിനസ് ഫോൺ
+Closed,ml,അടഞ്ഞിരിക്കുന്നു
+January,ml,ജനുവരി
+February,ml,ഫെബ്രുവരി
+March,ml,മാർച്ച്
+April,ml,ഏപ്രിൽ
+May,ml,മെയ്
+June,ml,ജൂൺ
+July,ml,ജൂലൈ
+August,ml,ഓഗസ്റ്റ്
+September,ml,സെപ്റ്റംബർ
+October,ml,ഒക്ടോബർ
+November,ml,നവംബർ
+December,ml,ഡിസംബർ
+you_are,ml,നിങ്ങൾ ആണ്
+intro,ml,പരിചയം
+current_date_and_time,ml,നിലവിലെ തീയതിയും സമയവും
+unknown_customer,ml,അജ്ഞാത ഉപഭോക്താവ്
+known_customer,ml,പരിചിത ഉപഭോക്താവ്
+thanks_for_calling,ml,വിളിച്ചതിന് നന്ദി
+how_can_i_help,ml,എങ്ങനെ സഹായിക്കാം?
+APPOINTMENTS FOR CUSTOMER,ml,ഉപഭോക്താവിന്റെ നിയമനങ്ങൾ
+no_appointments,ml,നിയമനങ്ങളൊന്നുമില്ല
+functions_calling_instructions,ml,ഫംഗ്ഷൻ കോൾ ചെയ്യാനുള്ള നിർദ്ദേശങ്ങൾ
+FINAL COMMANDS,ml,അവസാന കമാൻഡുകൾ
+"Keep replies short, polite, and helpful.",ml,മറുപടികൾ ചെറുതും വിനയപൂർവ്വവും ഉപകാരപ്രദവും ആക്കുക.
+"If booking: 'Great! May I have your name, please?'",ml,ബുക്കിംഗ് ആണെങ്കിൽ: 'അടിപൊളി! ദയവായി നിങ്ങളുടെ പേര് തരാമോ?'
+We're open until 7 PM today. Would you like something this afternoon?,ml,ഇന്ന് രാത്രി 7 മണിവരെ തുറന്നിരിക്കുന്നു. ഇന്ന് ഉച്ചതിരിഞ്ഞ് എന്തെങ്കിലും വേണമോ?
+When would you like to come in?,ml,താങ്കൾക്ക് എപ്പോൾ വരാൻ ആഗ്രഹം?
+Please feel free to call us on our phone:,ml,ദയവായി നമ്മുടെ ഫോൺ നമ്പറിൽ വിളിക്കാം:

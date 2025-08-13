@@ -1,0 +1,48 @@
+Monday,ca,Dilluns
+Tuesday,ca,Dimarts
+Wednesday,ca,Dimecres
+Thursday,ca,Dijous
+Friday,ca,Divendres
+Saturday,ca,Dissabte
+Sunday,ca,Diumenge
+CURRENT DATE & TIME,ca,DATA I HORA ACTUALS
+CUSTOMER INFORMATION,ca,INFORMACIÓ DEL CLIENT
+BUSINESS INFORMATION,ca,INFORMACIÓ DE L'EMPRESA
+BUSINESS WORKING HOURS,ca,HORARI D'OBERTURA DE L'EMPRESA
+SERVICES,ca,SERVEIS
+EXAMPLES OF CONCISE RESPONSES,ca,EXEMPLES DE RESPOSTES CONCISES
+FUNCTION INSTRUCTIONS,ca,INSTRUCCIONS DE FUNCIONS
+AM,ca,a. m.
+PM,ca,p. m.
+Minute,ca,Minut
+Business Name,ca,Nom de l'empresa
+Business Phone,ca,Telèfon de l'empresa
+Closed,ca,Tancat
+January,ca,gener
+February,ca,febrer
+March,ca,març
+April,ca,abril
+May,ca,maig
+June,ca,juny
+July,ca,juliol
+August,ca,agost
+September,ca,setembre
+October,ca,octubre
+November,ca,novembre
+December,ca,desembre
+you_are,ca,vostè és
+intro,ca,introducció
+current_date_and_time,ca,data i hora actuals
+unknown_customer,ca,client desconegut
+known_customer,ca,client conegut
+thanks_for_calling,ca,gràcies per trucar
+how_can_i_help,ca,com puc ajudar?
+APPOINTMENTS FOR CUSTOMER,ca,CITES DEL CLIENT
+no_appointments,ca,no hi ha cites
+functions_calling_instructions,ca,instruccions per cridar funcions
+FINAL COMMANDS,ca,ORDRES FINALS
+"Keep replies short, polite, and helpful.",ca,"Manteniu les respostes breus, educades i útils."
+"If booking: 'Great! May I have your name, please?'",ca,"Si fa una reserva: «Genial! Em pot dir el seu nom, si us plau?»"
+We're open until 7 PM today. Would you like something this afternoon?,ca,Avui estem oberts fins a les 19. Voldríeu alguna cosa aquesta tarda?
+When would you like to come in?,ca,Quan us agradaria venir?
+Please feel free to call us on our phone:,ca,No dubteu a trucar-nos al telèfon:

@@ -1,0 +1,48 @@
+Monday,cs,Pondělí
+Tuesday,cs,Úterý
+Wednesday,cs,Středa
+Thursday,cs,Čtvrtek
+Friday,cs,Pátek
+Saturday,cs,Sobota
+Sunday,cs,Neděle
+CURRENT DATE & TIME,cs,AKTUÁLNÍ DATUM A ČAS
+CUSTOMER INFORMATION,cs,INFORMACE O ZÁKAZNÍKOVI
+BUSINESS INFORMATION,cs,INFORMACE O FIRMĚ
+BUSINESS WORKING HOURS,cs,OTEVÍRACÍ DOBA FIRMY
+SERVICES,cs,SLUŽBY
+EXAMPLES OF CONCISE RESPONSES,cs,PŘÍKLADY STRUČNÝCH ODPOVĚDÍ
+FUNCTION INSTRUCTIONS,cs,POKYNY K FUNKCÍM
+AM,cs,dop.
+PM,cs,odp.
+Minute,cs,Minuta
+Business Name,cs,Název firmy
+Business Phone,cs,Telefon firmy
+Closed,cs,Zavřeno
+January,cs,leden
+February,cs,únor
+March,cs,březen
+April,cs,duben
+May,cs,květen
+June,cs,červen
+July,cs,červenec
+August,cs,srpen
+September,cs,září
+October,cs,říjen
+November,cs,listopad
+December,cs,prosinec
+you_are,cs,jste
+intro,cs,úvod
+current_date_and_time,cs,aktuální datum a čas
+unknown_customer,cs,neznámý zákazník
+known_customer,cs,známý zákazník
+thanks_for_calling,cs,děkujeme za zavolání
+how_can_i_help,cs,jak mohu pomoci?
+APPOINTMENTS FOR CUSTOMER,cs,SCHŮZKY ZÁKAZNÍKA
+no_appointments,cs,žádné schůzky
+functions_calling_instructions,cs,pokyny pro volání funkcí
+FINAL COMMANDS,cs,ZÁVĚREČNÉ PŘÍKAZY
+"Keep replies short, polite, and helpful.",cs,"Udržujte odpovědi krátké, zdvořilé a užitečné."
+"If booking: 'Great! May I have your name, please?'",cs,Pokud rezervujete: „Skvělé! Mohu prosím znát vaše jméno?“
+We're open until 7 PM today. Would you like something this afternoon?,cs,Dnes máme otevřeno do 19:00. Chtěli byste něco na dnešní odpoledne?
+When would you like to come in?,cs,Kdy byste chtěl(a) přijít?
+Please feel free to call us on our phone:,cs,Neváhejte nám zavolat na číslo:

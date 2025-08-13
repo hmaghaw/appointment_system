@@ -1,0 +1,48 @@
+Monday,fi,maanantai
+Tuesday,fi,tiistai
+Wednesday,fi,keskiviikko
+Thursday,fi,torstai
+Friday,fi,perjantai
+Saturday,fi,lauantai
+Sunday,fi,sunnuntai
+CURRENT DATE & TIME,fi,NYKYINEN PÄIVÄMÄÄRÄ JA AIKA
+CUSTOMER INFORMATION,fi,ASIAKASTIEDOT
+BUSINESS INFORMATION,fi,YRITYSTIEDOT
+BUSINESS WORKING HOURS,fi,YRITYKSEN AUKIOLOAJAT
+SERVICES,fi,PALVELUT
+EXAMPLES OF CONCISE RESPONSES,fi,TIIVISTETTYJEN VASTAUSTEN ESIMERKIT
+FUNCTION INSTRUCTIONS,fi,TOIMINTOJEN OHJEET
+AM,fi,ap.
+PM,fi,ip.
+Minute,fi,Minuutti
+Business Name,fi,Yrityksen nimi
+Business Phone,fi,Yrityksen puhelin
+Closed,fi,Suljettu
+January,fi,tammikuu
+February,fi,helmikuu
+March,fi,maaliskuu
+April,fi,huhtikuu
+May,fi,toukokuu
+June,fi,kesäkuu
+July,fi,heinäkuu
+August,fi,elokuu
+September,fi,syyskuu
+October,fi,lokakuu
+November,fi,marraskuu
+December,fi,joulukuu
+you_are,fi,olet
+intro,fi,esittely
+current_date_and_time,fi,nykyinen päivämäärä ja aika
+unknown_customer,fi,tuntematon asiakas
+known_customer,fi,tunnistettu asiakas
+thanks_for_calling,fi,kiitos soitosta
+how_can_i_help,fi,miten voin auttaa?
+APPOINTMENTS FOR CUSTOMER,fi,ASIAKKAAN AJANVARAUKSET
+no_appointments,fi,ei ajanvarauksia
+functions_calling_instructions,fi,funktioiden kutsuohjeet
+FINAL COMMANDS,fi,LOPULLISET KOMENNOT
+"Keep replies short, polite, and helpful.",fi,"Pidä vastaukset lyhyinä, kohteliaina ja hyödyllisinä."
+"If booking: 'Great! May I have your name, please?'",fi,"Jos varaat: 'Hienoa! Saisinko nimesi, kiitos?'"
+We're open until 7 PM today. Would you like something this afternoon?,fi,Olemme tänään auki kello 19:een. Haluaisitko jotain iltapäivälle?
+When would you like to come in?,fi,Milloin haluaisit tulla?
+Please feel free to call us on our phone:,fi,Voit soittaa meille numeroon:

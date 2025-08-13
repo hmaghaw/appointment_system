@@ -1,0 +1,48 @@
+Monday,nb,mandag
+Tuesday,nb,tirsdag
+Wednesday,nb,onsdag
+Thursday,nb,torsdag
+Friday,nb,fredag
+Saturday,nb,lørdag
+Sunday,nb,søndag
+CURRENT DATE & TIME,nb,GJELDENDE DATO OG TID
+CUSTOMER INFORMATION,nb,KUNDEINFORMASJON
+BUSINESS INFORMATION,nb,BEDRIFTSINFORMASJON
+BUSINESS WORKING HOURS,nb,BEDRIFTENS ÅPNINGSTIDER
+SERVICES,nb,TJENESTER
+EXAMPLES OF CONCISE RESPONSES,nb,EKSEMPLER PÅ KONSISE SVAR
+FUNCTION INSTRUCTIONS,nb,INSTRUKSJONER FOR FUNKSJONER
+AM,nb,AM
+PM,nb,PM
+Minute,nb,Minutt
+Business Name,nb,Bedriftsnavn
+Business Phone,nb,Bedriftstelefon
+Closed,nb,Stengt
+January,nb,januar
+February,nb,februar
+March,nb,mars
+April,nb,april
+May,nb,mai
+June,nb,juni
+July,nb,juli
+August,nb,august
+September,nb,september
+October,nb,oktober
+November,nb,november
+December,nb,desember
+you_are,nb,du er
+intro,nb,introduksjon
+current_date_and_time,nb,gjeldende dato og klokkeslett
+unknown_customer,nb,ukjent kunde
+known_customer,nb,kjent kunde
+thanks_for_calling,nb,takk for at du ringte
+how_can_i_help,nb,hvordan kan jeg hjelpe?
+APPOINTMENTS FOR CUSTOMER,nb,KUNDEAVTALER
+no_appointments,nb,ingen avtaler
+functions_calling_instructions,nb,instruksjoner for funksjonskall
+FINAL COMMANDS,nb,ENDELIGE KOMMANDOER
+"Keep replies short, polite, and helpful.",nb,"Hold svarene korte, høflige og nyttige."
+"If booking: 'Great! May I have your name, please?'",nb,Hvis du vil bestille: «Flott! Kan jeg få navnet ditt?»
+We're open until 7 PM today. Would you like something this afternoon?,nb,Vi har åpent til kl. 19 i dag. Ønsker du noe i ettermiddag?
+When would you like to come in?,nb,Når ønsker du å komme?
+Please feel free to call us on our phone:,nb,Ring oss gjerne på telefon:

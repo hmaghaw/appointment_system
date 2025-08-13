@@ -1,0 +1,48 @@
+Monday,yue,星期一
+Tuesday,yue,星期二
+Wednesday,yue,星期三
+Thursday,yue,星期四
+Friday,yue,星期五
+Saturday,yue,星期六
+Sunday,yue,星期日
+CURRENT DATE & TIME,yue,目前日期及時間
+CUSTOMER INFORMATION,yue,客戶資料
+BUSINESS INFORMATION,yue,商戶資料
+BUSINESS WORKING HOURS,yue,商戶營業時間
+SERVICES,yue,服務
+EXAMPLES OF CONCISE RESPONSES,yue,簡潔回覆範例
+FUNCTION INSTRUCTIONS,yue,功能指引
+AM,yue,上午
+PM,yue,下午
+Minute,yue,分鐘
+Business Name,yue,商戶名稱
+Business Phone,yue,商戶電話
+Closed,yue,休息
+January,yue,一月
+February,yue,二月
+March,yue,三月
+April,yue,四月
+May,yue,五月
+June,yue,六月
+July,yue,七月
+August,yue,八月
+September,yue,九月
+October,yue,十月
+November,yue,十一月
+December,yue,十二月
+you_are,yue,你係
+intro,yue,介紹
+current_date_and_time,yue,目前日期及時間
+unknown_customer,yue,未知客戶
+known_customer,yue,已知客戶
+thanks_for_calling,yue,多謝來電
+how_can_i_help,yue,我可以點幫你？
+APPOINTMENTS FOR CUSTOMER,yue,客戶預約
+no_appointments,yue,沒有預約
+functions_calling_instructions,yue,功能使用指引
+FINAL COMMANDS,yue,最後指令
+"Keep replies short, polite, and helpful.",yue,回覆要簡短、禮貌、並且有幫助。
+"If booking: 'Great! May I have your name, please?'",yue,如果要預約：「太好了！可否告知你的名字？」
+We're open until 7 PM today. Would you like something this afternoon?,yue,本店今日營業至晚上7點。你想安排今日下午的服務嗎？
+When would you like to come in?,yue,你想幾時過來？
+Please feel free to call us on our phone:,yue,歡迎致電本店：

@@ -1,0 +1,48 @@
+Monday,gl,luns
+Tuesday,gl,martes
+Wednesday,gl,mércores
+Thursday,gl,xoves
+Friday,gl,venres
+Saturday,gl,sábado
+Sunday,gl,domingo
+CURRENT DATE & TIME,gl,DATA E HORA ACTUAIS
+CUSTOMER INFORMATION,gl,INFORMACIÓN DO CLIENTE
+BUSINESS INFORMATION,gl,INFORMACIÓN DA EMPRESA
+BUSINESS WORKING HOURS,gl,HORARIO DE ATENCIÓN DA EMPRESA
+SERVICES,gl,SERVIZOS
+EXAMPLES OF CONCISE RESPONSES,gl,EXEMPLOS DE RESPOSTAS CONCISAS
+FUNCTION INSTRUCTIONS,gl,INSTRUCIÓNS DE FUNCIÓNS
+AM,gl,a. m.
+PM,gl,p. m.
+Minute,gl,Minuto
+Business Name,gl,Nome da empresa
+Business Phone,gl,Teléfono da empresa
+Closed,gl,Pechado
+January,gl,xaneiro
+February,gl,febreiro
+March,gl,marzo
+April,gl,abril
+May,gl,maio
+June,gl,xuño
+July,gl,xullo
+August,gl,agosto
+September,gl,setembro
+October,gl,outubro
+November,gl,novembro
+December,gl,decembro
+you_are,gl,vostede é
+intro,gl,introdución
+current_date_and_time,gl,data e hora actuais
+unknown_customer,gl,cliente descoñecido
+known_customer,gl,cliente coñecido
+thanks_for_calling,gl,grazas por chamar
+how_can_i_help,gl,en que podo axudar?
+APPOINTMENTS FOR CUSTOMER,gl,CITAS DO CLIENTE
+no_appointments,gl,non hai citas
+functions_calling_instructions,gl,instrucións para chamar funcións
+FINAL COMMANDS,gl,COMANDOS FINAIS
+"Keep replies short, polite, and helpful.",gl,"Manteña as respostas curtas, amables e útiles."
+"If booking: 'Great! May I have your name, please?'",gl,"Se vai facer unha reserva: «Xenial! Podería darme o seu nome, por favor?»"
+We're open until 7 PM today. Would you like something this afternoon?,gl,Hoxe estamos abertos ata as 7 p. m. Gustaríalle algo esta tarde?
+When would you like to come in?,gl,Cando lle gustaría vir?
+Please feel free to call us on our phone:,gl,Non dubide en chamarnos ao teléfono:

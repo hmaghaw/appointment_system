@@ -1,0 +1,48 @@
+Monday,pa,ਸੋਮਵਾਰ
+Tuesday,pa,ਮੰਗਲਵਾਰ
+Wednesday,pa,ਬੁੱਧਵਾਰ
+Thursday,pa,ਵੀਰਵਾਰ
+Friday,pa,ਸ਼ੁੱਕਰਵਾਰ
+Saturday,pa,ਸ਼ਨੀਵਾਰ
+Sunday,pa,ਐਤਵਾਰ
+CURRENT DATE & TIME,pa,ਮੌਜੂਦਾ ਤਾਰੀਖ ਅਤੇ ਸਮਾਂ
+CUSTOMER INFORMATION,pa,ਗਾਹਕ ਜਾਣਕਾਰੀ
+BUSINESS INFORMATION,pa,ਕਾਰੋਬਾਰ ਜਾਣਕਾਰੀ
+BUSINESS WORKING HOURS,pa,ਕਾਰੋਬਾਰ ਦੇ ਕੰਮ ਦੇ ਘੰਟੇ
+SERVICES,pa,ਸੇਵਾਵਾਂ
+EXAMPLES OF CONCISE RESPONSES,pa,ਸੰਖੇਪ ਜਵਾਬਾਂ ਦੇ ਉਦਾਹਰਨ
+FUNCTION INSTRUCTIONS,pa,ਫੰਕਸ਼ਨ ਹਦਾਇਤਾਂ
+AM,pa,AM
+PM,pa,PM
+Minute,pa,ਮਿੰਟ
+Business Name,pa,ਕਾਰੋਬਾਰ ਦਾ ਨਾਮ
+Business Phone,pa,ਕਾਰੋਬਾਰ ਦਾ ਫੋਨ
+Closed,pa,ਬੰਦ
+January,pa,ਜਨਵਰੀ
+February,pa,ਫ਼ਰਵਰੀ
+March,pa,ਮਾਰਚ
+April,pa,ਅਪ੍ਰੈਲ
+May,pa,ਮਈ
+June,pa,ਜੂਨ
+July,pa,ਜੁਲਾਈ
+August,pa,ਅਗਸਤ
+September,pa,ਸਤੰਬਰ
+October,pa,ਅਕਤੂਬਰ
+November,pa,ਨਵੰਬਰ
+December,pa,ਦਸੰਬਰ
+you_are,pa,ਤੁਸੀਂ ਹੋ
+intro,pa,ਪ੍ਰਸਤਾਵਨਾ
+current_date_and_time,pa,ਮੌਜੂਦਾ ਤਾਰੀਖ ਅਤੇ ਸਮਾਂ
+unknown_customer,pa,ਅਣਪਛਾਤਾ ਗਾਹਕ
+known_customer,pa,ਜਾਣਿਆ ਗਾਹਕ
+thanks_for_calling,pa,ਕਾਲ ਕਰਨ ਲਈ ਧੰਨਵਾਦ
+how_can_i_help,pa,ਮੈਂ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦਾ/ਸਕਦੀ ਹਾਂ?
+APPOINTMENTS FOR CUSTOMER,pa,ਗਾਹਕ ਲਈ ਅਪਾਇੰਟਮੈਂਟਾਂ
+no_appointments,pa,ਕੋਈ ਅਪਾਇੰਟਮੈਂਟ ਨਹੀਂ
+functions_calling_instructions,pa,ਫੰਕਸ਼ਨਾਂ ਨੂੰ ਕਾਲ ਕਰਨ ਦੀਆਂ ਹਦਾਇਤਾਂ
+FINAL COMMANDS,pa,ਅੰਤਿਮ ਕਮਾਂਡਾਂ
+"Keep replies short, polite, and helpful.",pa,"ਜਵਾਬ ਛੋਟੇ, ਨਿਮਰ ਅਤੇ ਲਾਭਦਾਇਕ ਰੱਖੋ।"
+"If booking: 'Great! May I have your name, please?'",pa,ਜੇ ਬੁਕਿੰਗ ਕਰ ਰਹੇ ਹੋ: 'ਵਧੀਆ! ਕੀ ਮੈਂ ਤੁਹਾਡਾ ਨਾਮ ਲੈ ਸਕਦਾ/ਸਕਦੀ ਹਾਂ?'
+We're open until 7 PM today. Would you like something this afternoon?,pa,ਅੱਜ ਅਸੀਂ ਸ਼ਾਮ 7 ਵਜੇ ਤੱਕ ਖੁੱਲ੍ਹੇ ਹਾਂ। ਕੀ ਤੁਸੀਂ ਅੱਜ ਦੁਪਹਿਰ ਲਈ ਕੁਝ ਚਾਹੋਗੇ?
+When would you like to come in?,pa,ਤੁਸੀਂ ਕਦੋਂ ਆਉਣਾ ਚਾਹੁੰਦੇ ਹੋ?
+Please feel free to call us on our phone:,pa,ਕਿਰਪਾ ਕਰਕੇ ਸਾਡੇ ਫੋਨ 'ਤੇ ਬੇਝਿਜਕ ਕਾਲ ਕਰੋ:

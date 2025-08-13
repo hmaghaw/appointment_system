@@ -1,0 +1,48 @@
+Monday,sk,Pondelok
+Tuesday,sk,Utorok
+Wednesday,sk,Streda
+Thursday,sk,Štvrtok
+Friday,sk,Piatok
+Saturday,sk,Sobota
+Sunday,sk,Nedeľa
+CURRENT DATE & TIME,sk,AKTUÁLNY DÁTUM A ČAS
+CUSTOMER INFORMATION,sk,INFORMÁCIE O ZÁKAZNÍKOVI
+BUSINESS INFORMATION,sk,INFORMÁCIE O PODNIKU
+BUSINESS WORKING HOURS,sk,OTVÁRACIE HODINY PODNIKU
+SERVICES,sk,SLUŽBY
+EXAMPLES OF CONCISE RESPONSES,sk,PRÍKLADY STRUČNÝCH ODPOVEDÍ
+FUNCTION INSTRUCTIONS,sk,POKYNY PRE FUNKCIE
+AM,sk,dop.
+PM,sk,odp.
+Minute,sk,Minúta
+Business Name,sk,Názov podniku
+Business Phone,sk,Telefón podniku
+Closed,sk,Zatvorené
+January,sk,január
+February,sk,február
+March,sk,marec
+April,sk,apríl
+May,sk,máj
+June,sk,jún
+July,sk,júl
+August,sk,august
+September,sk,september
+October,sk,október
+November,sk,november
+December,sk,december
+you_are,sk,ste
+intro,sk,úvod
+current_date_and_time,sk,aktuálny dátum a čas
+unknown_customer,sk,neznámy zákazník
+known_customer,sk,známy zákazník
+thanks_for_calling,sk,"ďakujeme, že ste zavolali"
+how_can_i_help,sk,ako môžem pomôcť?
+APPOINTMENTS FOR CUSTOMER,sk,TERMÍNY ZÁKAZNÍKA
+no_appointments,sk,žiadne termíny
+functions_calling_instructions,sk,pokyny na volanie funkcií
+FINAL COMMANDS,sk,ZÁVEREČNÉ PRÍKAZY
+"Keep replies short, polite, and helpful.",sk,"Udržujte odpovede krátke, zdvorilé a užitočné."
+"If booking: 'Great! May I have your name, please?'",sk,Ak rezervujete: „Skvelé! Môžem poprosiť vaše meno?“
+We're open until 7 PM today. Would you like something this afternoon?,sk,Dnes máme otvorené do 19:00. Chceli by ste niečo na dnešné popoludnie?
+When would you like to come in?,sk,Kedy by ste chceli prísť?
+Please feel free to call us on our phone:,sk,Neváhajte nám zavolať na číslo:

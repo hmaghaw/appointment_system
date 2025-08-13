@@ -1,0 +1,48 @@
+Monday,lt,pirmadienis
+Tuesday,lt,antradienis
+Wednesday,lt,trečiadienis
+Thursday,lt,ketvirtadienis
+Friday,lt,penktadienis
+Saturday,lt,šeštadienis
+Sunday,lt,sekmadienis
+CURRENT DATE & TIME,lt,DABARTINĖ DATA IR LAIKAS
+CUSTOMER INFORMATION,lt,KLIENTO INFORMACIJA
+BUSINESS INFORMATION,lt,ĮMONĖS INFORMACIJA
+BUSINESS WORKING HOURS,lt,ĮMONĖS DARBO LAIKAS
+SERVICES,lt,PASLAUGOS
+EXAMPLES OF CONCISE RESPONSES,lt,TRUMPŲ ATSAKYMŲ PAVYZDŽIAI
+FUNCTION INSTRUCTIONS,lt,FUNKCIJŲ INSTRUKCIJOS
+AM,lt,priešpiet
+PM,lt,popiet
+Minute,lt,Minutė
+Business Name,lt,Įmonės pavadinimas
+Business Phone,lt,Įmonės telefonas
+Closed,lt,Uždaryta
+January,lt,sausis
+February,lt,vasaris
+March,lt,kovas
+April,lt,balandis
+May,lt,gegužė
+June,lt,birželis
+July,lt,liepa
+August,lt,rugpjūtis
+September,lt,rugsėjis
+October,lt,spalis
+November,lt,lapkritis
+December,lt,gruodis
+you_are,lt,jūs esate
+intro,lt,įžanga
+current_date_and_time,lt,dabartinė data ir laikas
+unknown_customer,lt,nežinomas klientas
+known_customer,lt,žinomas klientas
+thanks_for_calling,lt,"ačiū, kad paskambinote"
+how_can_i_help,lt,kuo galiu padėti?
+APPOINTMENTS FOR CUSTOMER,lt,KLIENTO VIZITAI
+no_appointments,lt,nėra vizitų
+functions_calling_instructions,lt,funkcijų iškvietimo instrukcijos
+FINAL COMMANDS,lt,GALUTINĖS KOMANDOS
+"Keep replies short, polite, and helpful.",lt,"Laikykite atsakymus trumpus, mandagius ir naudingus."
+"If booking: 'Great! May I have your name, please?'",lt,Jei rezervuojate: „Puiku! Ar galėčiau sužinoti jūsų vardą?“
+We're open until 7 PM today. Would you like something this afternoon?,lt,Šiandien dirbame iki 19 val. Ar norėtumėte ko nors šiam popiet?
+When would you like to come in?,lt,Kada norėtumėte atvykti?
+Please feel free to call us on our phone:,lt,Prašome drąsiai skambinti mums telefonu:

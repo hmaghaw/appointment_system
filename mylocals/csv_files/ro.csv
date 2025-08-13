@@ -1,0 +1,48 @@
+Monday,ro,Luni
+Tuesday,ro,Marți
+Wednesday,ro,Miercuri
+Thursday,ro,Joi
+Friday,ro,Vineri
+Saturday,ro,Sâmbătă
+Sunday,ro,Duminică
+CURRENT DATE & TIME,ro,DATA ȘI ORA ACTUALE
+CUSTOMER INFORMATION,ro,INFORMAȚII DESPRE CLIENT
+BUSINESS INFORMATION,ro,INFORMAȚII DESPRE AFACERE
+BUSINESS WORKING HOURS,ro,PROGRAMUL DE FUNCȚIONARE AL AFACERII
+SERVICES,ro,SERVICII
+EXAMPLES OF CONCISE RESPONSES,ro,EXEMPLE DE RĂSPUNSURI CONCISE
+FUNCTION INSTRUCTIONS,ro,INSTRUCȚIUNI PENTRU FUNCȚII
+AM,ro,a.m.
+PM,ro,p.m.
+Minute,ro,Minut
+Business Name,ro,Numele afacerii
+Business Phone,ro,Telefonul afacerii
+Closed,ro,Închis
+January,ro,Ianuarie
+February,ro,Februarie
+March,ro,Martie
+April,ro,Aprilie
+May,ro,Mai
+June,ro,Iunie
+July,ro,Iulie
+August,ro,August
+September,ro,Septembrie
+October,ro,Octombrie
+November,ro,Noiembrie
+December,ro,Decembrie
+you_are,ro,dumneavoastră sunteți
+intro,ro,introducere
+current_date_and_time,ro,data și ora actuale
+unknown_customer,ro,client necunoscut
+known_customer,ro,client cunoscut
+thanks_for_calling,ro,mulțumim că ați sunat
+how_can_i_help,ro,cu ce vă pot ajuta?
+APPOINTMENTS FOR CUSTOMER,ro,PROGRAMĂRI PENTRU CLIENT
+no_appointments,ro,nu există programări
+functions_calling_instructions,ro,instrucțiuni pentru apelarea funcțiilor
+FINAL COMMANDS,ro,COMENZI FINALE
+"Keep replies short, polite, and helpful.",ro,"Păstrați răspunsurile scurte, politicoase și utile."
+"If booking: 'Great! May I have your name, please?'",ro,"Dacă faceți o programare: „Grozav! Îmi puteți spune numele, vă rog?”"
+We're open until 7 PM today. Would you like something this afternoon?,ro,Astăzi suntem deschiși până la 19:00. Ați dori ceva pentru această după-amiază?
+When would you like to come in?,ro,Când ați dori să veniți?
+Please feel free to call us on our phone:,ro,Nu ezitați să ne sunați la:

@@ -1,0 +1,48 @@
+Monday,tr,Pazartesi
+Tuesday,tr,Salı
+Wednesday,tr,Çarşamba
+Thursday,tr,Perşembe
+Friday,tr,Cuma
+Saturday,tr,Cumartesi
+Sunday,tr,Pazar
+CURRENT DATE & TIME,tr,GEÇERLİ TARİH VE SAAT
+CUSTOMER INFORMATION,tr,MÜŞTERİ BİLGİLERİ
+BUSINESS INFORMATION,tr,İŞLETME BİLGİLERİ
+BUSINESS WORKING HOURS,tr,İŞLETME ÇALIŞMA SAATLERİ
+SERVICES,tr,HİZMETLER
+EXAMPLES OF CONCISE RESPONSES,tr,KISA YANIT ÖRNEKLERİ
+FUNCTION INSTRUCTIONS,tr,FONKSİYON TALİMATLARI
+AM,tr,ÖÖ
+PM,tr,ÖS
+Minute,tr,Dakika
+Business Name,tr,İşletme Adı
+Business Phone,tr,İşletme Telefonu
+Closed,tr,Kapalı
+January,tr,Ocak
+February,tr,Şubat
+March,tr,Mart
+April,tr,Nisan
+May,tr,Mayıs
+June,tr,Haziran
+July,tr,Temmuz
+August,tr,Ağustos
+September,tr,Eylül
+October,tr,Ekim
+November,tr,Kasım
+December,tr,Aralık
+you_are,tr,sizsiniz
+intro,tr,giriş
+current_date_and_time,tr,geçerli tarih ve saat
+unknown_customer,tr,bilinmeyen müşteri
+known_customer,tr,bilinen müşteri
+thanks_for_calling,tr,aradığınız için teşekkürler
+how_can_i_help,tr,nasıl yardımcı olabilirim?
+APPOINTMENTS FOR CUSTOMER,tr,MÜŞTERİ İÇİN RANDEVULAR
+no_appointments,tr,randevu yok
+functions_calling_instructions,tr,fonksiyon çağırma talimatları
+FINAL COMMANDS,tr,SON KOMUTLAR
+"Keep replies short, polite, and helpful.",tr,"Yanıtları kısa, nazik ve faydalı tutun."
+"If booking: 'Great! May I have your name, please?'",tr,Rezervasyon yapıyorsanız: 'Harika! Adınızı alabilir miyim?'
+We're open until 7 PM today. Would you like something this afternoon?,tr,Bugün 19:00'a kadar açığız. Bu öğleden sonra bir şey ister misiniz?
+When would you like to come in?,tr,Ne zaman gelmek istersiniz?
+Please feel free to call us on our phone:,tr,Lütfen bizi şu telefondan aramaktan çekinmeyin:

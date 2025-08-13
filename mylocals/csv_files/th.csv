@@ -1,0 +1,48 @@
+Monday,th,จันทร์
+Tuesday,th,อังคาร
+Wednesday,th,พุธ
+Thursday,th,พฤหัสบดี
+Friday,th,ศุกร์
+Saturday,th,เสาร์
+Sunday,th,อาทิตย์
+CURRENT DATE & TIME,th,วันที่และเวลาปัจจุบัน
+CUSTOMER INFORMATION,th,ข้อมูลลูกค้า
+BUSINESS INFORMATION,th,ข้อมูลธุรกิจ
+BUSINESS WORKING HOURS,th,เวลาทำการของธุรกิจ
+SERVICES,th,บริการ
+EXAMPLES OF CONCISE RESPONSES,th,ตัวอย่างคำตอบแบบกระชับ
+FUNCTION INSTRUCTIONS,th,คำแนะนำการใช้งานฟังก์ชัน
+AM,th,ก่อนเที่ยง
+PM,th,หลังเที่ยง
+Minute,th,นาที
+Business Name,th,ชื่อธุรกิจ
+Business Phone,th,หมายเลขโทรศัพท์ของธุรกิจ
+Closed,th,ปิด
+January,th,มกราคม
+February,th,กุมภาพันธ์
+March,th,มีนาคม
+April,th,เมษายน
+May,th,พฤษภาคม
+June,th,มิถุนายน
+July,th,กรกฎาคม
+August,th,สิงหาคม
+September,th,กันยายน
+October,th,ตุลาคม
+November,th,พฤศจิกายน
+December,th,ธันวาคม
+you_are,th,คุณคือ
+intro,th,บทนำ
+current_date_and_time,th,วันที่และเวลาปัจจุบัน
+unknown_customer,th,ลูกค้าไม่ทราบตัวตน
+known_customer,th,ลูกค้าที่รู้จัก
+thanks_for_calling,th,ขอบคุณที่โทรมา
+how_can_i_help,th,ฉันสามารถช่วยอะไรคุณได้บ้าง?
+APPOINTMENTS FOR CUSTOMER,th,การนัดหมายของลูกค้า
+no_appointments,th,ไม่มีการนัดหมาย
+functions_calling_instructions,th,คำแนะนำการเรียกใช้ฟังก์ชัน
+FINAL COMMANDS,th,คำสั่งสุดท้าย
+"Keep replies short, polite, and helpful.",th,โปรดตอบให้สั้น สุภาพ และเป็นประโยชน์
+"If booking: 'Great! May I have your name, please?'",th,หากทำการจอง: 'เยี่ยมมาก! ขอทราบชื่อของคุณได้ไหม?'
+We're open until 7 PM today. Would you like something this afternoon?,th,วันนี้เราเปิดถึง 19:00 ต้องการนัดหมายช่วงบ่ายนี้ไหม?
+When would you like to come in?,th,คุณต้องการเข้ามาเมื่อไหร่?
+Please feel free to call us on our phone:,th,สามารถโทรหาเราได้ที่หมายเลข:

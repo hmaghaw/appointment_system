@@ -1,0 +1,48 @@
+Monday,te,సోమవారం
+Tuesday,te,మంగళవారం
+Wednesday,te,బుధవారం
+Thursday,te,గురువారం
+Friday,te,శుక్రవారం
+Saturday,te,శనివారం
+Sunday,te,ఆదివారం
+CURRENT DATE & TIME,te,ప్రస్తుత తేదీ & సమయం
+CUSTOMER INFORMATION,te,కస్టమర్ సమాచారం
+BUSINESS INFORMATION,te,వ్యాపార సమాచారం
+BUSINESS WORKING HOURS,te,వ్యాపార పని వేళలు
+SERVICES,te,సేవలు
+EXAMPLES OF CONCISE RESPONSES,te,సంక్షిప్త సమాధానాల ఉదాహరణలు
+FUNCTION INSTRUCTIONS,te,ఫంక్షన్ సూచనలు
+AM,te,AM
+PM,te,PM
+Minute,te,నిమిషం
+Business Name,te,వ్యాపార పేరు
+Business Phone,te,వ్యాపార ఫోన్
+Closed,te,మూసివుంది
+January,te,జనవరి
+February,te,ఫిబ్రవరి
+March,te,మార్చి
+April,te,ఏప్రిల్
+May,te,మే
+June,te,జూన్
+July,te,జూలై
+August,te,ఆగస్టు
+September,te,సెప్టెంబర్
+October,te,అక్టోబర్
+November,te,నవంబర్
+December,te,డిసెంబర్
+you_are,te,మీరు
+intro,te,పరిచయం
+current_date_and_time,te,ప్రస్తుత తేదీ మరియు సమయం
+unknown_customer,te,తెలియని కస్టమర్
+known_customer,te,తెలిసిన కస్టమర్
+thanks_for_calling,te,కాల్ చేసినందుకు ధన్యవాదాలు
+how_can_i_help,te,నేను ఎలా సహాయం చేయగలను?
+APPOINTMENTS FOR CUSTOMER,te,కస్టమర్ కోసం అపాయింట్‌మెంట్లు
+no_appointments,te,అపాయింట్‌మెంట్లు లేవు
+functions_calling_instructions,te,ఫంక్షన్లను కాల్ చేసే సూచనలు
+FINAL COMMANDS,te,తుది ఆదేశాలు
+"Keep replies short, polite, and helpful.",te,"సమాధానాలను చిన్నగా, మర్యాదపూర్వకంగా మరియు ఉపయుక్తంగా ఉంచండి."
+"If booking: 'Great! May I have your name, please?'",te,బుకింగ్ అయితే: 'చాలా బాగుంది! దయచేసి మీ పేరు చెప్పగలరా?'
+We're open until 7 PM today. Would you like something this afternoon?,te,ఈ రోజు మేము రాత్రి 7 గంటల వరకు తెరిచి ఉన్నాం. ఈ మధ్యాహ్నం ఏదైనా కావాలా?
+When would you like to come in?,te,మీరు ఎప్పుడు రావాలనుకుంటున్నారు?
+Please feel free to call us on our phone:,te,దయచేసి మా ఫోన్‌కు సంకోచం లేకుండా కాల్ చేయండి:

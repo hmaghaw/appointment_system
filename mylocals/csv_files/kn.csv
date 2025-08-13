@@ -1,0 +1,48 @@
+Monday,kn,ಸೋಮವಾರ
+Tuesday,kn,ಮಂಗಳವಾರ
+Wednesday,kn,ಬುಧವಾರ
+Thursday,kn,ಗುರುವಾರ
+Friday,kn,ಶುಕ್ರವಾರ
+Saturday,kn,ಶನಿವಾರ
+Sunday,kn,ಭಾನುವಾರ
+CURRENT DATE & TIME,kn,ಪ್ರಸ್ತುತ ದಿನಾಂಕ ಮತ್ತು ಸಮಯ
+CUSTOMER INFORMATION,kn,ಗ್ರಾಹಕ ಮಾಹಿತಿ
+BUSINESS INFORMATION,kn,ವ್ಯವಹಾರದ ಮಾಹಿತಿ
+BUSINESS WORKING HOURS,kn,ವ್ಯವಹಾರದ ಕೆಲಸದ ಸಮಯ
+SERVICES,kn,ಸೇವೆಗಳು
+EXAMPLES OF CONCISE RESPONSES,kn,ಸಂಕ್ಷಿಪ್ತ ಪ್ರತಿಕ್ರಿಯೆಗಳ ಉದಾಹರಣೆಗಳು
+FUNCTION INSTRUCTIONS,kn,ಕಾರ್ಯ ಸೂಚನೆಗಳು
+AM,kn,ಪೂರ್ವಾಹ್ನ
+PM,kn,ಅಪರಾಹ್ನ
+Minute,kn,ನಿಮಿಷ
+Business Name,kn,ವ್ಯವಹಾರದ ಹೆಸರು
+Business Phone,kn,ವ್ಯವಹಾರದ ದೂರವಾಣಿ
+Closed,kn,ಮುಚ್ಚಲಾಗಿದೆ
+January,kn,ಜನವರಿ
+February,kn,ಫೆಬ್ರವರಿ
+March,kn,ಮಾರ್ಚ್
+April,kn,ಏಪ್ರಿಲ್
+May,kn,ಮೇ
+June,kn,ಜೂನ್
+July,kn,ಜುಲೈ
+August,kn,ಆಗಸ್ಟ್
+September,kn,ಸೆಪ್ಟೆಂಬರ್
+October,kn,ಅಕ್ಟೋಬರ್
+November,kn,ನವೆಂಬರ್
+December,kn,ಡಿಸೆಂಬರ್
+you_are,kn,ನೀವು
+intro,kn,ಪರಿಚಯ
+current_date_and_time,kn,ಪ್ರಸ್ತುತ ದಿನಾಂಕ ಮತ್ತು ಸಮಯ
+unknown_customer,kn,ಅಜ್ಞಾತ ಗ್ರಾಹಕ
+known_customer,kn,ಪರಿಚಿತ ಗ್ರಾಹಕ
+thanks_for_calling,kn,ಕರೆ ಮಾಡಿದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು
+how_can_i_help,kn,ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?
+APPOINTMENTS FOR CUSTOMER,kn,ಗ್ರಾಹಕರಿಗಾಗಿ ನಿಯೋಜನೆಗಳು
+no_appointments,kn,ಯಾವುದೇ ನಿಯೋಜನೆಗಳಿಲ್ಲ
+functions_calling_instructions,kn,ಕಾರ್ಯಗಳನ್ನು ಕರೆ ಮಾಡುವ ಸೂಚನೆಗಳು
+FINAL COMMANDS,kn,ಅಂತಿಮ ಆಜ್ಞೆಗಳು
+"Keep replies short, polite, and helpful.",kn,"ಪ್ರತಿಕ್ರಿಯೆಗಳನ್ನು ಚಿಕ್ಕದಾಗಿ, ಸೌಜನ್ಯಪೂರ್ಣವಾಗಿ ಮತ್ತು ಉಪಯುಕ್ತವಾಗಿಡಿ."
+"If booking: 'Great! May I have your name, please?'",kn,ಬುಕ್ಕಿಂಗ್ ಇದ್ದರೆ: 'ಚೆನ್ನಾಗಿದೆ! ದಯವಿಟ್ಟು ನಿಮ್ಮ ಹೆಸರನ್ನು ನೀಡುತ್ತೀರಾ?'
+We're open until 7 PM today. Would you like something this afternoon?,kn,ಇಂದು ನಾವು ಸಂಜೆ 7 ಗಂಟೆಯವರೆಗೆ ತೆರೆಯಿದ್ದೇವೆ. ನಿಮಗೆ ಈ ಮಧ್ಯಾಹ್ನ ಏನಾದರೂ ಬೇಕೆ?
+When would you like to come in?,kn,ನೀವು ಯಾವಾಗ ಬರಲು ಇಷ್ಟಪಡುತ್ತೀರಿ?
+Please feel free to call us on our phone:,kn,ದಯವಿಟ್ಟು ನಮ್ಮ ದೂರವಾಣಿಗೆ ನಿರ್ಬಂಧವಿಲ್ಲದೆ ಕರೆ ಮಾಡಿ:

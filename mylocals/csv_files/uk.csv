@@ -1,0 +1,48 @@
+Monday,uk,Понеділок
+Tuesday,uk,Вівторок
+Wednesday,uk,Середа
+Thursday,uk,Четвер
+Friday,uk,П’ятниця
+Saturday,uk,Субота
+Sunday,uk,Неділя
+CURRENT DATE & TIME,uk,ПОТОЧНА ДАТА ТА ЧАС
+CUSTOMER INFORMATION,uk,ІНФОРМАЦІЯ ПРО КЛІЄНТА
+BUSINESS INFORMATION,uk,ІНФОРМАЦІЯ ПРО БІЗНЕС
+BUSINESS WORKING HOURS,uk,ГОДИНИ РОБОТИ БІЗНЕСУ
+SERVICES,uk,ПОСЛУГИ
+EXAMPLES OF CONCISE RESPONSES,uk,ПРИКЛАДИ СТИСЛИХ ВІДПОВІДЕЙ
+FUNCTION INSTRUCTIONS,uk,ІНСТРУКЦІЇ ЩОДО ФУНКЦІЙ
+AM,uk,дп
+PM,uk,пп
+Minute,uk,Хвилина
+Business Name,uk,Назва бізнесу
+Business Phone,uk,Телефон бізнесу
+Closed,uk,Зачинено
+January,uk,Січень
+February,uk,Лютий
+March,uk,Березень
+April,uk,Квітень
+May,uk,Травень
+June,uk,Червень
+July,uk,Липень
+August,uk,Серпень
+September,uk,Вересень
+October,uk,Жовтень
+November,uk,Листопад
+December,uk,Грудень
+you_are,uk,ви є
+intro,uk,вступ
+current_date_and_time,uk,поточна дата та час
+unknown_customer,uk,невідомий клієнт
+known_customer,uk,відомий клієнт
+thanks_for_calling,uk,дякуємо за дзвінок
+how_can_i_help,uk,чим я можу допомогти?
+APPOINTMENTS FOR CUSTOMER,uk,ЗАПИСИ КЛІЄНТА
+no_appointments,uk,немає записів
+functions_calling_instructions,uk,інструкції щодо виклику функцій
+FINAL COMMANDS,uk,КІНЦЕВІ КОМАНДИ
+"Keep replies short, polite, and helpful.",uk,"Тримайте відповіді короткими, ввічливими та корисними."
+"If booking: 'Great! May I have your name, please?'",uk,"Якщо бронюєте: «Чудово! Можна, будь ласка, ваше ім’я?»"
+We're open until 7 PM today. Would you like something this afternoon?,uk,Сьогодні працюємо до 19:00. Хотіли б щось на сьогодні пообіді?
+When would you like to come in?,uk,Коли б ви хотіли прийти?
+Please feel free to call us on our phone:,uk,"Будь ласка, телефонуйте нам за номером:"

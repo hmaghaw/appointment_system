@@ -1,0 +1,48 @@
+Monday,is,Mánudagur
+Tuesday,is,Þriðjudagur
+Wednesday,is,Miðvikudagur
+Thursday,is,Fimmtudagur
+Friday,is,Föstudagur
+Saturday,is,Laugardagur
+Sunday,is,Sunnudagur
+CURRENT DATE & TIME,is,NÚVERANDI DAGSETNING OG TÍMI
+CUSTOMER INFORMATION,is,UPPLÝSINGAR UM VIÐSKIPTAVIN
+BUSINESS INFORMATION,is,UPPLÝSINGAR UM FYRIRTÆKIÐ
+BUSINESS WORKING HOURS,is,OPNUNARTÍMI FYRIRTÆKIS
+SERVICES,is,ÞJÓNUSTA
+EXAMPLES OF CONCISE RESPONSES,is,DÆMI UM STUTT SVÖR
+FUNCTION INSTRUCTIONS,is,LEIÐBEININGAR FYRIR AÐGERÐIR
+AM,is,f.h.
+PM,is,e.h.
+Minute,is,Mínúta
+Business Name,is,Nafn fyrirtækis
+Business Phone,is,Sími fyrirtækis
+Closed,is,Lokað
+January,is,janúar
+February,is,febrúar
+March,is,mars
+April,is,apríl
+May,is,maí
+June,is,júní
+July,is,júlí
+August,is,ágúst
+September,is,september
+October,is,október
+November,is,nóvember
+December,is,desember
+you_are,is,þú ert
+intro,is,kynning
+current_date_and_time,is,núverandi dagsetning og tími
+unknown_customer,is,óþekktur viðskiptavinur
+known_customer,is,þekktur viðskiptavinur
+thanks_for_calling,is,takk fyrir að hringja
+how_can_i_help,is,hvernig get ég hjálpað?
+APPOINTMENTS FOR CUSTOMER,is,TÍMAPANTANIR FYRIR VIÐSKIPTAVIN
+no_appointments,is,engar tímabókanir
+functions_calling_instructions,is,leiðbeiningar um að kalla í föll
+FINAL COMMANDS,is,LOKA FYRIRMÆLI
+"Keep replies short, polite, and helpful.",is,"Hafðu svör stutt, kurteis og gagnleg."
+"If booking: 'Great! May I have your name, please?'",is,"Ef þú vilt bóka: „Frábært! Má ég fá nafnið þitt, vinsamlegast?“"
+We're open until 7 PM today. Would you like something this afternoon?,is,Við erum opin til kl. 19 í dag. Viltu eitthvað síðdegis?
+When would you like to come in?,is,Hvenær viltu koma?
+Please feel free to call us on our phone:,is,Endilega hringdu í símanúmerið okkar:

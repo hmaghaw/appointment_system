@@ -1,0 +1,48 @@
+Monday,bg,Понеделник
+Tuesday,bg,Вторник
+Wednesday,bg,Сряда
+Thursday,bg,Четвъртък
+Friday,bg,Петък
+Saturday,bg,Събота
+Sunday,bg,Неделя
+CURRENT DATE & TIME,bg,ТЕКУЩА ДАТА И ЧАС
+CUSTOMER INFORMATION,bg,ИНФОРМАЦИЯ ЗА КЛИЕНТ
+BUSINESS INFORMATION,bg,ИНФОРМАЦИЯ ЗА БИЗНЕСА
+BUSINESS WORKING HOURS,bg,РАБОТНО ВРЕМЕ НА БИЗНЕСА
+SERVICES,bg,УСЛУГИ
+EXAMPLES OF CONCISE RESPONSES,bg,ПРИМЕРИ ЗА КРАТКИ ОТГОВОРИ
+FUNCTION INSTRUCTIONS,bg,ИНСТРУКЦИИ ЗА ФУНКЦИИТЕ
+AM,bg,пр.об.
+PM,bg,сл.об.
+Minute,bg,Минута
+Business Name,bg,Име на бизнеса
+Business Phone,bg,Телефон на бизнеса
+Closed,bg,Затворено
+January,bg,Януари
+February,bg,Февруари
+March,bg,Март
+April,bg,Април
+May,bg,Май
+June,bg,Юни
+July,bg,Юли
+August,bg,Август
+September,bg,Септември
+October,bg,Октомври
+November,bg,Ноември
+December,bg,Декември
+you_are,bg,вие сте
+intro,bg,въведение
+current_date_and_time,bg,текуща дата и час
+unknown_customer,bg,неизвестен клиент
+known_customer,bg,познат клиент
+thanks_for_calling,bg,"благодарим, че се обадихте"
+how_can_i_help,bg,с какво мога да помогна?
+APPOINTMENTS FOR CUSTOMER,bg,ЧАСОВЕ ЗА КЛИЕНТА
+no_appointments,bg,няма часове
+functions_calling_instructions,bg,инструкции за извикване на функции
+FINAL COMMANDS,bg,КРАЙНИ КОМАНДИ
+"Keep replies short, polite, and helpful.",bg,"Поддържайте отговорите кратки, учтиви и полезни."
+"If booking: 'Great! May I have your name, please?'",bg,"Ако записвате час: „Чудесно! Може ли името ви, моля?“"
+We're open until 7 PM today. Would you like something this afternoon?,bg,Днес сме отворени до 19:00. Желаете ли нещо за следобед?
+When would you like to come in?,bg,Кога бихте искали да дойдете?
+Please feel free to call us on our phone:,bg,"Моля, не се колебайте да ни се обадите на:"

@@ -1,0 +1,48 @@
+Monday,id,Senin
+Tuesday,id,Selasa
+Wednesday,id,Rabu
+Thursday,id,Kamis
+Friday,id,Jumat
+Saturday,id,Sabtu
+Sunday,id,Minggu
+CURRENT DATE & TIME,id,TANGGAL & WAKTU SAAT INI
+CUSTOMER INFORMATION,id,INFORMASI PELANGGAN
+BUSINESS INFORMATION,id,INFORMASI BISNIS
+BUSINESS WORKING HOURS,id,JAM OPERASIONAL BISNIS
+SERVICES,id,LAYANAN
+EXAMPLES OF CONCISE RESPONSES,id,CONTOH TANGGAPAN SINGKAT
+FUNCTION INSTRUCTIONS,id,INSTRUKSI FUNGSI
+AM,id,AM
+PM,id,PM
+Minute,id,Menit
+Business Name,id,Nama Bisnis
+Business Phone,id,Telepon Bisnis
+Closed,id,Tutup
+January,id,Januari
+February,id,Februari
+March,id,Maret
+April,id,April
+May,id,Mei
+June,id,Juni
+July,id,Juli
+August,id,Agustus
+September,id,September
+October,id,Oktober
+November,id,November
+December,id,Desember
+you_are,id,Anda adalah
+intro,id,pengantar
+current_date_and_time,id,tanggal dan waktu saat ini
+unknown_customer,id,pelanggan tidak dikenal
+known_customer,id,pelanggan dikenal
+thanks_for_calling,id,terima kasih telah menelepon
+how_can_i_help,id,bagaimana saya bisa membantu?
+APPOINTMENTS FOR CUSTOMER,id,JANJI TEMU PELANGGAN
+no_appointments,id,tidak ada janji temu
+functions_calling_instructions,id,instruksi pemanggilan fungsi
+FINAL COMMANDS,id,PERINTAH AKHIR
+"Keep replies short, polite, and helpful.",id,"Jaga jawaban tetap singkat, sopan, dan membantu."
+"If booking: 'Great! May I have your name, please?'",id,Jika pemesanan: 'Bagus! Boleh saya mengetahui nama Anda?'
+We're open until 7 PM today. Would you like something this afternoon?,id,Hari ini kami buka sampai pukul 19.00. Apakah Anda menginginkan sesuatu sore ini?
+When would you like to come in?,id,Kapan Anda ingin datang?
+Please feel free to call us on our phone:,id,Silakan hubungi kami di telepon:

@@ -1,0 +1,48 @@
+Monday,hu,hétfő
+Tuesday,hu,kedd
+Wednesday,hu,szerda
+Thursday,hu,csütörtök
+Friday,hu,péntek
+Saturday,hu,szombat
+Sunday,hu,vasárnap
+CURRENT DATE & TIME,hu,AKTUÁLIS DÁTUM ÉS IDŐ
+CUSTOMER INFORMATION,hu,ÜGYFÉLINFORMÁCIÓK
+BUSINESS INFORMATION,hu,CÉGINFORMÁCIÓK
+BUSINESS WORKING HOURS,hu,A CÉG NYITVATARTÁSA
+SERVICES,hu,SZOLGÁLTATÁSOK
+EXAMPLES OF CONCISE RESPONSES,hu,TÖMÖR VÁLASZOK PÉLDÁI
+FUNCTION INSTRUCTIONS,hu,FUNKCIÓK ÚTMUTATÓJA
+AM,hu,de.
+PM,hu,du.
+Minute,hu,Perc
+Business Name,hu,Cég neve
+Business Phone,hu,Cég telefonszáma
+Closed,hu,Zárva
+January,hu,január
+February,hu,február
+March,hu,március
+April,hu,április
+May,hu,május
+June,hu,június
+July,hu,július
+August,hu,augusztus
+September,hu,szeptember
+October,hu,október
+November,hu,november
+December,hu,december
+you_are,hu,te vagy
+intro,hu,bevezetés
+current_date_and_time,hu,aktuális dátum és idő
+unknown_customer,hu,ismeretlen ügyfél
+known_customer,hu,ismert ügyfél
+thanks_for_calling,hu,köszönjük a hívást
+how_can_i_help,hu,miben segíthetek?
+APPOINTMENTS FOR CUSTOMER,hu,ÜGYFÉL IDŐPONTJAI
+no_appointments,hu,nincsenek időpontok
+functions_calling_instructions,hu,függvényhívási utasítások
+FINAL COMMANDS,hu,VÉGSŐ PARANCSOK
+"Keep replies short, polite, and helpful.",hu,"Tartsa a válaszokat röviden, udvariasan és hasznosan."
+"If booking: 'Great! May I have your name, please?'",hu,"Foglalás esetén: „Remek! Kérem, megadhatná a nevét?”"
+We're open until 7 PM today. Would you like something this afternoon?,hu,Ma 19:00-ig vagyunk nyitva. Szeretne valamit ma délutánra?
+When would you like to come in?,hu,Mikor szeretne bejönni?
+Please feel free to call us on our phone:,hu,"Kérjük, bátran hívjon minket ezen a telefonszámon:"

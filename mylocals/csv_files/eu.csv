@@ -1,0 +1,48 @@
+Monday,eu,Astelehena
+Tuesday,eu,Asteartea
+Wednesday,eu,Asteazkena
+Thursday,eu,Osteguna
+Friday,eu,Ostirala
+Saturday,eu,Larunbata
+Sunday,eu,Igandea
+CURRENT DATE & TIME,eu,UNEEKO DATA ETA ORDUA
+CUSTOMER INFORMATION,eu,BEZEROAREN INFORMAZIOA
+BUSINESS INFORMATION,eu,ENPRESAREN INFORMAZIOA
+BUSINESS WORKING HOURS,eu,ENPRESAREN LAN-ORDUTEGIA
+SERVICES,eu,ZERBITZUAK
+EXAMPLES OF CONCISE RESPONSES,eu,ERANTZUN LABURREN ADIBIDEAK
+FUNCTION INSTRUCTIONS,eu,FUNTZIOEN JARRAIBIDEAK
+AM,eu,a.m.
+PM,eu,p.m.
+Minute,eu,Minutu
+Business Name,eu,Enpresaren izena
+Business Phone,eu,Enpresaren telefonoa
+Closed,eu,Itxita
+January,eu,Urtarrila
+February,eu,Otsaila
+March,eu,Martxoa
+April,eu,Apirila
+May,eu,Maiatza
+June,eu,Ekaina
+July,eu,Uztaila
+August,eu,Abuztua
+September,eu,Iraila
+October,eu,Urria
+November,eu,Azaroa
+December,eu,Abendua
+you_are,eu,zara
+intro,eu,sarrera
+current_date_and_time,eu,uneko data eta ordua
+unknown_customer,eu,bezero ezezaguna
+known_customer,eu,bezero ezaguna
+thanks_for_calling,eu,deitzeagatik eskerrik asko
+how_can_i_help,eu,nola lagundu diezazuket?
+APPOINTMENTS FOR CUSTOMER,eu,BEZEROAREN HITZORDUAK
+no_appointments,eu,hitzordurik ez
+functions_calling_instructions,eu,funtzioak deitzeko jarraibideak
+FINAL COMMANDS,eu,AZKEN AGINDUAK
+"Keep replies short, polite, and helpful.",eu,"Mantendu erantzunak laburrak, adeitsuak eta lagungarriak."
+"If booking: 'Great! May I have your name, please?'",eu,"Erreserba bada: 'Bikain! Eman al diezadakezu zure izena, mesedez?'"
+We're open until 7 PM today. Would you like something this afternoon?,eu,Gaur 19:00ak arte gaude zabalik. Arratsalde honetan zerbait nahi al duzu?
+When would you like to come in?,eu,Noiz etorri nahiko zenuke?
+Please feel free to call us on our phone:,eu,"Mesedez, deitu lasai gure telefono honetara:"

@@ -1,0 +1,48 @@
+Monday,ko,월요일
+Tuesday,ko,화요일
+Wednesday,ko,수요일
+Thursday,ko,목요일
+Friday,ko,금요일
+Saturday,ko,토요일
+Sunday,ko,일요일
+CURRENT DATE & TIME,ko,현재 날짜 및 시간
+CUSTOMER INFORMATION,ko,고객 정보
+BUSINESS INFORMATION,ko,비즈니스 정보
+BUSINESS WORKING HOURS,ko,영업 시간
+SERVICES,ko,서비스
+EXAMPLES OF CONCISE RESPONSES,ko,간결한 응답 예시
+FUNCTION INSTRUCTIONS,ko,기능 지침
+AM,ko,오전
+PM,ko,오후
+Minute,ko,분
+Business Name,ko,업체명
+Business Phone,ko,업체 전화번호
+Closed,ko,휴무
+January,ko,1월
+February,ko,2월
+March,ko,3월
+April,ko,4월
+May,ko,5월
+June,ko,6월
+July,ko,7월
+August,ko,8월
+September,ko,9월
+October,ko,10월
+November,ko,11월
+December,ko,12월
+you_are,ko,당신은
+intro,ko,소개
+current_date_and_time,ko,현재 날짜와 시간
+unknown_customer,ko,알 수 없는 고객
+known_customer,ko,기존 고객
+thanks_for_calling,ko,전화해 주셔서 감사합니다
+how_can_i_help,ko,무엇을 도와드릴까요?
+APPOINTMENTS FOR CUSTOMER,ko,고객 예약
+no_appointments,ko,예약이 없습니다
+functions_calling_instructions,ko,함수 호출 지침
+FINAL COMMANDS,ko,최종 명령
+"Keep replies short, polite, and helpful.",ko,답변은 짧고 정중하며 도움이 되게 하세요.
+"If booking: 'Great! May I have your name, please?'",ko,예약하시는 경우: '좋습니다! 성함을 알려 주시겠어요?'
+We're open until 7 PM today. Would you like something this afternoon?,ko,오늘은 오후 7시까지 영업합니다. 오늘 오후에 원하시는 것이 있으신가요?
+When would you like to come in?,ko,언제 방문하시겠습니까?
+Please feel free to call us on our phone:,ko,전화로 언제든지 연락해 주세요:

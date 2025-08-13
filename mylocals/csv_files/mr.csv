@@ -1,0 +1,48 @@
+Monday,mr,सोमवार
+Tuesday,mr,मंगळवार
+Wednesday,mr,बुधवार
+Thursday,mr,गुरुवार
+Friday,mr,शुक्रवार
+Saturday,mr,शनिवार
+Sunday,mr,रविवार
+CURRENT DATE & TIME,mr,सध्याची तारीख आणि वेळ
+CUSTOMER INFORMATION,mr,ग्राहक माहिती
+BUSINESS INFORMATION,mr,व्यवसायाची माहिती
+BUSINESS WORKING HOURS,mr,व्यवसायाचे कामाचे तास
+SERVICES,mr,सेवा
+EXAMPLES OF CONCISE RESPONSES,mr,संक्षिप्त उत्तरांची उदाहरणे
+FUNCTION INSTRUCTIONS,mr,फंक्शनच्या सूचना
+AM,mr,AM
+PM,mr,PM
+Minute,mr,मिनिट
+Business Name,mr,व्यवसायाचे नाव
+Business Phone,mr,व्यवसायाचा फोन
+Closed,mr,बंद
+January,mr,जानेवारी
+February,mr,फेब्रुवारी
+March,mr,मार्च
+April,mr,एप्रिल
+May,mr,मे
+June,mr,जून
+July,mr,जुलै
+August,mr,ऑगस्ट
+September,mr,सप्टेंबर
+October,mr,ऑक्टोबर
+November,mr,नोव्हेंबर
+December,mr,डिसेंबर
+you_are,mr,आपण आहात
+intro,mr,परिचय
+current_date_and_time,mr,सध्याची तारीख आणि वेळ
+unknown_customer,mr,अज्ञात ग्राहक
+known_customer,mr,ओळखीचा ग्राहक
+thanks_for_calling,mr,फोन केल्याबद्दल धन्यवाद
+how_can_i_help,mr,मी कशी मदत करू?
+APPOINTMENTS FOR CUSTOMER,mr,ग्राहकाच्या नियुक्त्या
+no_appointments,mr,नियुक्त्या नाहीत
+functions_calling_instructions,mr,फंक्शन्स कॉल करण्याच्या सूचना
+FINAL COMMANDS,mr,अंतिम आदेश
+"Keep replies short, polite, and helpful.",mr,"उत्तरे लहान, नम्र आणि उपयुक्त ठेवा."
+"If booking: 'Great! May I have your name, please?'",mr,बुकिंग असल्यास: 'छान! कृपया आपले नाव सांगाल का?'
+We're open until 7 PM today. Would you like something this afternoon?,mr,आज आम्ही संध्याकाळी ७ पर्यंत खुले आहोत. आपल्याला दुपारी काही हवे आहे का?
+When would you like to come in?,mr,आपण कधी येऊ इच्छिता?
+Please feel free to call us on our phone:,mr,कृपया आमच्या फोनवर निःसंकोच कॉल करा:

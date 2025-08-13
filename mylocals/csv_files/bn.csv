@@ -1,0 +1,48 @@
+Monday,bn,সোমবার
+Tuesday,bn,মঙ্গলবার
+Wednesday,bn,বুধবার
+Thursday,bn,বৃহস্পতিবার
+Friday,bn,শুক্রবার
+Saturday,bn,শনিবার
+Sunday,bn,রবিবার
+CURRENT DATE & TIME,bn,বর্তমান তারিখ ও সময়
+CUSTOMER INFORMATION,bn,গ্রাহকের তথ্য
+BUSINESS INFORMATION,bn,ব্যবসার তথ্য
+BUSINESS WORKING HOURS,bn,ব্যবসার কাজের সময়সূচি
+SERVICES,bn,সেবা
+EXAMPLES OF CONCISE RESPONSES,bn,সংক্ষিপ্ত উত্তরগুলোর উদাহরণ
+FUNCTION INSTRUCTIONS,bn,ফাংশনের নির্দেশনা
+AM,bn,পূর্বাহ্ণ
+PM,bn,অপরাহ্ণ
+Minute,bn,মিনিট
+Business Name,bn,ব্যবসার নাম
+Business Phone,bn,ব্যবসার ফোন
+Closed,bn,বন্ধ
+January,bn,জানুয়ারি
+February,bn,ফেব্রুয়ারি
+March,bn,মার্চ
+April,bn,এপ্রিল
+May,bn,মে
+June,bn,জুন
+July,bn,জুলাই
+August,bn,আগস্ট
+September,bn,সেপ্টেম্বর
+October,bn,অক্টোবর
+November,bn,নভেম্বর
+December,bn,ডিসেম্বর
+you_are,bn,আপনি হলেন
+intro,bn,ভূমিকা
+current_date_and_time,bn,বর্তমান তারিখ ও সময়
+unknown_customer,bn,অজানা গ্রাহক
+known_customer,bn,পরিচিত গ্রাহক
+thanks_for_calling,bn,ফোন করার জন্য ধন্যবাদ
+how_can_i_help,bn,আমি কীভাবে সাহায্য করতে পারি?
+APPOINTMENTS FOR CUSTOMER,bn,গ্রাহকের অ্যাপয়েন্টমেন্ট
+no_appointments,bn,কোনো অ্যাপয়েন্টমেন্ট নেই
+functions_calling_instructions,bn,ফাংশন কল করার নির্দেশনা
+FINAL COMMANDS,bn,চূড়ান্ত কমান্ডসমূহ
+"Keep replies short, polite, and helpful.",bn,"উত্তরগুলো সংক্ষিপ্ত, ভদ্র ও সহায়ক রাখুন।"
+"If booking: 'Great! May I have your name, please?'",bn,যদি বুকিং করেন: 'চমৎকার! অনুগ্রহ করে আপনার নামটি বলবেন?'
+We're open until 7 PM today. Would you like something this afternoon?,bn,আজ আমরা সন্ধ্যা ৭টা পর্যন্ত খোলা। আজ বিকেলে কিছু চান কি?
+When would you like to come in?,bn,আপনি কবে আসতে চান?
+Please feel free to call us on our phone:,bn,আমাদের ফোন নম্বরে নির্দ্বিধায় কল করুন:

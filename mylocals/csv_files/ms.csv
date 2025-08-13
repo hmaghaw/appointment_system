@@ -1,0 +1,48 @@
+Monday,ms,Isnin
+Tuesday,ms,Selasa
+Wednesday,ms,Rabu
+Thursday,ms,Khamis
+Friday,ms,Jumaat
+Saturday,ms,Sabtu
+Sunday,ms,Ahad
+CURRENT DATE & TIME,ms,TARIKH & MASA SEMASA
+CUSTOMER INFORMATION,ms,MAKLUMAT PELANGGAN
+BUSINESS INFORMATION,ms,MAKLUMAT PERNIAGAAN
+BUSINESS WORKING HOURS,ms,WAKTU OPERASI PERNIAGAAN
+SERVICES,ms,PERKHIDMATAN
+EXAMPLES OF CONCISE RESPONSES,ms,CONTOH JAWAPAN RINGKAS
+FUNCTION INSTRUCTIONS,ms,ARAHAN FUNGSI
+AM,ms,AM
+PM,ms,PM
+Minute,ms,Minit
+Business Name,ms,Nama Perniagaan
+Business Phone,ms,Telefon Perniagaan
+Closed,ms,Tutup
+January,ms,Januari
+February,ms,Februari
+March,ms,Mac
+April,ms,April
+May,ms,Mei
+June,ms,Jun
+July,ms,Julai
+August,ms,Ogos
+September,ms,September
+October,ms,Oktober
+November,ms,November
+December,ms,Disember
+you_are,ms,anda ialah
+intro,ms,pengenalan
+current_date_and_time,ms,tarikh dan masa semasa
+unknown_customer,ms,pelanggan tidak diketahui
+known_customer,ms,pelanggan dikenali
+thanks_for_calling,ms,terima kasih kerana menelefon
+how_can_i_help,ms,bagaimana saya boleh membantu?
+APPOINTMENTS FOR CUSTOMER,ms,TEMU JANJI PELANGGAN
+no_appointments,ms,tiada temu janji
+functions_calling_instructions,ms,arahan pemanggilan fungsi
+FINAL COMMANDS,ms,ARAHAN AKHIR
+"Keep replies short, polite, and helpful.",ms,"Pastikan jawapan ringkas, sopan dan membantu."
+"If booking: 'Great! May I have your name, please?'",ms,Jika tempahan: 'Bagus! Boleh saya dapatkan nama anda?'
+We're open until 7 PM today. Would you like something this afternoon?,ms,Hari ini kami dibuka sehingga 7 PM. Adakah anda mahukan sesuatu pada petang ini?
+When would you like to come in?,ms,Bila anda ingin datang?
+Please feel free to call us on our phone:,ms,Sila hubungi kami di telefon:

@@ -1,0 +1,48 @@
+Monday,lv,pirmdiena
+Tuesday,lv,otrdiena
+Wednesday,lv,trešdiena
+Thursday,lv,ceturtdiena
+Friday,lv,piektdiena
+Saturday,lv,sestdiena
+Sunday,lv,svētdiena
+CURRENT DATE & TIME,lv,PAŠREIZĒJAIS DATUMS UN LAIKS
+CUSTOMER INFORMATION,lv,KLIENTA INFORMĀCIJA
+BUSINESS INFORMATION,lv,UZŅĒMUMA INFORMĀCIJA
+BUSINESS WORKING HOURS,lv,UZŅĒMUMA DARBA LAIKS
+SERVICES,lv,PAKALPOJUMI
+EXAMPLES OF CONCISE RESPONSES,lv,ĪSU ATBILŽU PIEMĒRI
+FUNCTION INSTRUCTIONS,lv,FUNKCIJU NORĀDĪJUMI
+AM,lv,priekšp.
+PM,lv,pēcp.
+Minute,lv,Minūte
+Business Name,lv,Uzņēmuma nosaukums
+Business Phone,lv,Uzņēmuma tālrunis
+Closed,lv,Slēgts
+January,lv,janvāris
+February,lv,februāris
+March,lv,marts
+April,lv,aprīlis
+May,lv,maijs
+June,lv,jūnijs
+July,lv,jūlijs
+August,lv,augusts
+September,lv,septembris
+October,lv,oktobris
+November,lv,novembris
+December,lv,decembris
+you_are,lv,jūs esat
+intro,lv,ievads
+current_date_and_time,lv,pašreizējais datums un laiks
+unknown_customer,lv,nezināms klients
+known_customer,lv,zināms klients
+thanks_for_calling,lv,paldies par zvanu
+how_can_i_help,lv,kā varu palīdzēt?
+APPOINTMENTS FOR CUSTOMER,lv,KLIENTA PIERAKSTI
+no_appointments,lv,nav pierakstu
+functions_calling_instructions,lv,funkciju izsaukšanas norādījumi
+FINAL COMMANDS,lv,GALĪGĀS KOMANDAS
+"Keep replies short, polite, and helpful.",lv,"Saglabājiet atbildes īsas, pieklājīgas un noderīgas."
+"If booking: 'Great! May I have your name, please?'",lv,Ja veicat pierakstu: 'Lieliski! Vai varu lūgt jūsu vārdu?'
+We're open until 7 PM today. Would you like something this afternoon?,lv,Šodien esam atvērti līdz 19:00. Vai vēlaties ko šai pēcpusdienai?
+When would you like to come in?,lv,Kad jūs vēlētos atnākt?
+Please feel free to call us on our phone:,lv,Droši zvaniet mums pa tālruni:

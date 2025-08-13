@@ -1,0 +1,48 @@
+Monday,sr,Понедељак
+Tuesday,sr,Уторак
+Wednesday,sr,Среда
+Thursday,sr,Четвртак
+Friday,sr,Петак
+Saturday,sr,Субота
+Sunday,sr,Недеља
+CURRENT DATE & TIME,sr,ТРЕНУТНИ ДАТУМ И ВРЕМЕ
+CUSTOMER INFORMATION,sr,ИНФОРМАЦИЈЕ О КЛИЈЕНТУ
+BUSINESS INFORMATION,sr,ИНФОРМАЦИЈЕ О ПРЕДУЗЕЋУ
+BUSINESS WORKING HOURS,sr,РАДНО ВРЕМЕ ПРЕДУЗЕЋА
+SERVICES,sr,УСЛУГЕ
+EXAMPLES OF CONCISE RESPONSES,sr,ПРИМЕРИ САЖЕТИХ ОДГОВОРА
+FUNCTION INSTRUCTIONS,sr,УПУТСТВА ЗА ФУНКЦИЈЕ
+AM,sr,пре подне
+PM,sr,по подне
+Minute,sr,Минут
+Business Name,sr,Назив предузећа
+Business Phone,sr,Телефон предузећа
+Closed,sr,Затворено
+January,sr,Јануар
+February,sr,Фебруар
+March,sr,Март
+April,sr,Април
+May,sr,Мај
+June,sr,Јун
+July,sr,Јул
+August,sr,Август
+September,sr,Септембар
+October,sr,Октобар
+November,sr,Новембар
+December,sr,Децембар
+you_are,sr,ви сте
+intro,sr,увод
+current_date_and_time,sr,тренутни датум и време
+unknown_customer,sr,непознат клијент
+known_customer,sr,познати клијент
+thanks_for_calling,sr,хвала што сте позвали
+how_can_i_help,sr,како могу да помогнем?
+APPOINTMENTS FOR CUSTOMER,sr,ТЕРМИНИ КЛИЈЕНТА
+no_appointments,sr,нема термина
+functions_calling_instructions,sr,упутства за позивање функција
+FINAL COMMANDS,sr,ЗАВРШНЕ КОМАНДЕ
+"Keep replies short, polite, and helpful.",sr,"Нека одговори буду кратки, љубазни и корисни."
+"If booking: 'Great! May I have your name, please?'",sr,"Ако резервишете: „Одлично! Могу ли добити ваше име, молим?”"
+We're open until 7 PM today. Would you like something this afternoon?,sr,Данас смо отворени до 19:00. Да ли желите нешто за поподне?
+When would you like to come in?,sr,Када бисте желели да дођете?
+Please feel free to call us on our phone:,sr,Слободно нас позовите на телефон:

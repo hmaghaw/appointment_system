@@ -1,0 +1,48 @@
+Monday,fil,Lunes
+Tuesday,fil,Martes
+Wednesday,fil,Miyerkules
+Thursday,fil,Huwebes
+Friday,fil,Biyernes
+Saturday,fil,Sabado
+Sunday,fil,Linggo
+CURRENT DATE & TIME,fil,KASALUKUYANG PETSA AT ORAS
+CUSTOMER INFORMATION,fil,IMPORMASYON NG CUSTOMER
+BUSINESS INFORMATION,fil,IMPORMASYON NG NEGOSYO
+BUSINESS WORKING HOURS,fil,ORAS NG OPERASYON NG NEGOSYO
+SERVICES,fil,MGA SERBISYO
+EXAMPLES OF CONCISE RESPONSES,fil,MGA HALIMBAWA NG MAIKLING SAGOT
+FUNCTION INSTRUCTIONS,fil,MGA TAGUBILIN SA FUNCTION
+AM,fil,AM
+PM,fil,PM
+Minute,fil,Minuto
+Business Name,fil,Pangalan ng Negosyo
+Business Phone,fil,Telepono ng Negosyo
+Closed,fil,Sarado
+January,fil,Enero
+February,fil,Pebrero
+March,fil,Marso
+April,fil,Abril
+May,fil,Mayo
+June,fil,Hunyo
+July,fil,Hulyo
+August,fil,Agosto
+September,fil,Setyembre
+October,fil,Oktubre
+November,fil,Nobyembre
+December,fil,Disyembre
+you_are,fil,ikaw ay
+intro,fil,panimula
+current_date_and_time,fil,kasalukuyang petsa at oras
+unknown_customer,fil,hindi kilalang customer
+known_customer,fil,kilalang customer
+thanks_for_calling,fil,salamat sa pagtawag
+how_can_i_help,fil,paano ako makakatulong?
+APPOINTMENTS FOR CUSTOMER,fil,MGA TIPAN NG CUSTOMER
+no_appointments,fil,walang mga tipan
+functions_calling_instructions,fil,mga tagubilin sa pagtawag ng function
+FINAL COMMANDS,fil,MGA HULING UTOS
+"Keep replies short, polite, and helpful.",fil,"Panatilihing maikli, magalang, at kapaki-pakinabang ang mga sagot."
+"If booking: 'Great! May I have your name, please?'",fil,"Kung magbu-book: 'Mahihingi ko ba ang iyong pangalan, pakiusap?'"
+We're open until 7 PM today. Would you like something this afternoon?,fil,Bukas kami hanggang 7 PM ngayon. May nais ka ba ngayong hapon?
+When would you like to come in?,fil,Kailan mo gustong bumisita?
+Please feel free to call us on our phone:,fil,Huwag mag-atubiling tawagan kami sa aming telepono:

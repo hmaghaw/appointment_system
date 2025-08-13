@@ -1,0 +1,48 @@
+Monday,ja,月曜日
+Tuesday,ja,火曜日
+Wednesday,ja,水曜日
+Thursday,ja,木曜日
+Friday,ja,金曜日
+Saturday,ja,土曜日
+Sunday,ja,日曜日
+CURRENT DATE & TIME,ja,現在の日時
+CUSTOMER INFORMATION,ja,顧客情報
+BUSINESS INFORMATION,ja,店舗情報
+BUSINESS WORKING HOURS,ja,営業時間
+SERVICES,ja,サービス
+EXAMPLES OF CONCISE RESPONSES,ja,簡潔な返答の例
+FUNCTION INSTRUCTIONS,ja,機能の手順
+AM,ja,午前
+PM,ja,午後
+Minute,ja,分
+Business Name,ja,店舗名
+Business Phone,ja,店舗の電話番号
+Closed,ja,休業
+January,ja,1月
+February,ja,2月
+March,ja,3月
+April,ja,4月
+May,ja,5月
+June,ja,6月
+July,ja,7月
+August,ja,8月
+September,ja,9月
+October,ja,10月
+November,ja,11月
+December,ja,12月
+you_are,ja,あなたは
+intro,ja,導入
+current_date_and_time,ja,現在の日時
+unknown_customer,ja,不明な顧客
+known_customer,ja,既知の顧客
+thanks_for_calling,ja,お電話ありがとうございます
+how_can_i_help,ja,どのようにお手伝いできますか？
+APPOINTMENTS FOR CUSTOMER,ja,顧客の予約
+no_appointments,ja,予約はありません
+functions_calling_instructions,ja,関数呼び出しの手順
+FINAL COMMANDS,ja,最終コマンド
+"Keep replies short, polite, and helpful.",ja,返信は簡潔で、丁寧かつ有用にしてください。
+"If booking: 'Great! May I have your name, please?'",ja,予約の場合：「素晴らしいです！お名前を教えていただけますか？」
+We're open until 7 PM today. Would you like something this afternoon?,ja,本日は19時まで営業しています。午後にいかがですか？
+When would you like to come in?,ja,ご来店はいつをご希望ですか？
+Please feel free to call us on our phone:,ja,お電話は次の番号までお気軽にご連絡ください：

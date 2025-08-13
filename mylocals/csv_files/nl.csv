@@ -1,0 +1,48 @@
+Monday,nl,maandag
+Tuesday,nl,dinsdag
+Wednesday,nl,woensdag
+Thursday,nl,donderdag
+Friday,nl,vrijdag
+Saturday,nl,zaterdag
+Sunday,nl,zondag
+CURRENT DATE & TIME,nl,HUIDIGE DATUM EN TIJD
+CUSTOMER INFORMATION,nl,KLANTGEGEVENS
+BUSINESS INFORMATION,nl,BEDRIJFSINFORMATIE
+BUSINESS WORKING HOURS,nl,OPENINGSTIJDEN VAN HET BEDRIJF
+SERVICES,nl,DIENSTEN
+EXAMPLES OF CONCISE RESPONSES,nl,VOORBEELDEN VAN BONDIGE ANTWOORDEN
+FUNCTION INSTRUCTIONS,nl,INSTRUCTIES VOOR FUNCTIES
+AM,nl,AM
+PM,nl,PM
+Minute,nl,Minuut
+Business Name,nl,Bedrijfsnaam
+Business Phone,nl,Bedrijfstelefoon
+Closed,nl,Gesloten
+January,nl,januari
+February,nl,februari
+March,nl,maart
+April,nl,april
+May,nl,mei
+June,nl,juni
+July,nl,juli
+August,nl,augustus
+September,nl,september
+October,nl,oktober
+November,nl,november
+December,nl,december
+you_are,nl,u bent
+intro,nl,introductie
+current_date_and_time,nl,huidige datum en tijd
+unknown_customer,nl,onbekende klant
+known_customer,nl,bekende klant
+thanks_for_calling,nl,bedankt voor het bellen
+how_can_i_help,nl,hoe kan ik u helpen?
+APPOINTMENTS FOR CUSTOMER,nl,AFSPRAKEN VOOR KLANT
+no_appointments,nl,geen afspraken
+functions_calling_instructions,nl,instructies voor het aanroepen van functies
+FINAL COMMANDS,nl,FINALE COMMANDO'S
+"Keep replies short, polite, and helpful.",nl,"Houd antwoorden kort, beleefd en behulpzaam."
+"If booking: 'Great! May I have your name, please?'",nl,Als u wilt boeken: 'Geweldig! Mag ik uw naam alstublieft?'
+We're open until 7 PM today. Would you like something this afternoon?,nl,We zijn vandaag open tot 19.00 uur. Wilt u vanmiddag iets plannen?
+When would you like to come in?,nl,Wanneer wilt u langskomen?
+Please feel free to call us on our phone:,nl,Bel ons gerust op:

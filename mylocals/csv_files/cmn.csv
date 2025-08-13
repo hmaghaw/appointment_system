@@ -1,0 +1,48 @@
+Monday,cmn,星期一
+Tuesday,cmn,星期二
+Wednesday,cmn,星期三
+Thursday,cmn,星期四
+Friday,cmn,星期五
+Saturday,cmn,星期六
+Sunday,cmn,星期日
+CURRENT DATE & TIME,cmn,当前日期和时间
+CUSTOMER INFORMATION,cmn,客户信息
+BUSINESS INFORMATION,cmn,商家信息
+BUSINESS WORKING HOURS,cmn,营业时间
+SERVICES,cmn,服务
+EXAMPLES OF CONCISE RESPONSES,cmn,简洁回复示例
+FUNCTION INSTRUCTIONS,cmn,功能说明
+AM,cmn,上午
+PM,cmn,下午
+Minute,cmn,分钟
+Business Name,cmn,商家名称
+Business Phone,cmn,商家电话
+Closed,cmn,休息
+January,cmn,一月
+February,cmn,二月
+March,cmn,三月
+April,cmn,四月
+May,cmn,五月
+June,cmn,六月
+July,cmn,七月
+August,cmn,八月
+September,cmn,九月
+October,cmn,十月
+November,cmn,十一月
+December,cmn,十二月
+you_are,cmn,您是
+intro,cmn,介绍
+current_date_and_time,cmn,当前日期和时间
+unknown_customer,cmn,未知客户
+known_customer,cmn,已知客户
+thanks_for_calling,cmn,感谢来电
+how_can_i_help,cmn,我能为您做什么？
+APPOINTMENTS FOR CUSTOMER,cmn,客户预约
+no_appointments,cmn,没有预约
+functions_calling_instructions,cmn,函数调用说明
+FINAL COMMANDS,cmn,最终指令
+"Keep replies short, polite, and helpful.",cmn,保持回复简短、礼貌且有帮助。
+"If booking: 'Great! May I have your name, please?'",cmn,如果预约：“太好了！可以告诉我您的名字吗？”
+We're open until 7 PM today. Would you like something this afternoon?,cmn,今天营业至晚上7点。您想在今天下午安排些什么吗？
+When would you like to come in?,cmn,您想什么时候过来？
+Please feel free to call us on our phone:,cmn,欢迎致电：

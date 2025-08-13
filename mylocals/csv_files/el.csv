@@ -1,0 +1,48 @@
+Monday,el,Δευτέρα
+Tuesday,el,Τρίτη
+Wednesday,el,Τετάρτη
+Thursday,el,Πέμπτη
+Friday,el,Παρασκευή
+Saturday,el,Σάββατο
+Sunday,el,Κυριακή
+CURRENT DATE & TIME,el,ΤΡΕΧΟΥΣΑ ΗΜΕΡΟΜΗΝΙΑ & ΩΡΑ
+CUSTOMER INFORMATION,el,ΠΛΗΡΟΦΟΡΙΕΣ ΠΕΛΑΤΗ
+BUSINESS INFORMATION,el,ΠΛΗΡΟΦΟΡΙΕΣ ΕΠΙΧΕΙΡΗΣΗΣ
+BUSINESS WORKING HOURS,el,ΩΡΕΣ ΛΕΙΤΟΥΡΓΙΑΣ ΕΠΙΧΕΙΡΗΣΗΣ
+SERVICES,el,ΥΠΗΡΕΣΙΕΣ
+EXAMPLES OF CONCISE RESPONSES,el,ΠΑΡΑΔΕΙΓΜΑΤΑ ΣΥΝΤΟΜΩΝ ΑΠΑΝΤΗΣΕΩΝ
+FUNCTION INSTRUCTIONS,el,ΟΔΗΓΙΕΣ ΛΕΙΤΟΥΡΓΙΩΝ
+AM,el,π.μ.
+PM,el,μ.μ.
+Minute,el,Λεπτό
+Business Name,el,Επωνυμία επιχείρησης
+Business Phone,el,Τηλέφωνο επιχείρησης
+Closed,el,Κλειστό
+January,el,Ιανουάριος
+February,el,Φεβρουάριος
+March,el,Μάρτιος
+April,el,Απρίλιος
+May,el,Μάιος
+June,el,Ιούνιος
+July,el,Ιούλιος
+August,el,Αύγουστος
+September,el,Σεπτέμβριος
+October,el,Οκτώβριος
+November,el,Νοέμβριος
+December,el,Δεκέμβριος
+you_are,el,είστε
+intro,el,εισαγωγή
+current_date_and_time,el,τρέχουσα ημερομηνία και ώρα
+unknown_customer,el,άγνωστος πελάτης
+known_customer,el,γνωστός πελάτης
+thanks_for_calling,el,ευχαριστούμε που καλέσατε
+how_can_i_help,el,πώς μπορώ να βοηθήσω;
+APPOINTMENTS FOR CUSTOMER,el,ΡΑΝΤΕΒΟΥ ΠΕΛΑΤΗ
+no_appointments,el,δεν υπάρχουν ραντεβού
+functions_calling_instructions,el,οδηγίες κλήσης συναρτήσεων
+FINAL COMMANDS,el,ΤΕΛΙΚΕΣ ΕΝΤΟΛΕΣ
+"Keep replies short, polite, and helpful.",el,"Κρατήστε τις απαντήσεις σύντομες, ευγενικές και χρήσιμες."
+"If booking: 'Great! May I have your name, please?'",el,"Αν γίνεται κράτηση: 'Υπέροχα! Μπορώ να έχω το όνομά σας, παρακαλώ;'"
+We're open until 7 PM today. Would you like something this afternoon?,el,Σήμερα είμαστε ανοιχτά έως τις 7 μ.μ. Θα θέλατε κάτι αυτό το απόγευμα;
+When would you like to come in?,el,Πότε θα θέλατε να έρθετε;
+Please feel free to call us on our phone:,el,"Παρακαλούμε, μη διστάσετε να μας καλέσετε στο τηλέφωνο:"

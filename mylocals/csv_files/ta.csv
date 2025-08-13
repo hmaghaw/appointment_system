@@ -1,0 +1,48 @@
+Monday,ta,திங்கட்கிழமை
+Tuesday,ta,செவ்வாய்க்கிழமை
+Wednesday,ta,புதன்கிழமை
+Thursday,ta,வியாழக்கிழமை
+Friday,ta,வெள்ளிக்கிழமை
+Saturday,ta,சனிக்கிழமை
+Sunday,ta,ஞாயிற்றுக்கிழமை
+CURRENT DATE & TIME,ta,தற்போதைய தேதி மற்றும் நேரம்
+CUSTOMER INFORMATION,ta,வாடிக்கையாளர் தகவல்
+BUSINESS INFORMATION,ta,வணிகத் தகவல்
+BUSINESS WORKING HOURS,ta,வணிகத்தின் பணிநேரங்கள்
+SERVICES,ta,சேவைகள்
+EXAMPLES OF CONCISE RESPONSES,ta,சுருக்கமான பதில்களின் உதாரணங்கள்
+FUNCTION INSTRUCTIONS,ta,செயல்பாட்டு வழிமுறைகள்
+AM,ta,AM
+PM,ta,PM
+Minute,ta,நிமிடம்
+Business Name,ta,வணிகத்தின் பெயர்
+Business Phone,ta,வணிகத்தின் தொலைபேசி
+Closed,ta,மூடப்பட்டுள்ளது
+January,ta,ஜனவரி
+February,ta,பிப்ரவரி
+March,ta,மார்ச்
+April,ta,ஏப்ரல்
+May,ta,மே
+June,ta,ஜூன்
+July,ta,ஜூலை
+August,ta,ஆகஸ்ட்
+September,ta,செப்டம்பர்
+October,ta,அக்டோபர்
+November,ta,நவம்பர்
+December,ta,டிசம்பர்
+you_are,ta,நீங்கள்
+intro,ta,அறிமுகம்
+current_date_and_time,ta,தற்போதைய தேதி மற்றும் நேரம்
+unknown_customer,ta,அறியப்படாத வாடிக்கையாளர்
+known_customer,ta,அறியப்பட்ட வாடிக்கையாளர்
+thanks_for_calling,ta,அழைத்ததற்கு நன்றி
+how_can_i_help,ta,நான் எப்படிச் உதவலாம்?
+APPOINTMENTS FOR CUSTOMER,ta,வாடிக்கையாளருக்கான நியமனங்கள்
+no_appointments,ta,நியமனங்கள் இல்லை
+functions_calling_instructions,ta,செயல்பாடுகளை அழைக்கும் வழிமுறைகள்
+FINAL COMMANDS,ta,இறுதி கட்டளைகள்
+"Keep replies short, polite, and helpful.",ta,"பதில்களை சுருக்கமாக, மரியாதையுடன் மற்றும் பயனுள்ளதாக வைத்திருங்கள்."
+"If booking: 'Great! May I have your name, please?'",ta,பதிவு செய்வின்: 'அருமை! தயவுசெய்து உங்கள் பெயரை தெரிவிக்க முடியுமா?'
+We're open until 7 PM today. Would you like something this afternoon?,ta,இன்று மாலை 7 மணி வரை திறந்திருக்கிறோம். இன்று பிற்பகலில் ஏதாவது விரும்புகிறீர்களா?
+When would you like to come in?,ta,நீங்கள் எப்போது வர விரும்புகிறீர்கள்?
+Please feel free to call us on our phone:,ta,எங்கள் தொலைபேசி எண்ணிற்கு தயங்காமல் அழைக்கவும்:

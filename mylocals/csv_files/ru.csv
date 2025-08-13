@@ -1,0 +1,48 @@
+Monday,ru,Понедельник
+Tuesday,ru,Вторник
+Wednesday,ru,Среда
+Thursday,ru,Четверг
+Friday,ru,Пятница
+Saturday,ru,Суббота
+Sunday,ru,Воскресенье
+CURRENT DATE & TIME,ru,ТЕКУЩАЯ ДАТА И ВРЕМЯ
+CUSTOMER INFORMATION,ru,ИНФОРМАЦИЯ О КЛИЕНТЕ
+BUSINESS INFORMATION,ru,ИНФОРМАЦИЯ О КОМПАНИИ
+BUSINESS WORKING HOURS,ru,ЧАСЫ РАБОТЫ КОМПАНИИ
+SERVICES,ru,УСЛУГИ
+EXAMPLES OF CONCISE RESPONSES,ru,ПРИМЕРЫ КРАТКИХ ОТВЕТОВ
+FUNCTION INSTRUCTIONS,ru,ИНСТРУКЦИИ ПО ФУНКЦИЯМ
+AM,ru,AM
+PM,ru,PM
+Minute,ru,Минута
+Business Name,ru,Название компании
+Business Phone,ru,Телефон компании
+Closed,ru,Закрыто
+January,ru,Январь
+February,ru,Февраль
+March,ru,Март
+April,ru,Апрель
+May,ru,Май
+June,ru,Июнь
+July,ru,Июль
+August,ru,Август
+September,ru,Сентябрь
+October,ru,Октябрь
+November,ru,Ноябрь
+December,ru,Декабрь
+you_are,ru,вы
+intro,ru,введение
+current_date_and_time,ru,текущая дата и время
+unknown_customer,ru,неизвестный клиент
+known_customer,ru,известный клиент
+thanks_for_calling,ru,спасибо за звонок
+how_can_i_help,ru,чем я могу помочь?
+APPOINTMENTS FOR CUSTOMER,ru,ЗАПИСИ КЛИЕНТА
+no_appointments,ru,нет записей
+functions_calling_instructions,ru,инструкции по вызову функций
+FINAL COMMANDS,ru,ЗАКЛЮЧИТЕЛЬНЫЕ КОМАНДЫ
+"Keep replies short, polite, and helpful.",ru,"Делайте ответы короткими, вежливыми и полезными."
+"If booking: 'Great! May I have your name, please?'",ru,Если бронируете: «Отлично! Можно ваше имя?»
+We're open until 7 PM today. Would you like something this afternoon?,ru,Сегодня мы открыты до 19:00. Хотите что‑нибудь на сегодня днём?
+When would you like to come in?,ru,Когда вам удобно прийти?
+Please feel free to call us on our phone:,ru,"Пожалуйста, звоните нам по телефону:"

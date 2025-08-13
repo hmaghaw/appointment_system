@@ -1,0 +1,48 @@
+Monday,da,mandag
+Tuesday,da,tirsdag
+Wednesday,da,onsdag
+Thursday,da,torsdag
+Friday,da,fredag
+Saturday,da,lørdag
+Sunday,da,søndag
+CURRENT DATE & TIME,da,AKTUEL DATO OG TID
+CUSTOMER INFORMATION,da,KUNDEOPLYSNINGER
+BUSINESS INFORMATION,da,VIRKSOMHEDSOPLYSNINGER
+BUSINESS WORKING HOURS,da,VIRKSOMHEDENS ÅBNINGSTIDER
+SERVICES,da,YDELSER
+EXAMPLES OF CONCISE RESPONSES,da,EKSEMPLER PÅ KORTE SVAR
+FUNCTION INSTRUCTIONS,da,INSTRUKTIONER TIL FUNKTIONER
+AM,da,AM
+PM,da,PM
+Minute,da,Minut
+Business Name,da,Virksomhedsnavn
+Business Phone,da,Virksomhedens telefon
+Closed,da,Lukket
+January,da,januar
+February,da,februar
+March,da,marts
+April,da,april
+May,da,maj
+June,da,juni
+July,da,juli
+August,da,august
+September,da,september
+October,da,oktober
+November,da,november
+December,da,december
+you_are,da,du er
+intro,da,introduktion
+current_date_and_time,da,aktuel dato og tid
+unknown_customer,da,ukendt kunde
+known_customer,da,kendt kunde
+thanks_for_calling,da,tak fordi du ringede
+how_can_i_help,da,hvordan kan jeg hjælpe?
+APPOINTMENTS FOR CUSTOMER,da,KUNDEAFTALER
+no_appointments,da,ingen aftaler
+functions_calling_instructions,da,vejledning til funktionskald
+FINAL COMMANDS,da,ENDELIGE KOMMANDOER
+"Keep replies short, polite, and helpful.",da,"Hold svarene korte, høflige og hjælpsomme."
+"If booking: 'Great! May I have your name, please?'",da,"Hvis du booker: 'Fint! Må jeg få dit navn, tak?'"
+We're open until 7 PM today. Would you like something this afternoon?,da,Vi har åbent til kl. 19 i dag. Ønsker du noget i eftermiddag?
+When would you like to come in?,da,Hvornår vil du gerne komme?
+Please feel free to call us on our phone:,da,Du er velkommen til at ringe til os på:

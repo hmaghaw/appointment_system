@@ -1,0 +1,48 @@
+Monday,es,Lunes
+Tuesday,es,Martes
+Wednesday,es,Miércoles
+Thursday,es,Jueves
+Friday,es,Viernes
+Saturday,es,Sábado
+Sunday,es,Domingo
+CURRENT DATE & TIME,es,FECHA Y HORA ACTUAL
+CUSTOMER INFORMATION,es,INFORMACIÓN DEL CLIENTE
+BUSINESS INFORMATION,es,INFORMACIÓN DE LA EMPRESA
+BUSINESS WORKING HOURS,es,HORARIO DE ATENCIÓN DE LA EMPRESA
+SERVICES,es,SERVICIOS
+EXAMPLES OF CONCISE RESPONSES,es,EJEMPLOS DE RESPUESTAS CONCISAS
+FUNCTION INSTRUCTIONS,es,INSTRUCCIONES DE FUNCIONES
+AM,es,a. m.
+PM,es,p. m.
+Minute,es,Minuto
+Business Name,es,Nombre de la empresa
+Business Phone,es,Teléfono de la empresa
+Closed,es,Cerrado
+January,es,Enero
+February,es,Febrero
+March,es,Marzo
+April,es,Abril
+May,es,Mayo
+June,es,Junio
+July,es,Julio
+August,es,Agosto
+September,es,Septiembre
+October,es,Octubre
+November,es,Noviembre
+December,es,Diciembre
+you_are,es,usted es
+intro,es,introducción
+current_date_and_time,es,fecha y hora actuales
+unknown_customer,es,cliente desconocido
+known_customer,es,cliente conocido
+thanks_for_calling,es,gracias por llamar
+how_can_i_help,es,¿cómo puedo ayudar?
+APPOINTMENTS FOR CUSTOMER,es,CITAS DEL CLIENTE
+no_appointments,es,no hay citas
+functions_calling_instructions,es,instrucciones para llamar funciones
+FINAL COMMANDS,es,COMANDOS FINALES
+"Keep replies short, polite, and helpful.",es,"Mantenga las respuestas cortas, educadas y útiles."
+"If booking: 'Great! May I have your name, please?'",es,"Si va a reservar: '¡Genial! ¿Podría darme su nombre, por favor?'"
+We're open until 7 PM today. Would you like something this afternoon?,es,Hoy estamos abiertos hasta las 7 p. m. ¿Le gustaría algo esta tarde?
+When would you like to come in?,es,¿Cuándo le gustaría venir?
+Please feel free to call us on our phone:,es,No dude en llamarnos al teléfono:

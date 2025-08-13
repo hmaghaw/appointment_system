@@ -1,0 +1,48 @@
+Monday,fr,Lundi
+Tuesday,fr,Mardi
+Wednesday,fr,Mercredi
+Thursday,fr,Jeudi
+Friday,fr,Vendredi
+Saturday,fr,Samedi
+Sunday,fr,Dimanche
+CURRENT DATE & TIME,fr,DATE ET HEURE ACTUELLES
+CUSTOMER INFORMATION,fr,INFORMATIONS CLIENT
+BUSINESS INFORMATION,fr,INFORMATIONS SUR L'ENTREPRISE
+BUSINESS WORKING HOURS,fr,HEURES D'OUVERTURE DE L'ENTREPRISE
+SERVICES,fr,SERVICES
+EXAMPLES OF CONCISE RESPONSES,fr,EXEMPLES DE RÉPONSES CONCISES
+FUNCTION INSTRUCTIONS,fr,INSTRUCTIONS DES FONCTIONS
+AM,fr,AM
+PM,fr,PM
+Minute,fr,Minute
+Business Name,fr,Nom de l'entreprise
+Business Phone,fr,Téléphone de l'entreprise
+Closed,fr,Fermé
+January,fr,Janvier
+February,fr,Février
+March,fr,Mars
+April,fr,Avril
+May,fr,Mai
+June,fr,Juin
+July,fr,Juillet
+August,fr,Août
+September,fr,Septembre
+October,fr,Octobre
+November,fr,Novembre
+December,fr,Décembre
+you_are,fr,vous êtes
+intro,fr,introduction
+current_date_and_time,fr,date et heure actuelles
+unknown_customer,fr,client inconnu
+known_customer,fr,client connu
+thanks_for_calling,fr,merci d'avoir appelé
+how_can_i_help,fr,comment puis-je vous aider ?
+APPOINTMENTS FOR CUSTOMER,fr,RENDEZ-VOUS DU CLIENT
+no_appointments,fr,aucun rendez-vous
+functions_calling_instructions,fr,instructions d'appel de fonctions
+FINAL COMMANDS,fr,COMMANDES FINALES
+"Keep replies short, polite, and helpful.",fr,"Gardez les réponses courtes, polies et utiles."
+"If booking: 'Great! May I have your name, please?'",fr,"Si réservation : « Super ! Puis-je avoir votre nom, s'il vous plaît ? »"
+We're open until 7 PM today. Would you like something this afternoon?,fr,Nous sommes ouverts jusqu'à 19 h aujourd'hui. Souhaitez-vous quelque chose cet après-midi ?
+When would you like to come in?,fr,Quand souhaitez-vous venir ?
+Please feel free to call us on our phone:,fr,N'hésitez pas à nous appeler au :

@@ -1,0 +1,48 @@
+Monday,hi,सोमवार
+Tuesday,hi,मंगलवार
+Wednesday,hi,बुधवार
+Thursday,hi,गुरुवार
+Friday,hi,शुक्रवार
+Saturday,hi,शनिवार
+Sunday,hi,रविवार
+CURRENT DATE & TIME,hi,वर्तमान तिथि और समय
+CUSTOMER INFORMATION,hi,ग्राहक जानकारी
+BUSINESS INFORMATION,hi,व्यवसाय की जानकारी
+BUSINESS WORKING HOURS,hi,व्यवसाय के कार्य समय
+SERVICES,hi,सेवाएँ
+EXAMPLES OF CONCISE RESPONSES,hi,संक्षिप्त उत्तरों के उदाहरण
+FUNCTION INSTRUCTIONS,hi,फ़ंक्शन निर्देश
+AM,hi,पूर्वाह्न
+PM,hi,अपराह्न
+Minute,hi,मिनट
+Business Name,hi,व्यवसाय का नाम
+Business Phone,hi,व्यवसाय का फ़ोन
+Closed,hi,बंद
+January,hi,जनवरी
+February,hi,फ़रवरी
+March,hi,मार्च
+April,hi,अप्रैल
+May,hi,मई
+June,hi,जून
+July,hi,जुलाई
+August,hi,अगस्त
+September,hi,सितंबर
+October,hi,अक्टूबर
+November,hi,नवंबर
+December,hi,दिसंबर
+you_are,hi,आप हैं
+intro,hi,परिचय
+current_date_and_time,hi,वर्तमान तिथि और समय
+unknown_customer,hi,अज्ञात ग्राहक
+known_customer,hi,ज्ञात ग्राहक
+thanks_for_calling,hi,कॉल करने के लिए धन्यवाद
+how_can_i_help,hi,मैं आपकी कैसे सहायता कर सकता/सकती हूँ?
+APPOINTMENTS FOR CUSTOMER,hi,ग्राहक की नियुक्तियाँ
+no_appointments,hi,कोई नियुक्तियाँ नहीं
+functions_calling_instructions,hi,फ़ंक्शन कॉल करने के निर्देश
+FINAL COMMANDS,hi,अंतिम कमांड्स
+"Keep replies short, polite, and helpful.",hi,"जवाब संक्षिप्त, विनम्र और सहायक रखें।"
+"If booking: 'Great! May I have your name, please?'",hi,यदि बुकिंग कर रहे हैं: 'बहुत बढ़िया! कृपया अपना नाम बताएँ?'
+We're open until 7 PM today. Would you like something this afternoon?,hi,आज हम शाम 7 बजे तक खुले हैं। क्या आप दोपहर में कोई समय लेना चाहेंगे?
+When would you like to come in?,hi,आप कब आना चाहेंगे?
+Please feel free to call us on our phone:,hi,कृपया बेझिझक हमारे फ़ोन पर कॉल करें:

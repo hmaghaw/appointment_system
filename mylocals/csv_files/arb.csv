@@ -1,0 +1,48 @@
+Monday,arb,الاثنين
+Tuesday,arb,الثلاثاء
+Wednesday,arb,الأربعاء
+Thursday,arb,الخميس
+Friday,arb,الجمعة
+Saturday,arb,السبت
+Sunday,arb,الأحد
+CURRENT DATE & TIME,arb,التاريخ والوقت الحاليان
+CUSTOMER INFORMATION,arb,معلومات العميل
+BUSINESS INFORMATION,arb,معلومات النشاط التجاري
+BUSINESS WORKING HOURS,arb,ساعات عمل النشاط التجاري
+SERVICES,arb,الخدمات
+EXAMPLES OF CONCISE RESPONSES,arb,أمثلة على الردود الموجزة
+FUNCTION INSTRUCTIONS,arb,تعليمات الوظائف
+AM,arb,ص
+PM,arb,م
+Minute,arb,دقيقة
+Business Name,arb,اسم النشاط التجاري
+Business Phone,arb,هاتف النشاط التجاري
+Closed,arb,مغلق
+January,arb,يناير
+February,arb,فبراير
+March,arb,مارس
+April,arb,أبريل
+May,arb,مايو
+June,arb,يونيو
+July,arb,يوليو
+August,arb,أغسطس
+September,arb,سبتمبر
+October,arb,أكتوبر
+November,arb,نوفمبر
+December,arb,ديسمبر
+you_are,arb,أنت
+intro,arb,مقدمة
+current_date_and_time,arb,التاريخ والوقت الحاليان
+unknown_customer,arb,عميل غير معروف
+known_customer,arb,عميل معروف
+thanks_for_calling,arb,شكرًا لاتصالك
+how_can_i_help,arb,كيف يمكنني المساعدة؟
+APPOINTMENTS FOR CUSTOMER,arb,مواعيد العميل
+no_appointments,arb,لا توجد مواعيد
+functions_calling_instructions,arb,تعليمات استدعاء الوظائف
+FINAL COMMANDS,arb,الأوامر النهائية
+"Keep replies short, polite, and helpful.",arb,اجعل الردود قصيرة ومهذبة ومفيدة.
+"If booking: 'Great! May I have your name, please?'",arb,"إذا كنت تحجز: ""رائع! هل لي باسمك من فضلك؟"""
+We're open until 7 PM today. Would you like something this afternoon?,arb,نحن مفتوحون اليوم حتى الساعة 7 مساءً. هل ترغب في شيء هذا بعد الظهر؟
+When would you like to come in?,arb,متى ترغب في القدوم؟
+Please feel free to call us on our phone:,arb,لا تتردد في الاتصال بنا على:

@@ -1,0 +1,48 @@
+Monday,am,ሰኞ
+Tuesday,am,ማክሰኞ
+Wednesday,am,ረቡዕ
+Thursday,am,ሐሙስ
+Friday,am,ዓርብ
+Saturday,am,ቅዳሜ
+Sunday,am,እሑድ
+CURRENT DATE & TIME,am,አሁን ያለው ቀን እና ሰዓት
+CUSTOMER INFORMATION,am,የደንበኛ መረጃ
+BUSINESS INFORMATION,am,የንግድ መረጃ
+BUSINESS WORKING HOURS,am,የንግድ መክፈቻ ሰዓታት
+SERVICES,am,አገልግሎቶች
+EXAMPLES OF CONCISE RESPONSES,am,የአጭር መልሶች ምሳሌዎች
+FUNCTION INSTRUCTIONS,am,የፋንክሽን መመሪያዎች
+AM,am,ጥዋት
+PM,am,ከሰዓት በኋላ
+Minute,am,ደቂቃ
+Business Name,am,የንግድ ስም
+Business Phone,am,የንግድ ስልክ
+Closed,am,ዝግ
+January,am,ጃንዋሪ
+February,am,ፌብሩወሪ
+March,am,ማርች
+April,am,ኤፕሪል
+May,am,ሜይ
+June,am,ጁን
+July,am,ጁላይ
+August,am,ኦገስት
+September,am,ሴፕቴምበር
+October,am,ኦክቶበር
+November,am,ኖቬምበር
+December,am,ዲሴምበር
+you_are,am,እርስዎ ነዎት
+intro,am,መግቢያ
+current_date_and_time,am,አሁን ያለው ቀን እና ሰዓት
+unknown_customer,am,ያልታወቀ ደንበኛ
+known_customer,am,የታወቀ ደንበኛ
+thanks_for_calling,am,ስለደወሉ እናመሰግናለን
+how_can_i_help,am,እንዴት ልረዳዎት?
+APPOINTMENTS FOR CUSTOMER,am,የደንበኛ ቀጠሮዎች
+no_appointments,am,ቀጠሮ የለም
+functions_calling_instructions,am,የፋንክሽኖች ጥሪ መመሪያዎች
+FINAL COMMANDS,am,መጨረሻ ትእዛዞች
+"Keep replies short, polite, and helpful.",am,መልሶችን አጭር፣ በትህትና እና ጠቃሚ ያድርጉ።
+"If booking: 'Great! May I have your name, please?'",am,ቀጠሮ ካለ፣ ‘ጥሩ! እባክዎ ስምዎን ሊያብሩልኝ ይችላሉ?’
+We're open until 7 PM today. Would you like something this afternoon?,am,ዛሬ እስከ 7 ሰዓት ክፍት ነን። ዛሬ ከሰዓት በኋላ ምንም መያዝ ትፈልጋሉ?
+When would you like to come in?,am,መቼ መግባት ትፈልጋሉ?
+Please feel free to call us on our phone:,am,እባክዎ በስልክ ይደውሉልን፦

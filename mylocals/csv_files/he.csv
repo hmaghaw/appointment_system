@@ -1,0 +1,48 @@
+Monday,he,יום שני
+Tuesday,he,יום שלישי
+Wednesday,he,יום רביעי
+Thursday,he,יום חמישי
+Friday,he,יום שישי
+Saturday,he,יום שבת
+Sunday,he,יום ראשון
+CURRENT DATE & TIME,he,תאריך ושעה נוכחיים
+CUSTOMER INFORMATION,he,פרטי לקוח
+BUSINESS INFORMATION,he,פרטי העסק
+BUSINESS WORKING HOURS,he,שעות פעילות העסק
+SERVICES,he,שירותים
+EXAMPLES OF CONCISE RESPONSES,he,דוגמאות לתגובות תמציתיות
+FUNCTION INSTRUCTIONS,he,הוראות פונקציות
+AM,he,לפנה״צ
+PM,he,אחה״צ
+Minute,he,דקה
+Business Name,he,שם העסק
+Business Phone,he,טלפון העסק
+Closed,he,סגור
+January,he,ינואר
+February,he,פברואר
+March,he,מרץ
+April,he,אפריל
+May,he,מאי
+June,he,יוני
+July,he,יולי
+August,he,אוגוסט
+September,he,ספטמבר
+October,he,אוקטובר
+November,he,נובמבר
+December,he,דצמבר
+you_are,he,את/ה
+intro,he,הקדמה
+current_date_and_time,he,תאריך ושעה נוכחיים
+unknown_customer,he,לקוח לא ידוע
+known_customer,he,לקוח מזוהה
+thanks_for_calling,he,תודה שהתקשרת
+how_can_i_help,he,כיצד אוכל לעזור?
+APPOINTMENTS FOR CUSTOMER,he,תורים ללקוח
+no_appointments,he,אין תורים
+functions_calling_instructions,he,הוראות לקריאת פונקציות
+FINAL COMMANDS,he,פקודות סופיות
+"Keep replies short, polite, and helpful.",he,"השאירו תשובות קצרות, מנומסות ושימושיות."
+"If booking: 'Great! May I have your name, please?'",he,"אם מזמינים: 'נהדר! אפשר לקבל את שמך, בבקשה?'"
+We're open until 7 PM today. Would you like something this afternoon?,he,היום אנחנו פתוחים עד 19:00. תרצה/תרצי משהו אחר הצהריים?
+When would you like to come in?,he,מתי תרצה/תרצי להגיע?
+Please feel free to call us on our phone:,he,מוזמן/ת להתקשר אלינו בטלפון:
