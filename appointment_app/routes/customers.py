@@ -414,7 +414,7 @@ def upsert_customer():
                     "first_name": "Guest",
                     "last_name": "",
                     "email": "",
-                    "language": "en"  # Default language for new customers
+                    "language": ""  # Default language for new customers
                 }), 201
             else:
                 # Return existing customer info
@@ -423,7 +423,7 @@ def upsert_customer():
                     "first_name": customer['first_name'] or "Guest",
                     "last_name": customer['last_name'] or "",
                     "email": customer['email'] or "",
-                    "language": customer.get('language', 'en')  # Return the customer's language, default to 'en' if not set
+                    "language": customer.get('language', '')  # Return the customer's language, default to '' if not set
                 }), 200
                 
     except mysql.connector.Error as err:

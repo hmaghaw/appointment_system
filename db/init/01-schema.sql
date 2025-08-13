@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS customer (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255),
-    language VARCHAR(10) DEFAULT 'en' COMMENT 'ISO 639-1 language code (e.g., en, ar, fr)',
+    language VARCHAR(10) DEFAULT '' COMMENT 'ISO 639-1 language code (e.g., en, ar, fr)',
     notes TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
