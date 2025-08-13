@@ -735,21 +735,19 @@ def list_language_voices():
                 "region_code": "SA",
                 "voice_provider": "aws",
                 "voice_name": "Hala",
-                "is_default": true
             },
             ...
         ]
     """
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No JSON data provided"}), 400
-        
-    language_code = data.get('language_code')
-    if not language_code:
-        return jsonify({"error": "language_code is required"}), 400
-    
     try:
+        data = request.get_json()
+        if not data or 'language_code' not in data:
+            return jsonify({"error": "language_code is required in the request body"}), 400
+            
+        language_code = data['language_code']
+        
         with get_db_cursor(dictionary=True) as cursor:
+            # Get all voices for the specified language
             cursor.execute("""
                 SELECT 
                     language_voice_id,
@@ -760,13 +758,17 @@ def list_language_voices():
                     is_default
                 FROM language_voice
                 WHERE language_code = %s
-                ORDER BY is_default DESC, region_code, voice_name
+                ORDER BY is_default DESC, voice_name
             """, (language_code,))
             
             voices = cursor.fetchall()
             
             if not voices:
                 return jsonify({"message": f"No voices found for language: {language_code}"}), 404
+                
+            # Convert boolean values to Python booleans for JSON serialization
+            for voice in voices:
+                voice['is_default'] = bool(voice['is_default'])
                 
             return jsonify(voices)
             
@@ -776,6 +778,70 @@ def list_language_voices():
     except Exception as e:
         logger.error(f"Unexpected error in list_language_voices: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to fetch language voices: {str(e)}"}), 500
+
+@bp.route('/phone/voice-options', methods=['POST'])
+def get_voice_options_for_phone():
+    """
+    Get available voice options for a specific phone number.
+    
+    Request Body:
+        {
+            "phone_number": "+16474905987"  # The phone number to look up
+        }
+        
+    Returns:
+        JSON response with list of available voice options for the phone's language
+        [
+            {
+                "voice_language": "en-US",
+                "voice_name": "Joanna"
+            },
+            ...
+        ]
+    """
+    try:
+        data = request.get_json()
+        if not data or 'phone_number' not in data:
+            return jsonify({"error": "phone_number is required in the request body"}), 400
+            
+        phone_number = data['phone_number'].strip()
+        
+        with get_db_cursor(dictionary=True) as cursor:
+            # First, get the language_code for the phone
+            cursor.execute("""
+                SELECT language_code 
+                FROM business_phone 
+                WHERE business_phone = %s
+            """, (phone_number,))
+            
+            phone = cursor.fetchone()
+            if not phone:
+                return jsonify({"error": "Phone number not found"}), 404
+                
+            # Then get all voice options for that language
+            cursor.execute("""
+                SELECT
+                    language_code,
+                    CONCAT(language_code, '-', region_code) AS voice_language,
+                    voice_name
+                FROM language_voice
+                WHERE language_code = %s
+                ORDER BY is_default DESC, voice_name
+            """, (phone['language_code'],))
+            
+            voices = cursor.fetchall()
+            
+            if not voices:
+                return jsonify({"message": f"No voice options found for this phone's language"}), 404
+                
+            return jsonify(voices)
+            
+    except mysql.connector.Error as e:
+        logger.error(f"Database error in get_voice_options_for_phone: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error in get_voice_options_for_phone: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch voice options: {str(e)}"}), 500
 
 
 @bp.route('/business/language', methods=['DELETE'])
