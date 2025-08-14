@@ -107,7 +107,7 @@ services:
              pip install -e . &&
              pip install -r appointment_app/requirements.txt &&
              pip install gunicorn &&
-             python create_env_file.py development &&
+             python create_env_file.py production &&
              cd /app/appointment_app && gunicorn --bind 0.0.0.0:5000 app:app"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
