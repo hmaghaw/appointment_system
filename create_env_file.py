@@ -179,18 +179,18 @@ if __name__ == "__main__":
     environment = "production"
     output_file = ".env"
 
-    # Check for command line arguments
-    if len(sys.argv) > 1:
-        env_arg = sys.argv[1].lower()
-        if env_arg in ["production", "prod"]:
-            environment = "production"
-            print("Using production environment configuration")
-        elif env_arg in ["development", "dev"]:
-            print("Using development environment configuration")
-        else:
-            print(f"Warning: Unknown environment '{env_arg}'. Using development environment by default.")
-    else:
-        print("No environment specified. Using development environment by default.")
+    # # Check for command line arguments
+    # if len(sys.argv) > 1:
+    #     env_arg = sys.argv[1].lower()
+    #     if env_arg in ["production", "prod"]:
+    #         environment = "production"
+    #         print("Using production environment configuration")
+    #     elif env_arg in ["development", "dev"]:
+    #         print("Using development environment configuration")
+    #     else:
+    #         print(f"Warning: Unknown environment '{env_arg}'. Using development environment by default.")
+    # else:
+    #     print("No environment specified. Using development environment by default.")
 
     # Get secrets and create .env file
     try:
