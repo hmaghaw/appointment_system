@@ -113,3 +113,22 @@ server {
 ```angular2html
 sudo systemctl reload nginx 
 ```
+
+# Install Crontab
+```angular2html
+sudo yum install -y cronie
+sudo systemctl enable crond
+sudo systemctl start crond
+```
+```angular2html
+echo 'export EDITOR=nano' >> ~/.bashrc
+source ~/.bashrc
+crontab -e
+```
+# crontab
+```angular2html
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+MAILTO=""
+0 2 * * * /bin/bash /home/ec2-user/appointment_system/db_backup_restore/backup_to_s3.sh >> /home/ec2-user/db_data_backup/db_backup.log 2>&1
+```
