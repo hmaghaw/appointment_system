@@ -9,7 +9,7 @@ ARCHIVE_NAME="mysql_data_${DATE_STR}.tar.gz"
 ARCHIVE_PATH="$BACKUP_DIR/$ARCHIVE_NAME"
 
 # S3
-S3_BUCKET="ploydial"
+S3_BUCKET="polydial"
 S3_PREFIX="mysql-backups"          # folder inside the bucket
 S3_URI="s3://${S3_BUCKET}/${S3_PREFIX}/${ARCHIVE_NAME}"
 
