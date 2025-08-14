@@ -1,0 +1,71 @@
+{
+  "name": "Email Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "76048637-5d5b-497d-bd1b-db9aa06fa730",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6219cabb-b823-4474-ae04-1e31d830ef1e",
+      "name": "Webhook",
+      "webhookId": "76048637-5d5b-497d-bd1b-db9aa06fa730"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.to }}",
+        "subject": "={{ $json.body.subject }}",
+        "message": "={{ $json.body.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "0e7df115-846d-4822-a588-ee1bb1b39bb4",
+      "name": "Send a message",
+      "webhookId": "2351b5ff-2c89-4a66-b36a-e1ba51ac1da1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Oz9iHPKCsLz7ojhg",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b84373c3-69eb-44de-bb89-f2cd9d21a9f5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9d8000114fda19246226f22c4682560e77f59f72eb6a58273269c30e02736bdc"
+  },
+  "id": "hzLCWPxtWVlmyulg",
+  "tags": []
+}
