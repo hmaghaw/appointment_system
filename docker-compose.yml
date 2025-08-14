@@ -61,9 +61,9 @@ services:
       - N8N_BASIC_AUTH_USER=admin
       - N8N_BASIC_AUTH_PASSWORD=admin
       - N8N_PROTOCOL=http
-      - N8N_HOST=halalcooking.ca
+      - N8N_HOST=polydial.com
       - N8N_PORT=5678
-      - WEBHOOK_URL=https://halalcooking.ca
+      - WEBHOOK_URL=https://polydial.com
       - N8N_SSL_KEY=/certs/privkey.pem
       - N8N_SSL_CERT=/certs/fullchain.pem
       - DB_TYPE=postgresdb
@@ -78,7 +78,7 @@ services:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     volumes:
       - n8n_data:/home/node/.n8n
-      - /home/ec2-user/.certbot/config/live/halalcooking.ca/:/certs:ro
+      - /home/ec2-user/.certbot/config/live/polydial.com/:/certs:ro
     depends_on:
       postgres:
         condition: service_healthy

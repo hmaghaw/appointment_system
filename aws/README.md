@@ -5,7 +5,7 @@ chmod +x install_docker.sh
 ```
 ## Elastic IP
 ```angular2html
-98.86.217.185
+34.199.192.157
 ```
 
 # Create Nginx Config
@@ -19,14 +19,14 @@ sudo systemctl status nginx
 ```
 
 ```angular2html
-sudo nano /etc/nginx/conf.d/halalcooking.ca.conf
+sudo nano /etc/nginx/conf.d/polydial.com.conf
 ```
 
 ```angular2html
 # Redirect HTTP to HTTPS for all subdomains
 server {
     listen 80;
-    server_name api.www.halalcooking.ca twilio.halalcooking.ca n8n.halalcooking.ca;
+    server_name api.www.polydial.com twilio.polydial.com n8n.polydial.com;
     return 301 https://$host$request_uri;
 }
 
@@ -35,10 +35,10 @@ server {
 # ======================
 server {
     listen 443 ssl;
-    server_name api.www.halalcooking.ca;
+    server_name api.www.polydial.com;
 
-    ssl_certificate     /home/ec2-user/.certbot/config/live/halalcooking.ca/fullchain.pem;
-    ssl_certificate_key /home/ec2-user/.certbot/config/live/halalcooking.ca/privkey.pem;
+    ssl_certificate     /home/ec2-user/.certbot/config/live/polydial.com/fullchain.pem;
+    ssl_certificate_key /home/ec2-user/.certbot/config/live/polydial.com/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
@@ -58,10 +58,10 @@ server {
 # ==========================
 server {
     listen 443 ssl;
-    server_name twilio.halalcooking.ca;
+    server_name twilio.polydial.com;
 
-    ssl_certificate     /home/ec2-user/.certbot/config/live/halalcooking.ca/fullchain.pem;
-    ssl_certificate_key /home/ec2-user/.certbot/config/live/halalcooking.ca/privkey.pem;
+    ssl_certificate     /home/ec2-user/.certbot/config/live/polydial.com/fullchain.pem;
+    ssl_certificate_key /home/ec2-user/.certbot/config/live/polydial.com/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
@@ -81,10 +81,10 @@ server {
 # ==========================
 server {
     listen 443 ssl;
-    server_name n8n.halalcooking.ca;
+    server_name n8n.polydial.com;
 
-    ssl_certificate     /home/ec2-user/.certbot/config/live/halalcooking.ca/fullchain.pem;
-    ssl_certificate_key /home/ec2-user/.certbot/config/live/halalcooking.ca/privkey.pem;
+    ssl_certificate     /home/ec2-user/.certbot/config/live/polydial.com/fullchain.pem;
+    ssl_certificate_key /home/ec2-user/.certbot/config/live/polydial.com/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
@@ -108,7 +108,7 @@ server {
     }
 }
 
-```https://api.halalcooking.ca
+```https://api.polydial.com
 
 ```angular2html
 sudo systemctl reload nginx 
