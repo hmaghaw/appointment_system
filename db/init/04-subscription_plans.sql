@@ -1,7 +1,7 @@
 USE appointment_db;
 
 -- First, insert subscription plans since other tables reference them
--- Insert Voxxell Free plan (ID: 7)
+-- Insert PolyDial Free plan (ID: 7)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -12,7 +12,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Free',
+    'PolyDial Free',
     'Best for testing the platform — manage customers and calendar without making calls or using voice AI.',
     'monthly',
     0.00,
@@ -22,7 +22,7 @@ INSERT INTO subscription_plan (
     0
 );
 
--- Insert Voxxell Free yearly plan (ID: 8)
+-- Insert PolyDial Free yearly plan (ID: 8)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -33,7 +33,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Free',
+    'PolyDial Free',
     'Best for testing the platform — manage customers and calendar without making calls or using voice AI.',
     'yearly',
     0.00,
@@ -43,7 +43,7 @@ INSERT INTO subscription_plan (
     0
 );
 
--- Insert Voxxell Starter monthly plan (ID: 1)
+-- Insert PolyDial Starter monthly plan (ID: 1)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -54,7 +54,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Starter',
+    'PolyDial Starter',
     'Perfect for small Canadian businesses getting started with voice AI',
     'monthly',
     99.00,
@@ -64,7 +64,7 @@ INSERT INTO subscription_plan (
     1
 );
 
--- Insert Voxxell Starter yearly plan (ID: 2)
+-- Insert PolyDial Starter yearly plan (ID: 2)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -76,7 +76,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Starter',
+    'PolyDial Starter',
     'Perfect for small Canadian businesses getting started with voice AI',
     'yearly',
     99.00,
@@ -87,7 +87,7 @@ INSERT INTO subscription_plan (
     2
 );
 
--- Insert Voxxell Professional monthly plan (ID: 3)
+-- Insert PolyDial Professional monthly plan (ID: 3)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -98,7 +98,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Professional',
+    'PolyDial Professional',
     'Ideal for growing SMBs needing advanced voice AI capabilities',
     'monthly',
     249.00,
@@ -108,7 +108,7 @@ INSERT INTO subscription_plan (
     3
 );
 
--- Insert Voxxell Professional yearly plan (ID: 4)
+-- Insert PolyDial Professional yearly plan (ID: 4)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -120,7 +120,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Professional',
+    'PolyDial Professional',
     'Ideal for growing SMBs needing advanced voice AI capabilities',
     'yearly',
     249.00,
@@ -131,7 +131,7 @@ INSERT INTO subscription_plan (
     4
 );
 
--- Insert Voxxell Enterprise monthly plan (ID: 5)
+-- Insert PolyDial Enterprise monthly plan (ID: 5)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -142,7 +142,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Enterprise',
+    'PolyDial Enterprise',
     'Comprehensive solution for established businesses with high call volumes',
     'monthly',
     599.00,
@@ -152,7 +152,7 @@ INSERT INTO subscription_plan (
     5
 );
 
--- Insert Voxxell Enterprise yearly plan (ID: 6)
+-- Insert PolyDial Enterprise yearly plan (ID: 6)
 INSERT INTO subscription_plan (
     plan_name,
     plan_description,
@@ -164,7 +164,7 @@ INSERT INTO subscription_plan (
     is_active,
     display_order
 ) VALUES (
-    'Voxxell Enterprise',
+    'PolyDial Enterprise',
     'Comprehensive solution for established businesses with high call volumes',
     'yearly',
     599.00,
@@ -177,7 +177,7 @@ INSERT INTO subscription_plan (
 
 -- Insert subscription plan features
 INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, feature_value, display_order) VALUES
--- Voxxell Free (ID: 7)
+-- PolyDial Free (ID: 7)
 (7, 'Call Limit', 'No calls allowed', 1),
 (7, 'Voice AI Integrations', 'Not included', 2),
 (7, 'Analytics', 'Not included', 3),
@@ -185,7 +185,7 @@ INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, featu
 (7, 'Calendar Access', 'Basic calendar management', 5),
 (7, 'Customer Management', 'Unlimited customers', 6),
 
--- Voxxell Free Yearly (ID: 8)
+-- PolyDial Free Yearly (ID: 8)
 (8, 'Call Limit', 'No calls allowed', 1),
 (8, 'Voice AI Integrations', 'Not included', 2),
 (8, 'Analytics', 'Not included', 3),
@@ -193,21 +193,21 @@ INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, featu
 (8, 'Calendar Access', 'Basic calendar management', 5),
 (8, 'Customer Management', 'Unlimited customers', 6),
 
--- Voxxell Starter (ID: 1)
+-- PolyDial Starter (ID: 1)
 (1, 'Call Limit', 'Up to 500 calls/month', 1),
 (1, 'Voice AI Integrations', 'Basic voice AI integrations', 2),
 (1, 'Support', 'Business hours support (EST)', 3),
 (1, 'Language Support', 'Canadian English & French', 4),
 (1, 'Analytics Dashboard', 'Basic analytics dashboard', 5),
 
--- Voxxell Starter Yearly (ID: 2)
+-- PolyDial Starter Yearly (ID: 2)
 (2, 'Call Limit', 'Up to 500 calls/month', 1),
 (2, 'Voice AI Integrations', 'Basic voice AI integrations', 2),
 (2, 'Support', 'Business hours support (EST)', 3),
 (2, 'Language Support', 'Canadian English & French', 4),
 (2, 'Analytics Dashboard', 'Basic analytics dashboard', 5),
 
--- Voxxell Professional (ID: 3)
+-- PolyDial Professional (ID: 3)
 (3, 'Call Limit', 'Up to 2,000 calls/month', 1),
 (3, 'Voice AI Integrations', 'Advanced voice AI integrations', 2),
 (3, 'Support', 'Priority support (extended hours)', 3),
@@ -215,7 +215,7 @@ INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, featu
 (3, 'Support Channels', 'Email & chat support', 5),
 (3, 'Includes', 'Everything in Starter', 6),
 
--- Voxxell Professional Yearly (ID: 4)
+-- PolyDial Professional Yearly (ID: 4)
 (4, 'Includes', 'Everything in Starter', 1),
 (4, 'Call Limit', 'Up to 2,000 calls/month', 2),
 (4, 'Voice AI Integrations', 'Advanced voice AI integrations', 3),
@@ -223,7 +223,7 @@ INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, featu
 (4, 'Analytics & Reporting', 'Advanced analytics & reporting', 5),
 (4, 'Support Channels', 'Email & chat support', 6),
 
--- Voxxell Enterprise (ID: 5)
+-- PolyDial Enterprise (ID: 5)
 (5, 'Includes', 'Everything in Professional', 1),
 (5, 'Call Limit', 'Unlimited calls', 2),
 (5, 'Voice AI Integrations', 'Custom voice AI integrations', 3),
@@ -232,7 +232,7 @@ INSERT INTO subscription_plan_feature (subscription_plan_id, feature_name, featu
 (5, 'Support', '24/7 dedicated support hotline', 6),
 (5, 'Security & Compliance', 'Enterprise-grade security & compliance', 7),
 
--- Voxxell Enterprise Yearly (ID: 6)
+-- PolyDial Enterprise Yearly (ID: 6)
 (6, 'Includes', 'Everything in Professional', 1),
 (6, 'Call Limit', 'Unlimited calls', 2),
 (6, 'Voice AI Integrations', 'Custom voice AI integrations', 3),

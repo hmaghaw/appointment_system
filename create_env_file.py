@@ -32,14 +32,14 @@ DB_POOL_RECYCLE=3600
 # Twilio Configuration
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
-TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
+TWILIO_WEBHOOK_BASE_URL=https://twilio.polydial.com
 
 # Email
 SEND_EMAIL_WEBHOOK=
 FROM_EMAIL=
 FROM_NAME=
 
-FRONTEND_URL=https://halalcooking.ca
+FRONTEND_URL=https://polydial.com
 
 OPENAI_API_KEY=
 """
@@ -74,7 +74,7 @@ DB_POOL_RECYCLE=3600
 # Twilio Configuration
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
-TWILIO_WEBHOOK_BASE_URL=https://twilio.halalcooking.ca
+TWILIO_WEBHOOK_BASE_URL=https://twilio.polydial.com
 
 # Email
 SEND_EMAIL_WEBHOOK=

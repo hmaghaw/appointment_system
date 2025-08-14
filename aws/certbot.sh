@@ -1,6 +1,6 @@
 ## CERTBOT
 #
-# this file is for halalcooking.ca
+# this file is for polydial.com
 #
 # Install python3-pip if not installed
 sudo dnf install -y python3-pip
