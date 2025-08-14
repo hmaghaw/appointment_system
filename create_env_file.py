@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     # Get secrets and create .env file
     try:
-        secret_data = get_secret("voxxel-keys", "us-east-1")
+        secret_data = get_secret("polydial-keys", "us-east-1")
         create_env_from_template(secret_data, environment, output_file)
     except Exception as e:
         print(f"Error: {e}")
