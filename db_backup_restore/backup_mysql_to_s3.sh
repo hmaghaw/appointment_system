@@ -2,15 +2,14 @@
 set -euo pipefail
 
 # ===== CONFIG =====
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # repo root
-DATA_DIR="$PROJECT_DIR/mysql_data"                            # mapped /var/lib/mysql
-BACKUP_DIR="$PROJECT_DIR/backups"                             # local backup folder
+DATA_DIR="$HOME/db_data"                                      # mapped /var/lib/mysql
+BACKUP_DIR="$HOME/db_data_backup"                             # local backup folder
 DATE_STR="$(date +%F_%H%M%S)"
 ARCHIVE_NAME="mysql_data_${DATE_STR}.tar.gz"
 ARCHIVE_PATH="$BACKUP_DIR/$ARCHIVE_NAME"
 
 # S3
-S3_BUCKET="your-bucket-name"
+S3_BUCKET="ploydial"
 S3_PREFIX="mysql-backups"          # folder inside the bucket
 S3_URI="s3://${S3_BUCKET}/${S3_PREFIX}/${ARCHIVE_NAME}"
 
@@ -22,13 +21,14 @@ SSE_ARGS=(--sse "AES256")
 KEEP_LOCAL=7
 
 # ===== WORK =====
+# Create backup folder if it doesn't exist
 mkdir -p "$BACKUP_DIR"
 
 echo "[1/6] Stopping DB container..."
 docker-compose stop db
 
-echo "[2/6] Creating archive..."
-tar -czf "$ARCHIVE_PATH" -C "$PROJECT_DIR" mysql_data
+echo "[2/6] Creating archive from $DATA_DIR..."
+tar -czf "$ARCHIVE_PATH" -C "$HOME" "$(basename "$DATA_DIR")"
 
 echo "[3/6] Starting DB container..."
 docker-compose start db
@@ -44,4 +44,4 @@ echo "[6/6] Local rotation (keep last $KEEP_LOCAL)..."
 ls -1t "$BACKUP_DIR"/mysql_data_*.tar.gz | tail -n +$((KEEP_LOCAL+1)) | xargs -r rm -f
 ls -1t "$BACKUP_DIR"/mysql_data_*.tar.gz.sha256 | tail -n +$((KEEP_LOCAL+1)) | xargs -r rm -f
 
-echo "Done."
+echo "Backup complete."
