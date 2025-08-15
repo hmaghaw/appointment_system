@@ -1,8 +1,11 @@
 -- Database schema for Windsurf Appointment System
 
 -- Create database
-CREATE DATABASE IF NOT EXISTS appointment_db;
+#CREATE DATABASE IF NOT EXISTS appointment_db;
 
+CREATE DATABASE IF NOT EXISTS appointment_db
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_0900_ai_ci;
 USE appointment_db;
 
 -- Subscription plan tables (must come first due to foreign key references)
@@ -70,7 +73,7 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_business_id (business_id),
     INDEX idx_social_id (social_id),
     INDEX idx_active (active)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Password reset tokens for user authentication
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -85,7 +88,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     UNIQUE KEY unique_token (token),
     INDEX idx_token (token),
     INDEX idx_user_id (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Business Messages
 CREATE TABLE IF NOT EXISTS business_messages (
@@ -250,7 +253,7 @@ CREATE TABLE IF NOT EXISTS translations (
     UNIQUE KEY unique_phrase_language (phrase, language_code),
     INDEX idx_phrase (phrase),
     INDEX idx_language (language_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Service Translations
 CREATE TABLE IF NOT EXISTS service_translation (
@@ -265,7 +268,7 @@ CREATE TABLE IF NOT EXISTS service_translation (
     FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE,
     INDEX idx_service_id (service_id),
     INDEX idx_language_code (language_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores translations for service names and descriptions';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Stores translations for service names and descriptions';
 
 CREATE TABLE IF NOT EXISTS `call_meta` (
     `call_sid` VARCHAR(50) NOT NULL COMMENT 'Unique identifier for the call from the telephony provider',
@@ -289,7 +292,7 @@ CREATE TABLE IF NOT EXISTS `call_meta` (
     INDEX `idx_call_status` (`call_status`),
     INDEX `idx_communication_channel` (`communication_channel`),
     INDEX `idx_direction` (`direction`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores call metadata with call_sid as primary key';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Stores call metadata with call_sid as primary key';
 
 CREATE TABLE IF NOT EXISTS `call_conversation` (
     `call_conversation_id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -303,7 +306,7 @@ CREATE TABLE IF NOT EXISTS `call_conversation` (
     PRIMARY KEY (`call_conversation_id`),
     INDEX `idx_call_sid` (`call_sid`),
     INDEX `idx_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Table to track SMS message IDs
 CREATE TABLE IF NOT EXISTS `sms_sid` (
@@ -312,7 +315,7 @@ CREATE TABLE IF NOT EXISTS `sms_sid` (
     `sms_sid` VARCHAR(64) NOT NULL COMMENT 'Unique identifier for the SMS from the provider',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the SMS record was created',
     PRIMARY KEY (`business_id`, `customer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks SMS message IDs for business-customer communications';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Tracks SMS message IDs for business-customer communications';
 
 CREATE TABLE twilio_transaction_log (
     transaction_id       INT AUTO_INCREMENT PRIMARY KEY,
@@ -351,5 +354,21 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
     INDEX idx_user_id (user_id),
     INDEX idx_expires_at (expires_at),
     INDEX idx_used (used)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- Create premium_numbers table for storing premium phone numbers
+CREATE TABLE IF NOT EXISTS `premium_numbers` (
+  `_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `phone_number` VARCHAR(20) NOT NULL COMMENT 'The premium phone number',
+  `phone_sid` VARCHAR(100) COMMENT 'The SID from the telephony provider',
+  `price` DECIMAL(10, 2) NOT NULL COMMENT 'Price of the premium number',
+  `taken` BOOLEAN DEFAULT FALSE COMMENT 'Whether the number is currently in use',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `unique_phone_number` (`phone_number`),
+  INDEX `idx_taken` (`taken`),
+  INDEX `idx_phone_sid` (`phone_sid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores premium phone numbers available for purchase';
+
+-- Add index for faster lookups on phone number
+CREATE INDEX `idx_phone_number` ON `premium_numbers` (`phone_number`);
