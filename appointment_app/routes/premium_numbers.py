@@ -68,7 +68,7 @@ def reserve_premium_number():
     data = request.get_json()
     
     # Validate required fields
-    required_fields = ['phone_number', 'business_id', 'friendly_name']
+    required_fields = ['phone_number', 'business_id']
     missing_fields = [field for field in required_fields if field not in data or not data[field]]
     
     if missing_fields:
@@ -79,7 +79,6 @@ def reserve_premium_number():
     
     phone_number = data['phone_number']
     business_id = data['business_id']
-    friendly_name = data['friendly_name']
     
     try:
         with get_db_cursor(commit=True) as cursor:
@@ -139,12 +138,11 @@ def reserve_premium_number():
             # Add to business_phone table with explicit collation
             cursor.execute("""
                 INSERT INTO business_phone 
-                (business_id, phone_sid, friendly_name, business_phone, is_primary, created_at, updated_at)
-                VALUES (%s, %s, %s, %s COLLATE utf8mb4_unicode_ci, 0, NOW(), NOW())
+                (business_id, phone_sid, business_phone, is_primary, created_at, updated_at)
+                VALUES (%s, %s, %s COLLATE utf8mb4_unicode_ci, 0, NOW(), NOW())
             """, (
                 business_id,
                 number['phone_sid'],
-                friendly_name,
                 phone_number
             ))
             

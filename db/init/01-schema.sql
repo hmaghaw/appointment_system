@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS business_phone (
     business_phone_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     phone_sid VARCHAR(34) NOT NULL COMMENT 'Twilio Phone Number SID (starts with PN)',
-    friendly_name VARCHAR(255) NOT NULL COMMENT 'User-friendly name for the phone number',
+    friendly_name VARCHAR(255) COMMENT 'User-friendly name for the phone number',
     business_phone VARCHAR(20) NOT NULL,
     language_code VARCHAR(10),
     is_primary BOOLEAN DEFAULT FALSE,
