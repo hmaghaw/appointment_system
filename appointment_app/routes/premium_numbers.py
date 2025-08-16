@@ -54,24 +54,38 @@ def list_premium_numbers():
 @bp.route('/premium-numbers/reserve', methods=['POST'])
 def reserve_premium_number():
     """
-    Reserve a premium number by setting taken = true
+    Reserve a premium number and add it to business_phone
     
     Request body:
     {
-        "phone_number": "+1234567890"  # The phone number to reserve
+        "phone_number": "+1234567890",  # The phone number to reserve
+        "business_id": 123,            # ID of the business to assign the number to
+        "friendly_name": "Main Line"   # User-friendly name for the phone number
     }
     
-    Returns: Success message with the reserved number details
+    Returns: Success message with the reserved number and business_phone details
     """
     data = request.get_json()
     
-    if not data or 'phone_number' not in data:
-        return jsonify({"success": False, "message": "Phone number is required"}), 400
+    # Validate required fields
+    required_fields = ['phone_number', 'business_id', 'friendly_name']
+    missing_fields = [field for field in required_fields if field not in data or not data[field]]
+    
+    if missing_fields:
+        return jsonify({
+            "success": False, 
+            "message": f"Missing required fields: {', '.join(missing_fields)}"
+        }), 400
     
     phone_number = data['phone_number']
+    business_id = data['business_id']
+    friendly_name = data['friendly_name']
     
     try:
         with get_db_cursor(commit=True) as cursor:
+            # Start transaction
+            cursor.execute("START TRANSACTION")
+            
             # First check if the number exists and is available
             cursor.execute("""
                 SELECT * FROM premium_numbers 
@@ -82,16 +96,30 @@ def reserve_premium_number():
             number = cursor.fetchone()
             
             if not number:
+                cursor.execute("ROLLBACK")
                 return jsonify({
                     "success": False,
                     "message": f"Premium number {phone_number} not found"
                 }), 404
                 
             if number['taken']:
+                cursor.execute("ROLLBACK")
                 return jsonify({
                     "success": False,
                     "message": f"Premium number {phone_number} is already taken"
                 }), 400
+                
+            # Check if business exists
+            cursor.execute("""
+                SELECT business_id FROM business WHERE business_id = %s
+            """, (business_id,))
+            
+            if not cursor.fetchone():
+                cursor.execute("ROLLBACK")
+                return jsonify({
+                    "success": False,
+                    "message": f"Business with ID {business_id} not found"
+                }), 404
             
             # Reserve the number
             cursor.execute("""
@@ -102,25 +130,51 @@ def reserve_premium_number():
             """, (phone_number,))
             
             if cursor.rowcount == 0:
+                cursor.execute("ROLLBACK")
                 return jsonify({
                     "success": False,
                     "message": "Failed to reserve the premium number"
                 }), 500
-            
-            # Get the updated number details
+                
+            # Add to business_phone table with explicit collation
             cursor.execute("""
-                SELECT _id, phone_number, phone_sid, price, taken, created_at, updated_at
-                FROM premium_numbers
-                WHERE phone_number = %s
+                INSERT INTO business_phone 
+                (business_id, phone_sid, friendly_name, business_phone, is_primary, created_at, updated_at)
+                VALUES (%s, %s, %s, %s COLLATE utf8mb4_unicode_ci, 0, NOW(), NOW())
+            """, (
+                business_id,
+                number['phone_sid'],
+                friendly_name,
+                phone_number
+            ))
+            
+            if cursor.rowcount == 0:
+                cursor.execute("ROLLBACK")
+                return jsonify({
+                    "success": False,
+                    "message": "Failed to add phone number to business"
+                }), 500
+                
+            # Get the updated number details with explicit collation
+            cursor.execute("""
+                SELECT pn._id, pn.phone_number, pn.phone_sid, pn.price, pn.taken, 
+                       pn.created_at, pn.updated_at,
+                       bp.business_phone_id, bp.business_id, bp.friendly_name as business_friendly_name,
+                       bp.is_primary, bp.created_at as assigned_at
+                FROM premium_numbers pn
+                LEFT JOIN business_phone bp ON pn.phone_number = bp.business_phone COLLATE utf8mb4_unicode_ci
+                WHERE pn.phone_number = %s
             """, (phone_number,))
             
-            updated_number = cursor.fetchone()
-            columns = [col[0] for col in cursor.description]
+            result = cursor.fetchone()
+            
+            # Commit transaction
+            cursor.execute("COMMIT")
             
             return jsonify({
                 "success": True,
-                "message": "Premium number reserved successfully",
-                "data": format_premium_number(updated_number, columns)
+                "message": "Premium number reserved and added to business successfully",
+                "data": dict(result) if result else None
             })
             
     except mysql.connector.Error as err:

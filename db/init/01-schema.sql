@@ -368,7 +368,7 @@ CREATE TABLE IF NOT EXISTS `premium_numbers` (
   UNIQUE KEY `unique_phone_number` (`phone_number`),
   INDEX `idx_taken` (`taken`),
   INDEX `idx_phone_sid` (`phone_sid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores premium phone numbers available for purchase';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Stores premium phone numbers available for purchase';
 
 -- Add index for faster lookups on phone number
 CREATE INDEX `idx_phone_number` ON `premium_numbers` (`phone_number`);

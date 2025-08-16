@@ -28,3 +28,9 @@ chmod +x /home/ec2-user/appointment_system/db_backup_restore/restore_latest_from
 ```angular2html
 
 ```
+
+# To Install a new version of db
+```angular2html
+docker compose down -v          # removes containers and named volumes (you’re using a bind mount, so next step too)
+sudo rm -rf ../db_data/*       
+```
