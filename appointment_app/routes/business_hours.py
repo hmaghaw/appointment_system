@@ -200,62 +200,69 @@ def update_business_hours():
 
     except mysql.connector.Error as err:
         return jsonify({"success": False, "error": f"Database error: {str(err)}"}), 500
-
-@bp.route('/business-hours/create-weekly', methods=['POST'])
-def create_weekly_business_hours():
-    """
-    Create a full week's default business hours for a given business_id.
-
-    Request body:
-    {
-        "business_id": 1   # Required
-    }
-
-    Rules:
-    - Monday–Friday → open_time = "09:00:00", close_time = "17:00:00", is_closed = false
-    - Saturday & Sunday → open_time = NULL, close_time = NULL, is_closed = true
-    - Inserts 7 rows into business_hours (one per day)
-    """
-
-    data = request.get_json()
-    if not data or 'business_id' not in data:
-        return jsonify({"success": False, "error": "business_id is required"}), 400
-
-    business_id = data['business_id']
-
-    try:
-        with get_db_cursor(commit=True, dictionary=True) as cursor:
-            created_hours = []
-
-            for day_num, day_name in DAY_NAMES.items():
-                if day_name in ['Saturday', 'Sunday']:
-                    open_time = None
-                    close_time = None
-                    is_closed = True
-                else:
-                    open_time = "09:00:00"
-                    close_time = "17:00:00"
-                    is_closed = False
-
-                cursor.execute("""
-                    INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_closed)
-                    VALUES (%s, %s, %s, %s,%s)
-                """, (business_id, day_num,open_time, close_time, is_closed))
-
-                created_hours.append({
-                    "business_id": business_id,
-                    "open_time": open_time,
-                    "close_time": close_time,
-                    "is_closed": is_closed
-                })
-
-            return jsonify({"success": True, "data": created_hours}), 201
-
-    except mysql.connector.Error as err:
-        return jsonify({"success": False, "error": f"Database error: {str(err)}"}), 500
-
-
-def serialize_value(v):
-    if isinstance(v, (datetime, time, timedelta)):
-        return str(v)
-    return v
+#
+# @bp.route('/business-hours/create-weekly', methods=['POST'])
+# def create_weekly_business_hours():
+#     """
+#     Create a full week's default business hours for a given business_id.
+#
+#     Request body:
+#     {
+#         "business_id": 1   # Required
+#     }
+#
+#     Rules:
+#     - Monday–Friday → open_time = "09:00:00", close_time = "17:00:00", is_closed = false
+#     - Saturday & Sunday → open_time = NULL, close_time = NULL, is_closed = true
+#     - Inserts 7 rows into business_hours (one per day)
+#     """
+#
+#     data = request.get_json()
+#     if not data or 'business_id' not in data:
+#         return jsonify({"success": False, "error": "business_id is required"}), 400
+#
+#     business_id = data['business_id']
+#
+#     try:
+#         default_hours = [
+#             {"day_of_week": 0, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Monday
+#             {"day_of_week": 1, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Tuesday
+#             {"day_of_week": 2, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Wednesday
+#             {"day_of_week": 3, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Thursday
+#             {"day_of_week": 4, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": False},  # Friday
+#             {"day_of_week": 5, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True},
+#             # Saturday (closed)
+#             {"day_of_week": 6, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True}  # Sunday (closed)
+#         ]
+#         with get_db_cursor(commit=True, dictionary=True) as cursor:
+#             inserted = []
+#             for entry in default_hours:
+#                 cursor.execute("""
+#                                INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_closed)
+#                                VALUES (%s, %s, %s, %s, %s)
+#                                """, (
+#                                    business_id,
+#                                    entry["day_of_week"],
+#                                    entry["open_time"] if not entry["is_closed"] else None,
+#                                    entry["close_time"] if not entry["is_closed"] else None,
+#                                    entry["is_closed"]
+#                                ))
+#
+#                 inserted.append({
+#                     "business_id": business_id,
+#                     "day_of_week": entry["day_of_week"],
+#                     "open_time": entry["open_time"] if not entry["is_closed"] else None,
+#                     "close_time": entry["close_time"] if not entry["is_closed"] else None,
+#                     "is_closed": entry["is_closed"]
+#                 })
+#
+#             return jsonify({"success": True, "data": inserted}), 201
+#
+#     except mysql.connector.Error as err:
+#         return jsonify({"success": False, "error": f"Database error: {str(err)}"}), 500
+#
+#
+# def serialize_value(v):
+#     if isinstance(v, (datetime, time, timedelta)):
+#         return str(v)
+#     return v

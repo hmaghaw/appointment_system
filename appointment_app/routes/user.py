@@ -164,6 +164,35 @@ def create_weekly_business_hours(business_id):
         {"day_of_week": 5, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True},  # Saturday (closed)
         {"day_of_week": 6, "open_time": "09:00:00", "close_time": "17:00:00", "is_closed": True}  # Sunday (closed)
     ]
+    inserted = []
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        for entry in default_hours:
+            cursor.execute("""
+                INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_closed)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                business_id,
+                entry["day_of_week"],
+                entry["open_time"] if not entry["is_closed"] else None,
+                entry["close_time"] if not entry["is_closed"] else None,
+                entry["is_closed"]
+            ))
+
+            inserted.append({
+                "business_id": business_id,
+                "day_of_week": entry["day_of_week"],
+                "open_time": entry["open_time"] if not entry["is_closed"] else None,
+                "close_time": entry["close_time"] if not entry["is_closed"] else None,
+                "is_closed": entry["is_closed"]
+            })
+
+        return inserted
+
+    except mysql.connector.Error as err:
+        raise RuntimeError(f"Database error: {str(err)}")
 
 
 def create_email_verification_token(user_id, expiration_hours=24):
