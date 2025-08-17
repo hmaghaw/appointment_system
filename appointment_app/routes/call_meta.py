@@ -65,18 +65,20 @@ def create_or_update_call_meta():
     
     call_sid = data['call_sid']
     meta = data['meta']
-    
+    business_id = data['business_id']
+    customer_id = data['customer_id']
+
     try:
         meta_json = json.dumps(meta) if not isinstance(meta, str) else meta
         
         with get_db_cursor(database='appointment_db', commit=True) as cursor:
             cursor.execute("""
-                INSERT INTO call_meta (call_sid, meta)
-                VALUES (%s, %s)
+                INSERT INTO call_meta (call_sid, meta, business_id, customer_id)
+                VALUES (%s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     meta = VALUES(meta),
                     updated_at = NOW()
-            """, (call_sid, meta_json))
+            """, (call_sid, meta_json, business_id, customer_id))
             
             return jsonify({
                 "status": "success",
