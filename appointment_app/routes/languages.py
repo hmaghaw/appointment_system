@@ -928,3 +928,80 @@ def remove_business_language():
     except Exception as e:
         logger.error(f"Unexpected error in remove_business_language: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to remove language: {str(e)}"}), 500
+
+
+@bp.route('/phone/default-voice', methods=['POST'])
+def get_default_voice():
+    """
+    Get the default voice settings for a phone number and language.
+    
+    Request Body:
+        {
+            "phone_number": "+16474905987",  # The phone number to look up
+            "language": "en"  # ISO 639-1 language code
+        }
+        
+    Returns:
+        JSON response with voice settings from the database
+        {
+            "language_code": "ar",
+            "voice_language": "ar-XA",
+            "voice_name": "ar-XA-Chirp3-HD-Aoede"
+        }
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+        
+    phone_number = data.get('phone_number')
+    #language = data.get('language')
+    
+    if not phone_number:
+        return jsonify({"error": "phone_number is required"}), 400
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(dictionary=True) as cursor:
+                # First, get the business_id for the phone number
+                cursor.execute("""
+                    SELECT business_id, language_code
+                    FROM business_phone 
+                    WHERE business_phone = %s
+                """, (phone_number,))
+                
+                result = cursor.fetchone()
+                if not result:
+                    return jsonify({"error": "Phone number not found"}), 404
+                    
+                business_id = result['business_id']
+                language = result['language_code']
+
+                # Now get the voice settings for this business and language
+                cursor.execute("""
+                    SELECT lv.language_code, 
+                           CONCAT(lv.language_code, '-', lv.region_code) as voice_language, 
+                           lv.voice_name
+                    FROM business_languages bl
+                    JOIN language_voice lv ON bl.language_voice_id = lv.language_voice_id
+                    WHERE bl.business_id = %s
+                      AND bl.language_code = %s
+                """, (business_id, language))
+                
+                voice_settings = cursor.fetchone()
+                if not voice_settings:
+                    return jsonify({
+                        "error": f"No voice settings found for business_id {business_id} and language {language}"
+                    }), 404
+                
+                return jsonify({
+                    "language_code": voice_settings['language_code'],
+                    "voice_language": voice_settings['voice_language'],
+                    "voice_name": voice_settings['voice_name']
+                })
+                
+    except mysql.connector.Error as e:
+        logger.error(f"Database error in get_default_voice: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error in get_default_voice: {str(e)}", exc_info=True)
+        return jsonify({"error": "An error occurred while processing your request"}), 500
