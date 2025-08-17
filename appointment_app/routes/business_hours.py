@@ -260,9 +260,8 @@ def update_business_hours():
 #
 #     except mysql.connector.Error as err:
 #         return jsonify({"success": False, "error": f"Database error: {str(err)}"}), 500
-#
-#
-# def serialize_value(v):
-#     if isinstance(v, (datetime, time, timedelta)):
-#         return str(v)
-#     return v
+
+def serialize_value(v):
+    if isinstance(v, (datetime, time, timedelta)):
+        return str(v)
+    return v
