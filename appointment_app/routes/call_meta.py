@@ -67,18 +67,22 @@ def create_or_update_call_meta():
     meta = data['meta']
     business_id = data['business_id']
     customer_id = data['customer_id']
+    call_duration = data['call_duration']
+    call_start = data['call_start']
+    call_end = data['call_end']
+    call_status = data['call_status']
 
     try:
         meta_json = json.dumps(meta) if not isinstance(meta, str) else meta
         
         with get_db_cursor(database='appointment_db', commit=True) as cursor:
             cursor.execute("""
-                INSERT INTO call_meta (call_sid, meta, business_id, customer_id)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO call_meta (call_sid, meta, business_id, customer_id, call_duration, call_start, call_end, call_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     meta = VALUES(meta),
                     updated_at = NOW()
-            """, (call_sid, meta_json, business_id, customer_id))
+            """, (call_sid, meta_json, business_id, customer_id, call_duration, call_start, call_end, call_status))
             
             return jsonify({
                 "status": "success",
@@ -359,11 +363,20 @@ def read_call_meta():
                 "call_sid": call_sid
             })
         
-        # Convert datetime objects to strings
-        if 'created_at' in call and call['created_at']:
-            call['created_at'] = call['created_at'].isoformat()
-        if 'updated_at' in call and call['updated_at']:
-            call['updated_at'] = call['updated_at'].isoformat()
+        # Format datetime objects to 'YYYY-MM-DD HH:MM:SS' strings
+        datetime_fields = ['created_at', 'updated_at', 'call_start', 'call_end']
+        for field in datetime_fields:
+            if field in call and call[field]:
+                if isinstance(call[field], str):
+                    # If it's already a string, try to parse it first
+                    try:
+                        dt = datetime.fromisoformat(call[field].replace('Z', '+00:00'))
+                        call[field] = dt.strftime('%Y-%m-%d %H:%M:%S')
+                    except (ValueError, AttributeError):
+                        pass  # Leave as is if parsing fails
+                elif hasattr(call[field], 'strftime'):
+                    # If it's a datetime object
+                    call[field] = call[field].strftime('%Y-%m-%d %H:%M:%S')
         
         # Parse meta if it's a string
         if 'meta' in call and isinstance(call['meta'], str):
