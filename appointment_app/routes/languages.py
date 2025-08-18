@@ -978,14 +978,16 @@ def get_default_voice():
 
                 # Now get the voice settings for this business and language
                 cursor.execute("""
-                    SELECT lv.language_code, 
-                           CONCAT(lv.language_code, '-', lv.region_code) as voice_language, 
-                           lv.voice_name
-                    FROM business_languages bl
-                    JOIN language_voice lv ON bl.language_voice_id = lv.language_voice_id
-                    WHERE bl.business_id = %s
-                      AND bl.language_code = %s
-                """, (business_id, language))
+                               SELECT lv.language_code,
+                                      l.language_name,
+                                      CONCAT(lv.language_code, '-', lv.region_code) AS voice_language,
+                                      lv.voice_name
+                               FROM business_languages bl
+                                        JOIN language_voice lv ON bl.language_voice_id = lv.language_voice_id
+                                        JOIN language l ON lv.language_code = l.language_code
+                               WHERE bl.business_id = %s
+                                 AND bl.language_code = %s
+                               """, (business_id, language))
                 
                 voice_settings = cursor.fetchone()
                 if not voice_settings:
@@ -994,6 +996,7 @@ def get_default_voice():
                     }), 404
                 
                 return jsonify({
+                    "language_name": voice_settings['language_name'],
                     "language_code": voice_settings['language_code'],
                     "voice_language": voice_settings['voice_language'],
                     "voice_name": voice_settings['voice_name']

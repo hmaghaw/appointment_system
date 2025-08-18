@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS subscription_plan (
 CREATE TABLE IF NOT EXISTS business (
     business_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    timezone VARCHAR(50) NOT NULL DEFAULT 'UTC',
+    timezone VARCHAR(50) NOT NULL DEFAULT 'America/Toronto',
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     subscription_plan_id INT DEFAULT 7,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
