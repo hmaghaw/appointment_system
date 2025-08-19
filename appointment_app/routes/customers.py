@@ -430,3 +430,86 @@ def upsert_customer():
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
+@bp.route('', methods=['DELETE'])
+def delete_customer():
+    """
+    Delete a customer by ID
+    
+    Request body should contain:
+    {
+        "customer_id": 24  // Required: ID of the customer to delete
+    }
+    
+    Returns:
+        JSON object with success status and message
+        {
+            "success": true/false,
+            "message": "Customer deleted successfully" or error message
+        }
+    """
+    data = request.get_json()
+    
+    if not data or 'customer_id' not in data:
+        return jsonify({
+            "success": False,
+            "message": "customer_id is required in the request body"
+        }), 400
+    
+    try:
+        customer_id = int(data['customer_id'])
+        if customer_id <= 0:
+            raise ValueError("customer_id must be a positive integer")
+            
+        with get_db_cursor(commit=True) as cursor:
+            # First check if customer exists
+            cursor.execute(
+                "SELECT customer_id FROM customer WHERE customer_id = %s",
+                (customer_id,)
+            )
+            if not cursor.fetchone():
+                return jsonify({
+                    "success": False,
+                    "message": f"Customer with ID {customer_id} not found"
+                }), 404
+            
+            # Delete the customer
+            cursor.execute(
+                "DELETE FROM customer WHERE customer_id = %s",
+                (customer_id,)
+            )
+            
+            if cursor.rowcount == 0:
+                return jsonify({
+                    "success": False,
+                    "message": "No customer was deleted"
+                }), 404
+            
+            return jsonify({
+                "success": True,
+                "message": f"Customer with ID {customer_id} has been deleted"
+            }), 200
+            
+    except ValueError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Invalid customer_id: {str(e)}"
+        }), 400
+    except mysql.connector.Error as e:
+        # Handle foreign key constraint violations or other DB errors
+        error_msg = str(e).lower()
+        if "foreign key constraint" in error_msg:
+            return jsonify({
+                "success": False,
+                "message": "Cannot delete customer because they have associated records (e.g., appointments). Please delete those first."
+            }), 400
+        return jsonify({
+            "success": False,
+            "message": f"Database error: {str(e)}"
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"An unexpected error occurred: {str(e)}"
+        }), 500
