@@ -9,7 +9,6 @@ def verify_bearer_token(request):
         return None, "Missing or invalid Authorization header"
 
     token = auth_header.split(" ")[1]  # Extract actual token
-
     try:
         # Decode and verify signature + expiration
         payload = jwt.decode(
@@ -25,14 +24,18 @@ def verify_bearer_token(request):
         return None, f"Invalid token: {str(e)}"
 
 
-def generate_jwt_token(user):
+def generate_jwt_token(user, validity=86400): # -8640000
     """Generate JWT token for user"""
     payload = {
         'user_id': user['id'],
         'email': user['email'],
         'business_id': user['business_id'],
         'role': user['role'],
-        'exp': int(time.time()) + 24 * 3600,  # expires in 24 hours
+        'exp': int(time.time()) + validity,  # expires in 24 hours
         'iat': int(time.time())
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    token =  jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
+
+
+

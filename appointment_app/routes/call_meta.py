@@ -123,7 +123,9 @@ def get_call_conversation():
         ]
     }
     """
-    verify_bearer_token(request)
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
 
     data = request.get_json() or {}
     
