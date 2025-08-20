@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import Error
 from appointment_app.database import get_db_connection
+from ..services.auth_token_validator import verify_bearer_token
 
 # Load environment variables
 load_dotenv()
@@ -105,6 +106,10 @@ def create_payment_intent():
     Expected JSON payload: {"amount": 1000, "currency": "usd"}
     """
     try:
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+
         data = request.get_json()
         amount = data.get('amount')
         currency = data.get('currency', 'usd')
@@ -130,6 +135,10 @@ def create_payment_intent():
 
 @bp.route('/create-checkout-session', methods=['POST'])
 def create_checkout():
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     session = stripe.checkout.Session.create(
         mode='subscription',

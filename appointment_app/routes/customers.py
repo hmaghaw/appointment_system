@@ -5,6 +5,7 @@ import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
 import re
+from ..services.auth_token_validator import verify_bearer_token
 
 bp = Blueprint('customers', __name__, url_prefix='/api/customers')
 
@@ -108,6 +109,10 @@ def get_customer():
     Returns:
         JSON with customer data if found, or error message
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'customer_id' not in data:
@@ -152,6 +157,10 @@ def create_customer():
     Returns:
         The created customer object with ID or error message
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     # Validate required fields
@@ -223,6 +232,10 @@ def update_customer():
     Returns:
         JSON with success status, message, and updated customer data on success.
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
 
     if not data or 'customer_id' not in data:
@@ -318,6 +331,10 @@ def list_customers():
         - customers: List of customer objects
         - total: Total number of customers for the business
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'business_id' not in data:
@@ -360,6 +377,10 @@ def upsert_customer():
     Returns:
         A JSON object with customer_id, name, and email
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     # Validate required fields
@@ -449,6 +470,10 @@ def delete_customer():
             "message": "Customer deleted successfully" or error message
         }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'customer_id' not in data:

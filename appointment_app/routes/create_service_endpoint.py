@@ -4,6 +4,7 @@ from database import get_db_cursor
 from functools import wraps
 import logging
 from ..services.ai_translate import AITranslate
+from ..services.auth_token_validator import verify_bearer_token
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,6 +70,10 @@ def create_service_blueprint(bp):
         """
         Create a new service with a specific language
         """
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+
         data = request.get_json() or {}
 
         required_fields = ['business_id', 'name', 'description', 'duration_minutes', 'language']

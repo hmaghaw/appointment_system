@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from appointment_app.database import get_db_cursor
 import mysql.connector
+from ..services.auth_token_validator import verify_bearer_token
 
 # Create blueprint
 bp = Blueprint('premium_numbers', __name__)
@@ -65,6 +66,10 @@ def reserve_premium_number():
     
     Returns: Success message with the reserved number and business_phone details
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     # Validate required fields
@@ -190,6 +195,10 @@ def release_premium_number():
     
     Returns: Success message with the released number details
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'phone_number' not in data:

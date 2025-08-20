@@ -3,6 +3,7 @@ from database import get_db_cursor
 import mysql.connector
 from datetime import datetime, time, timedelta
 from flask import jsonify, request, Blueprint
+from ..services.auth_token_validator import verify_bearer_token
 
 DAY_NAMES = {
     0: 'Monday',
@@ -67,6 +68,10 @@ def get_business_hours():
         ]
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'business_id' not in data:
@@ -131,6 +136,10 @@ def update_business_hours():
     - If is_closed = false → open_time and close_time must be provided or inferred from DB.
     - If is_closed is not provided, open_time/close_time can still be updated independently.
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
 
     if not data or 'business_hours_id' not in data:

@@ -3,6 +3,7 @@ from appointment_app.database import get_db_cursor
 import mysql.connector
 from datetime import datetime, timedelta
 from appointment_app.services.appointment_service import validate_appointment
+from ..services.auth_token_validator import verify_bearer_token
 
 # Create blueprint
 bp = Blueprint('appointments', __name__)
@@ -38,6 +39,10 @@ def search_appointments():
         "language": "string"          # Optional: Language code for service names (default: 'en')
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     # Get parameters from request body
     data = request.get_json() or {}
     
@@ -135,6 +140,10 @@ def create_appointment():
     - service_id: ID of the service being booked
     - start_time: Start time in ISO format (YYYY-MM-DDTHH:MM:SS)
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     # Validate required fields
@@ -203,6 +212,10 @@ def create_appointment():
 
 @bp.route('/api/appointments', methods=['PUT'])
 def update_appointment():
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
 
     if not data or 'appointment_id' not in data:
@@ -287,6 +300,10 @@ def update_appointment():
 
 @bp.route('/api/appointments', methods=['DELETE'])
 def cancel_appointment():
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
 
     if not data or 'appointment_id' not in data:
@@ -337,6 +354,10 @@ def list_business_appointments():
         "status": "confirmed"         # Optional: Filter by status (e.g., 'scheduled', 'confirmed', 'completed', 'cancelled'). If not provided, returns appointments of all statuses.
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json() or {}
     
     # Validate required fields

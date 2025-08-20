@@ -6,6 +6,7 @@ from functools import wraps
 import logging
 from typing import List, Dict, Any, Optional
 from .create_service_endpoint import create_service_blueprint
+from ..services.auth_token_validator import verify_bearer_token
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +51,10 @@ def list_services():
     
     Returns: List of services for the business with translated content if available
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json() or {}
     business_id = data['business_id']
     language = data.get('language', 'en')
@@ -157,6 +162,10 @@ def update_service_translation():
 
     Returns: Success message or error
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json() or {}
     translation_id = data.get('translation_id')
     name = data.get('name')
@@ -225,6 +234,10 @@ def delete_service():
     
     Returns: Success message or error
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json() or {}
     service_id = data.get('service_id')
     
@@ -295,6 +308,10 @@ def update_service():
     """
     if request.method == 'OPTIONS':
         return '', 200
+
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
 
     data = request.get_json(silent=True) or {}
     service_id = data.get('service_id')

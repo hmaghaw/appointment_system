@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from database import get_db_cursor
+from ..services.auth_token_validator import verify_bearer_token
 
 # Create blueprint
 bp = Blueprint('subscription', __name__)
@@ -18,6 +19,10 @@ def get_subscription_plans():
              with is_current_plan flag set for the customer's current plan
     """
     try:
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+
         data = request.get_json() or {}
         business_id = data.get('business_id')
         

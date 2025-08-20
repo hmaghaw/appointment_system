@@ -21,7 +21,8 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from ..services.send_email_notification import send_email_notification
 import time
-from ..services.auth_token_validator import generate_jwt_token
+from ..services.auth_token_validator import generate_jwt_token, verify_bearer_token
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info("User blueprint loaded.")
@@ -859,6 +860,10 @@ def create_social_user(social_data, provider):
 def request_password_reset():
     """Request a password reset email"""
     try:
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+
         data = request.get_json()
         email = data.get('email')
         
@@ -930,6 +935,11 @@ def request_password_reset():
 def reset_password():
     """Reset user password with a valid token"""
     try:
+        # Verify bearer token
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+
         data = request.get_json()
         token = data.get('token')
         new_password = data.get('password')

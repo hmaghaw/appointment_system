@@ -4,6 +4,7 @@ import mysql.connector
 import logging
 from typing import Dict, List, Any, Tuple, Optional, Union
 from functools import wraps
+from ..services.auth_token_validator import verify_bearer_token
 
 # Type aliases
 BusinessVoicesResponse = List[Dict[str, Any]]
@@ -168,6 +169,10 @@ def update_business_language():
     Returns:
         JSON response with success or error message
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
@@ -288,6 +293,10 @@ def get_business_language_voices() -> tuple[jsonify, int]:
             ...
         ]
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
@@ -363,6 +372,10 @@ def update_business_phone_voice() -> tuple[jsonify, int]:
             "language_code": 3
         }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
@@ -433,6 +446,10 @@ def list_supported_languages():
             ]
         }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     try:
         with get_db_connection() as conn:
             with conn.cursor(dictionary=True) as cursor:
@@ -464,6 +481,10 @@ def list_business_languages():
     Returns:
         JSON response with list of languages for the business
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     try:
         data = request.get_json()
         business_id = data.get('business_id')
@@ -518,6 +539,10 @@ def add_business_language():
     Returns:
         JSON response with success or error message
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
@@ -740,6 +765,10 @@ def list_language_voices():
         ]
     """
     try:
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+
         data = request.get_json()
         if not data or 'language_code' not in data:
             return jsonify({"error": "language_code is required in the request body"}), 400
@@ -800,6 +829,10 @@ def get_voice_options_for_phone():
         ]
     """
     try:
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+
         data = request.get_json()
         if not data or 'phone_number' not in data:
             return jsonify({"error": "phone_number is required in the request body"}), 400
@@ -859,6 +892,10 @@ def remove_business_language():
     Returns:
         JSON response with success or error message
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
@@ -949,6 +986,10 @@ def get_default_voice():
             "voice_name": "ar-XA-Chirp3-HD-Aoede"
         }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400

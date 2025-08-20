@@ -58,6 +58,10 @@ def create_or_update_call_meta():
         "meta": { ... }  # Any JSON-serializable data
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'call_sid' not in data or 'meta' not in data:
@@ -203,6 +207,10 @@ def list_call_meta():
         "count": number of calls
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json() or {}
     
     # Validate required fields
@@ -352,6 +360,10 @@ def read_call_meta():
     - If call exists: {call data}
     - If call doesn't exist: {"exists": false, "call_sid": "..."}
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'call_sid' not in data:
@@ -419,6 +431,10 @@ def get_sms_sid():
         "sms_id": "generated_or_existing_sid"
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'business_phone' not in data or 'customer_phone' not in data:
@@ -518,6 +534,10 @@ def is_business_admin_phone():
         "admin_phone": true/false
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'business_phone' not in data or 'customer_phone' not in data:

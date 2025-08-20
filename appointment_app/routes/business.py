@@ -4,6 +4,7 @@ import mysql.connector
 from database import get_db_cursor
 from functools import wraps
 from typing import List, Dict, Any, Optional
+from ..services.auth_token_validator import verify_bearer_token
 
 # Map day numbers to day names
 DAY_NAMES = {
@@ -36,6 +37,11 @@ def handle_business_messages():
         "is_active": true
     }
     """
+    # Verify bearer token
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+        
     data = request.get_json() or {}
     
     # If message and type are provided, it's a create request
@@ -151,6 +157,11 @@ def get_business_by_phone():
     
     Returns: Business information if found, error otherwise
     """
+    # Verify bearer token
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+        
     data = request.get_json() or {}
     phone = data.get('business_phone')
     
@@ -223,6 +234,11 @@ def list_business_phones():
     
     Returns: List of phone numbers associated with the business
     """
+    # Verify bearer token
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+        
     if request.method == 'POST':
         try:
             data = request.get_json()

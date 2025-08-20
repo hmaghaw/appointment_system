@@ -3,12 +3,17 @@ from database import get_db_cursor
 from datetime import datetime, time, timedelta
 import mysql.connector
 from services.availability_service import get_daily_availability, get_weekly_availability
+from ..services.auth_token_validator import verify_bearer_token
 # Create blueprint
 bp = Blueprint('availability', __name__)
 
 @bp.route('/api/availability', methods=['POST'])
 def check_availability():
     """Check available time slots for a service"""
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     # Validate required fields

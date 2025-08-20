@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, request
 import mysql.connector
 from database import get_db_cursor
 from datetime import datetime
+from ..services.auth_token_validator import verify_bearer_token
 
 bp = Blueprint('call_conversation', __name__, url_prefix='/api/call-conversation')
 
@@ -23,6 +24,10 @@ def add_conversation_item():
         }
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'call_sid' not in data or 'role' not in data:
@@ -119,6 +124,10 @@ def list_conversation_items():
     - role: Filter by role
     - has_function: If 'true', only include items with function_calls
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'call_sid' not in data:
@@ -198,6 +207,10 @@ def save_bulk_messages():
         ]
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'call_sid' not in data or 'messages' not in data:
@@ -260,6 +273,10 @@ def update_system_prompt():
         "content": "Updated system prompt content"
     }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'call_sid' not in data or 'content' not in data:

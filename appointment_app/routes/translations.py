@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from database import get_db_cursor
 import mysql.connector
 from typing import Dict, Any
+from ..services.auth_token_validator import verify_bearer_token
 
 bp = Blueprint('translations', __name__, url_prefix='/api/translations')
 
@@ -62,6 +63,10 @@ def get_translation_endpoint():
     Returns:
         JSON with the translated phrase or original phrase if not found
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     phrase = request.args.get('phrase')
     language = request.args.get('language', 'en')
     
@@ -90,6 +95,10 @@ def get_translation_post():
     Returns:
         JSON with the translated phrase or original phrase if not found
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     data = request.get_json()
     
     if not data or 'phrase' not in data:
@@ -120,6 +129,10 @@ def get_all_translations():
             "phrase2": { ... }
         }
     """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
     try:
         with get_db_cursor(dictionary=True) as cursor:
             cursor.execute(
