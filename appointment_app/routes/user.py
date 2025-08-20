@@ -21,6 +21,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from ..services.send_email_notification import send_email_notification
 import time
+from ..services.auth_token_validator import generate_jwt_token
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info("User blueprint loaded.")
@@ -95,30 +96,6 @@ def execute_query(query, params=None, fetch=False):
         if connection:
             connection.close()
         return None
-
-
-def generate_jwt_token(user):
-    """Generate JWT token for user"""
-    import os
-    from flask import current_app
-    
-    # Get JWT secret key from environment variables or use a default (not recommended for production)
-    secret_key = os.getenv('JWT_SECRET_KEY')
-    if not secret_key:
-        if current_app.config.get('TESTING'):
-            secret_key = 'test-secret-key'  # Only for testing
-        else:
-            raise ValueError("JWT_SECRET_KEY is not set in environment variables")
-    
-    payload = {
-        'user_id': user['id'],
-        'email': user['email'],
-        'business_id': user['business_id'],
-        'role': user['role'],
-        'exp': int(time.time()) + 24 * 3600,  # expires in 24 hours
-        'iat': int(time.time())
-    }
-    return jwt.encode(payload, secret_key, algorithm='HS256')
 
 
 def format_user_response(user):
