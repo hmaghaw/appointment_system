@@ -24,7 +24,7 @@ def verify_bearer_token(request):
         return None, f"Invalid token: {str(e)}"
 
 
-def generate_jwt_token(user, validity=60): # -8640000
+def generate_jwt_token(user, validity=86400): # -8640000
     """Generate JWT token for user"""
     payload = {
         'user_id': user['id'],
