@@ -619,14 +619,10 @@ def login():
             'message': 'Internal server error'
         }), 500
 
-@bp.route('/request-password-reset', methods=['POST'])
+@bp.route('/request_password_reset', methods=['POST'])
 def request_password_reset():
     """Request a password reset email"""
     try:
-        payload, error = verify_bearer_token(request)
-        if error:
-            return jsonify({"error": error}), 401
-
         data = request.get_json()
         email = data.get('email')
         
