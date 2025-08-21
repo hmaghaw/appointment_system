@@ -699,14 +699,14 @@ def reset_password():
             return jsonify({"error": error}), 401
 
         data = request.get_json()
-        token = data.get('token')
+        email = payload.get('email')
         new_password = data.get('password')
         
-        if not all([token, new_password]):
+        if not all([ new_password]):
             return jsonify({
                 'success': False,
                 'error': 'missing_fields',
-                'message': 'Token and new password are required'
+                'message': 'new password are required'
             }), 400
             
         # Validate password strength
@@ -718,13 +718,6 @@ def reset_password():
             }), 400
             
         # Validate token and get user ID
-        user_id = validate_reset_token(token)
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'error': 'invalid_token',
-                'message': 'Invalid or expired password reset token.'
-            }), 400
             
         # Hash the new password
         password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
@@ -733,13 +726,10 @@ def reset_password():
         update_query = """
         UPDATE users 
         SET password_hash = %s, updated_at = UTC_TIMESTAMP()
-        WHERE id = %s
+        WHERE email = %s
         """
-        execute_query(update_query, (password_hash, user_id))
-        
-        # Mark token as used
-        mark_token_used(token)
-        
+        execute_query(update_query, (password_hash, email))
+
         return jsonify({
             'success': True,
             'message': 'Your password has been successfully reset.'
