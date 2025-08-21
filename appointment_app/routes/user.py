@@ -172,22 +172,6 @@ def create_weekly_business_hours(business_id):
     except mysql.connector.Error as err:
         raise RuntimeError(f"Database error: {str(err)}")
 
-
-def create_email_verification_token(user_id, expiration_hours=24):
-    """Create and store an email verification token"""
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(hours=expiration_hours)
-    
-    # Store the token in the database
-    query = """
-    INSERT INTO email_verification_tokens 
-    (user_id, token, expires_at) 
-    VALUES (%s, %s, %s)
-    """
-    execute_query(query, (user_id, token, expires_at))
-    return token
-
-
 def send_verification_email(email, token, first_name, last_name):
     """Send an email with the verification link using the centralized email service"""
     verification_url = f"{FRONTEND_URL}/verify-email?token={token}"
@@ -198,23 +182,6 @@ def send_verification_email(email, token, first_name, last_name):
         verify_url=verification_url,
         expires_minutes=1440  # 24 hours
     )
-
-
-def create_password_reset_token(user_id):
-    """Create and store a password reset token"""
-    # Generate a secure random token
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(seconds=RESET_TOKEN_EXPIRATION)
-    
-    # Store the token in the database
-    query = """
-    INSERT INTO password_reset_tokens 
-    (user_id, token, expires_at) 
-    VALUES (%s, %s, %s)
-    """
-    execute_query(query, (user_id, token, expires_at))
-    return token
-
 
 def validate_reset_token(token):
     """Validate a password reset token and return the user if valid"""
@@ -454,7 +421,8 @@ def signup():
             }
             
             # Generate and send verification email (this also sends a welcome email)
-            verification_token =  create_email_verification_token(user_id)
+            verification_token =  generate_jwt_token(user)
+
             send_verification_email(email, verification_token, first_name, last_name)
             
             return jsonify({
@@ -489,43 +457,16 @@ def signup():
             'message': f'Failed to create account: {str(e)}'
         }), 500
 
-@bp.route('/verify-email', methods=['POST'])
+@bp.route('/verify-email', methods=['GET'])
 def verify_email():
     """Verify user's email using the verification token"""
-    token = request.args.get('token')
-    if not token:
-        return jsonify({
-            'success': False,
-            'error': 'missing_token',
-            'message': 'Verification token is required'
-        }), 400
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
 
-    # Check if token is valid and not expired
-    query = """
-    SELECT user_id 
-    FROM email_verification_tokens 
-    WHERE token = %s 
-      AND used = FALSE 
-      AND expires_at > UTC_TIMESTAMP()
-    """
-    result = execute_query(query, (token,), fetch='one')
-    
-    if not result:
-        return jsonify({
-            'success': False,
-            'error': 'invalid_token',
-            'message': 'Invalid or expired verification token'
-        }), 400
-    
-    user_id = result['user_id']
+    user_id = payload['user_id']
     
     try:
-        # Mark the token as used
-        execute_query(
-            "UPDATE email_verification_tokens SET used = TRUE WHERE token = %s",
-            (token,)
-        )
-        
         # Activate the user and mark email as verified
         execute_query(
             "UPDATE users SET active = TRUE, email_verified = TRUE WHERE id = %s",
@@ -543,13 +484,17 @@ def verify_email():
             raise Exception("User not found after verification")
             
         # Generate JWT token
-        jwt_token = generate_jwt_token(user)
-        
+        token = generate_jwt_token(user)
+        business = get_business_info(user['business_id'])
+
         return jsonify({
             'success': True,
+            'access_token': token,
+            'token_type': 'Bearer',
+            'expires_in': 86400,
+            'admin': format_user_response(user),
+            'business': business,
             'message': 'Email verified successfully',
-            'token': jwt_token,
-            'user': format_user_response(user)
         })
         
     except Exception as e:
@@ -684,8 +629,7 @@ def request_password_reset():
             })
             
         # Generate and store reset token
-        token = create_password_reset_token(user['id'])
-        
+        token = generate_jwt_token(user,1800) # Token Expires in 30 mins
         # Send password reset email
         email_sent = send_password_reset_email(user['email'], token)
         
