@@ -457,6 +457,32 @@ def signup():
             'message': f'Failed to create account: {str(e)}'
         }), 500
 
+@bp.route('/resend_verify_email', methods=['POST', 'OPTIONS'])
+def resend_verify_email():
+
+    if request.method == 'OPTIONS':
+        return '', 200
+    data = request.get_json()
+    email = data.get('email')
+
+    query = """
+            SELECT * \
+            FROM users
+            WHERE email = %s \
+            """
+    user = execute_query(query, (email,), fetch='one')
+
+    # Generate and send verification email (this also sends a welcome email)
+    verification_token = generate_jwt_token(user)
+
+    send_verification_email(email, verification_token, user["first_name"], user["last_name"])
+
+    return jsonify({
+        'success': True,
+        'message': 'Verification email resent! Please check your email to verify your account.',
+        'user': user
+    }), 200
+
 @bp.route('/verify-email', methods=['GET'])
 def verify_email():
     """Verify user's email using the verification token"""
