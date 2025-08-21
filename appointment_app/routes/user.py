@@ -527,10 +527,22 @@ def login():
         query = """
                 SELECT * \
                 FROM users
-                WHERE email = %s \
-                  AND active = 1 \
+                WHERE email = %s 
                 """
         user = execute_query(query, (email,), fetch='one')
+        if not user['email_verified']:
+            return jsonify({
+                'success': False,
+                'error': 'email_not_verified',
+                'message': 'Your email is not verified'
+            }), 401
+
+        if not user['active']:
+            return jsonify({
+                'success': False,
+                'error': 'inactive_user',
+                'message': 'Your user account is inactive. Please contact your administrator.'
+            }), 401
 
         if not user:
             return jsonify({
