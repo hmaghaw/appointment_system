@@ -11,6 +11,7 @@ from twilio.rest import Client
 import os
 from dotenv import load_dotenv
 from ..services.auth_token_validator import verify_bearer_token
+from ..services.evaluate_phone_number import evaluate_phone_numbers
 
 # Load environment variables
 load_dotenv()
@@ -154,11 +155,11 @@ def get_available_numbers():
                     "region": number.region,
                     "locality": number.locality
                 })
-
+            priced_numbers = evaluate_phone_numbers(results)
             return jsonify({
                 "status": "success",
                 "count": len(results),
-                "numbers": results
+                "numbers": priced_numbers
             }), 200
 
         except Exception as e:
