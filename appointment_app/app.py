@@ -48,6 +48,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.languages import bp as languages_bp
     from appointment_app.routes.user import bp as user_bp
     from appointment_app.routes.business_hours import bp as business_hours_bp
+    from appointment_app.routes.onboarding import bp as onboarding_bp
     from appointment_app.routes.twilio import bp as twilio_bp
     from appointment_app.routes.stripe import bp as stripe_bp
     from appointment_app.routes.subscription import bp as subscription_bp
@@ -69,6 +70,7 @@ def create_app(config_dict=None):
     app.register_blueprint(stripe_bp)  # Stripe webhook and payment endpoints
     app.register_blueprint(subscription_bp, url_prefix='/api/subscriptions')  # Subscription plan endpoints
     app.register_blueprint(premium_numbers_bp, url_prefix='/api')  # Premium numbers endpoints
+    app.register_blueprint(onboarding_bp)  # Onboarding endpoints
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])

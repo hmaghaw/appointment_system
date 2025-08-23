@@ -48,12 +48,21 @@ CREATE TABLE IF NOT EXISTS users (
     business_id INT NOT NULL,
     permissions JSON,
     active BOOLEAN DEFAULT TRUE,
-    auth_provider VARCHAR(50) DEFAULT 'email' CHECK (auth_provider IN ('email', 'google', 'facebook', 'apple', 'email,google', 'email,facebook', 'email,apple')),
+    auth_provider VARCHAR(50) DEFAULT 'email'
+        CHECK (auth_provider IN (
+            'email', 'google', 'facebook', 'apple',
+            'email,google', 'email,facebook', 'email,apple'
+        )),
     social_id VARCHAR(255) NULL,
     profile_picture_url VARCHAR(500) NULL,
     phone VARCHAR(20) NULL,
     last_login TIMESTAMP NULL,
     email_verified BOOLEAN DEFAULT FALSE,
+
+    -- Stripe + payments
+    stripe_customer_id VARCHAR(255) UNIQUE NULL COMMENT 'Stripe customer ID (cus_xxx)',
+    balance DECIMAL(10,2) DEFAULT 0.00 NOT NULL COMMENT 'Credit balance for top-ups',
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -68,9 +77,9 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_email (email),
     INDEX idx_business_id (business_id),
     INDEX idx_social_id (social_id),
-    INDEX idx_active (active)
+    INDEX idx_active (active),
+    INDEX idx_stripe_customer (stripe_customer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 -- Password reset tokens
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,
