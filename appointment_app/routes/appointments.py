@@ -449,3 +449,57 @@ def list_business_appointments():
             appointments.append(appointment)
         
         return jsonify(appointments)
+
+
+@bp.route('/api/appointments/create_from_ui', methods=['POST'])
+def create_appointment_from_ui():
+    """
+    Create a new appointment
+
+    Request body should contain:
+    - business_id: ID of the business
+    - customer_id: ID of the customer at this business
+    - service_id: ID of the service being booked
+    - start_time: Start time in ISO format (YYYY-MM-DDTHH:MM:SS)
+    """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
+    data = request.get_json()
+    business_id = data.get('business_id')
+    service_id = data.get('service_id')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
+    notes = data.get('notes')
+    if service_id == 0 : # closed time
+        if 'full_day' in data:
+            full_day = data.get('full_day')
+        else:
+            full_day = 0
+
+        if full_day == 1:
+            handle_holidays(business_id, start_time, end_time)
+        else:
+            handle_close_time(business_id, start_time, end_time)
+    else:
+        if data.get('customer_option')=='skip_customer':
+            book_appointment_for_ananomus_customer(business_id, service_id, start_time)
+            pass
+        elif data.get('customer_option') == 'select_from_list':
+            customer_id = data.get('customer_id')
+            book_appointment_for_a_known_customer(business_id, customer_id, service_id, start_time)
+            pass
+    pass
+
+def handle_holidays(business_id, start_time, end_time):
+    pass
+
+def handle_close_time(business_id, start_time, end_time):
+    pass
+
+def book_appointment_for_ananomus_customer(business_id, service_id, start_time):
+    pass
+
+def book_appointment_for_a_known_customer(business_id, customer_id, service_id, start_time):
+    pass
