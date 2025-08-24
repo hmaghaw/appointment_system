@@ -37,19 +37,32 @@ def webhook():
         print('⚠️  Webhook error while parsing basic request.' + str(e))
         return jsonify(success=False), 400
 
-    if endpoint_secret:
-        # Verify the event with the endpoint secret
-        sig_header = request.headers.get('stripe-signature')
-        try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, endpoint_secret
-            )
-        except stripe.error.SignatureVerificationError as e:
-            print('⚠️  Webhook signature verification failed.' + str(e))
-            return jsonify(success=False), 400
+    # if endpoint_secret:
+    #     # Verify the event with the endpoint secret
+    #     sig_header = request.headers.get('stripe-signature')
+    #     try:
+    #         event = stripe.Webhook.construct_event(
+    #             payload, sig_header, endpoint_secret
+    #         )
+    #     except stripe.error.SignatureVerificationError as e:
+    #         print('⚠️  Webhook signature verification failed.' + str(e))
+    #         return jsonify(success=False), 400
 
+    event_id = event['id']
+    id = event['data']['object']['id']
+
+    metadata = event['data']['object']['metadata']
+    #idempotency_key = event['request']['idempotency_key']
+    idempotency_key = event['id']
+    client_secret = event['data']['object']['client_secret']
+    event_type = event['type']
+    business_id = int(metadata['business_id'])
+    amount_cents = int(metadata['amount']) * 100
+    reason = metadata['type']
     # Handle the event
     if event and event['type'] == 'payment_intent.succeeded':
+        metadata = event['data']['object']['metadata']
+        result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
         payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
         print('Payment for {} succeeded'.format(payment_intent['amount']))
         # Add your payment success handling logic here
@@ -64,26 +77,10 @@ def webhook():
         pass
     elif event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        business_id = session['metadata'].get('business_id')
-        plan_id = session['metadata'].get('plan_id')
-        
-        if business_id and plan_id:
-            try:
-                with get_db_connection() as connection:
-                    with connection.cursor(dictionary=True) as cursor:
-                        # Update the business subscription plan
-                        query = """
-                            UPDATE business 
-                            SET subscription_plan_id = %s 
-                            WHERE business_id = %s
-                        """
-                        cursor.execute(query, (plan_id, business_id))
-                        connection.commit()
-                        print(f"Updated business {business_id} with plan {plan_id}")
-            except Error as e:
-                print(f"Error updating business subscription: {str(e)}")
-        
-        previous = event['data'].get('previous_attributes', {})
+        metadata = event['data']['object']['metadata']
+        result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
+        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
+        print('Payment for {} succeeded'.format(payment_intent['amount']))
 
     # # Detect cancellation at period end
     # if (
@@ -265,3 +262,66 @@ def topup_business_balance():
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+def apply_topup(business_id, amount_cents, request_id, reason="topup"):
+    """
+    Apply a top-up to a business balance and record a ledger entry.
+
+    Returns:
+        dict: {
+            "applied": bool,              # True if new ledger row was inserted
+            "amount_cents": int,
+            "amount_cents": int,
+            "request_id": str,
+            "reason": str,
+            "new_balance_cents": int
+        }
+    Raises:
+        ValueError, mysql.connector.Error
+    """
+
+    with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
+        # 1) Lock business row
+        cursor.execute(
+            "SELECT balance_cents FROM business WHERE business_id = %s FOR UPDATE",
+            (business_id,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise ValueError("Business not found")
+
+        # 2) Insert ledger entry (idempotent on request_id)
+        try:
+            cursor.execute("""
+                INSERT INTO business_ledger (business_id, amount_cents, reason, request_id)
+                VALUES (%s, %s, %s, %s)
+            """, (business_id, amount_cents, reason, request_id))
+            ledger_inserted = True
+        except mysql.connector.IntegrityError as e:
+            if getattr(e, 'errno', None) == errorcode.ER_DUP_ENTRY:
+                ledger_inserted = False
+            else:
+                raise
+
+        # 3) Update balance if new ledger row
+        if ledger_inserted:
+            cursor.execute("""
+                UPDATE business
+                SET balance_cents = balance_cents + %s
+                WHERE business_id = %s
+            """, (amount_cents, business_id))
+
+        # 4) Fetch latest balance
+        cursor.execute(
+            "SELECT balance_cents FROM business WHERE business_id = %s",
+            (business_id,)
+        )
+        new_balance_cents = int(cursor.fetchone()["balance_cents"])
+
+    return {
+        "applied": ledger_inserted,
+        "amount_cents": amount_cents,
+        "request_id": request_id,
+        "reason": reason,
+        "new_balance_cents": new_balance_cents
+    }

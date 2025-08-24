@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, abort
 from datetime import datetime, timedelta
 import mysql.connector
 from database import get_db_cursor
 from functools import wraps
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from ..services.auth_token_validator import verify_bearer_token
 
 # Map day numbers to day names
@@ -222,8 +222,140 @@ def validate_business_id(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@bp.route('/phones', methods=['POST'])
+@bp.route('/get', methods=['POST'])
 @validate_business_id
+def get_business():
+    """
+    Get business information by ID
+    
+    Request body: {
+        "business_id": 1  # ID of the business
+    }
+    
+    Returns: Business information if found, 404 if not found
+    """
+    try:
+        # Verify bearer token
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+            
+        data = request.get_json() or {}
+        business_id = data.get('business_id')
+        
+        if not business_id:
+            return jsonify({"error": "business_id is required in the request body"}), 400
+            
+        with get_db_cursor(dictionary=True) as cursor:
+            # Get business information
+            cursor.execute("""
+                SELECT *
+                FROM business
+                WHERE business_id = %s
+            """, (business_id,))
+            
+            business = cursor.fetchone()
+            
+            if not business:
+                return jsonify({"error": "Business not found"}), 404
+                
+            # Convert datetime objects to ISO format strings
+            for field in ['created_at', 'updated_at']:
+                if field in business and business[field]:
+                    if isinstance(business[field], datetime):
+                        business[field] = business[field].isoformat()
+                    
+            return jsonify(business)
+        
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {err}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@bp.route('', methods=['PUT'])
+def update_business():
+    """
+    Update business settings
+    
+    Request body: {
+        "business_id": 31,  # ID of the business to update
+        "is_auto_recharge": 1,  # Optional: 0 or 1
+        "recharge_threshold": 10,  # Optional: Threshold in cents
+        "recharge_amount": 20  # Optional: Recharge amount in cents
+    }
+    
+    Returns: Updated business information
+    """
+    try:
+        # Verify bearer token
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+            
+        data = request.get_json() or {}
+        business_id = data.get('business_id')
+        
+        if not business_id:
+            return jsonify({"error": "business_id is required"}), 400
+            
+        # Define allowed fields that can be updated
+        allowed_fields = {
+            'is_auto_recharge': int,
+            'recharge_threshold': int,
+            'recharge_amount': int
+        }
+        
+        # Filter and validate update fields
+        update_fields = {}
+        for field, field_type in allowed_fields.items():
+            if field in data:
+                try:
+                    update_fields[field] = field_type(data[field])
+                except (ValueError, TypeError):
+                    return jsonify({"error": f"Invalid value for {field}"}), 400
+        
+        if not update_fields:
+            return jsonify({"error": "No valid fields to update"}), 400
+            
+        with get_db_cursor(dictionary=True, commit=True) as cursor:
+            # Build the update query
+            set_clause = ", ".join([f"{field} = %s" for field in update_fields])
+            values = list(update_fields.values())
+            values.append(business_id)
+            
+            query = f"""
+                UPDATE business
+                SET {set_clause}
+                WHERE business_id = %s
+            """
+            
+            cursor.execute(query, tuple(values))
+            
+            # Get the updated business record
+            cursor.execute("""
+                SELECT *
+                FROM business
+                WHERE business_id = %s
+            """, (business_id,))
+            
+            updated_business = cursor.fetchone()
+            
+            if not updated_business:
+                return jsonify({"error": "Business not found"}), 404
+                
+            # Convert datetime objects to ISO format strings
+            for field in ['created_at', 'updated_at']:
+                if field in updated_business and updated_business[field]:
+                    if isinstance(updated_business[field], datetime):
+                        updated_business[field] = updated_business[field].isoformat()
+            
+            return jsonify(updated_business)
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {err}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 def list_business_phones():
     """
     List all phone numbers for a business
@@ -234,61 +366,61 @@ def list_business_phones():
     
     Returns: List of phone numbers associated with the business
     """
-    # Verify bearer token
-    payload, error = verify_bearer_token(request)
-    if error:
-        return jsonify({"error": error}), 401
+    try:
+        # Verify bearer token
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+            
+        data = request.get_json() or {}
+        business_id = data.get('business_id')
         
-    if request.method == 'POST':
-        try:
-            data = request.get_json()
-            if not data or 'business_id' not in data:
-                return jsonify({"error": "Missing required field: business_id"}), 400
+        if not business_id:
+            return jsonify({"error": "business_id is required"}), 400
             
-            business_id = data['business_id']
+        conn, cursor = get_db_cursor(dictionary=True)
+        
+        # Get business phones
+        query = """
+            SELECT 
+                bp.phone_id,
+                bp.phone_number,
+                bp.phone_type,
+                bp.is_primary,
+                bp.is_active,
+                bp.created_at,
+                bp.updated_at
+            FROM business_phone bp
+            WHERE bp.business_id = %s
+            ORDER BY 
+                bp.is_primary DESC,
+                bp.phone_type,
+                bp.phone_number
+        """
+        
+        cursor.execute(query, (business_id,))
+        phones = cursor.fetchall()
+        
+        # Convert datetime objects to string for JSON serialization
+        for phone in phones:
+            for field in ['created_at', 'updated_at']:
+                if field in phone and phone[field]:
+                    if isinstance(phone[field], datetime):
+                        phone[field] = phone[field].isoformat()
+        
+        return jsonify({
+            "business_id": business_id,
+            "phones": phones
+        }), 200
             
-            # Get database connection and cursor
-            with get_db_cursor(dictionary=True) as cursor:
-                # Check if business exists
-                cursor.execute("SELECT 1 FROM business WHERE business_id = %s", (business_id,))
-                if not cursor.fetchone():
-                    return jsonify({"error": f"Business with ID {business_id} not found"}), 404
-                
-                # Query business phones with language_code and language details
-                query = """
-                    SELECT 
-                        bp.business_phone_id,
-                        bp.business_id,
-                        bp.phone_sid,
-                        bp.friendly_name,
-                        bp.business_phone,
-                        bp.language_code,
-                        bp.is_primary,
-                        bp.created_at,
-                        bp.updated_at,
-                        l.language_name
-                    FROM business_phone bp
-                    LEFT JOIN language l ON bp.language_code = l.language_code
-                    WHERE bp.business_id = %s
-                    ORDER BY bp.is_primary DESC, bp.created_at ASC
-                """
-                
-                cursor.execute(query, (business_id,))
-                phones = cursor.fetchall()
-            
-            # Convert datetime objects to string for JSON serialization
-            for phone in phones:
-                phone['created_at'] = phone['created_at'].isoformat() if phone['created_at'] else None
-                phone['updated_at'] = phone['updated_at'].isoformat() if phone['updated_at'] else None
-            
-            return jsonify({
-                "business_id": business_id,
-                "phones": phones
-            }), 200
-            
-        except mysql.connector.Error as err:
-            return jsonify({"error": f"Database error: {err}"}), 500
-        except Exception as e:
-            return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {err}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
     
     return jsonify({"error": "Method not allowed"}), 405

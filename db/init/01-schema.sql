@@ -31,12 +31,18 @@ CREATE TABLE IF NOT EXISTS business (
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     subscription_plan_id INT DEFAULT 7,
     balance_cents BIGINT NOT NULL DEFAULT 0 COMMENT 'Credit balance for top-ups',
+    is_auto_recharge BOOLEAN NOT NULL DEFAULT 0 COMMENT 'Enable auto recharge if balance below threshold',
+    recharge_threshold INT NOT NULL DEFAULT 10 COMMENT 'Threshold in cents to trigger auto recharge',
+    recharge_amount INT NOT NULL DEFAULT 20 COMMENT 'Recharge amount in cents when triggered',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(subscription_plan_id)
         ON UPDATE CASCADE
         ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_general_ci;
+
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
