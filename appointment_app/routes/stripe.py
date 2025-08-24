@@ -61,10 +61,18 @@ def webhook():
     reason = metadata['type']
     # Handle the event
     if event and event['type'] == 'payment_intent.succeeded':
+        type = 'topup'
         metadata = event['data']['object']['metadata']
-        result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
-        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
-        print('Payment for {} succeeded'.format(payment_intent['amount']))
+        if 'type' in metadata:
+            type = metadata['type']
+        if type == 'topup':
+            result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
+            payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
+            print('Payment for {} succeeded'.format(payment_intent['amount']))
+        elif type == 'onboarding':
+            amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
+            result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
+                                 reason=reason)
         # Add your payment success handling logic here
         # handle_payment_intent_succeeded(payment_intent)
     elif event['type'] == 'payment_method.attached':
