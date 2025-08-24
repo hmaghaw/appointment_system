@@ -7,9 +7,11 @@ import stripe
 from flask import Blueprint, jsonify, request, current_app
 from dotenv import load_dotenv
 import mysql.connector
-from mysql.connector import Error
-from appointment_app.database import get_db_connection
+from mysql.connector import Error, errorcode
+from appointment_app.database import get_db_connection, get_db_cursor
 from ..services.auth_token_validator import verify_bearer_token
+
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -151,3 +153,115 @@ def create_checkout():
         }
     )
     return jsonify({'url': session.url})
+
+
+
+
+
+@bp.route('/topup', methods=['POST'])
+def topup_business_balance():
+    """
+    Top up a business balance (amount in dollars) and record a ledger entry.
+
+    Payload:
+    {
+        "business_id": 11,
+        "amount": 50,              # integer dollars
+        // optional:
+        // "request_id": "abc-123" # idempotency key; or use Idempotency-Key header
+    }
+
+    Behavior:
+    - amount is multiplied by 100 to convert to cents
+    - updates business.balance_cents
+    - inserts a row in business_ledger (business_id, amount_cents, reason, request_id)
+    - idempotent: same request_id won’t double-credit
+    """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
+    data = request.get_json(silent=True) or {}
+    business_id = data.get('business_id')
+    amount = data.get('amount')
+
+    if not business_id or amount is None:
+        return jsonify({"error": "business_id and amount are required"}), 400
+
+    # Validate integer amount > 0 (in dollars)
+    try:
+        amount_dollars = int(amount)
+    except (TypeError, ValueError):
+        return jsonify({"error": "amount must be an integer (dollars)"}), 400
+    if amount_dollars <= 0:
+        return jsonify({"error": "amount must be > 0"}), 400
+
+    # Convert to cents
+    amount_cents = amount_dollars * 100
+
+    # Idempotency: payload.request_id > header > generated
+    request_id = (
+        data.get('request_id')
+        or request.headers.get('Idempotency-Key')
+        or str(uuid.uuid4())
+    )
+    LEDGER_REASON = 'topup'
+
+    try:
+        with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
+            # 1) Lock the business row
+            cursor.execute(
+                "SELECT balance_cents FROM business WHERE business_id = %s FOR UPDATE",
+                (business_id,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({"error": "Business not found"}), 404
+
+            current_balance = int(row["balance_cents"])
+
+            # 2) Insert ledger (idempotent on request_id)
+            try:
+                cursor.execute("""
+                    INSERT INTO business_ledger (business_id, amount_cents, reason, request_id)
+                    VALUES (%s, %s, %s, %s)
+                """, (business_id, amount_cents, LEDGER_REASON, request_id))
+                ledger_inserted = True
+            except mysql.connector.IntegrityError as e:
+                if getattr(e, 'errno', None) == errorcode.ER_DUP_ENTRY:
+                    ledger_inserted = False  # duplicate topup; don't re-apply
+                else:
+                    raise
+
+            # 3) Apply balance only if new ledger row
+            if ledger_inserted:
+                cursor.execute("""
+                    UPDATE business
+                    SET balance_cents = balance_cents + %s
+                    WHERE business_id = %s
+                """, (amount_cents, business_id))
+
+            # 4) Read the latest balance to return
+            cursor.execute(
+                "SELECT balance_cents FROM business WHERE business_id = %s",
+                (business_id,)
+            )
+            new_balance_cents = int(cursor.fetchone()["balance_cents"])
+
+            return jsonify({
+                "status": "success",
+                "business_id": business_id,
+                "topup": {
+                    "amount_dollars": amount_dollars,
+                    "amount_cents": amount_cents,
+                    "applied": bool(ledger_inserted),
+                    "request_id": request_id,
+                    "reason": LEDGER_REASON
+                },
+                "balance_cents": new_balance_cents
+            }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
