@@ -325,3 +325,67 @@ def apply_topup(business_id, amount_cents, request_id, reason="topup"):
         "reason": reason,
         "new_balance_cents": new_balance_cents
     }
+
+@bp.route('/transaction_history', methods=['POST'])
+def transaction_history():
+    """
+    Retrieve the transaction history for a business.
+
+    Payload:
+    {
+        "business_id": 17
+    }
+
+    Response:
+    {
+        "status": "success",
+        "business_id": 17,
+        "transactions": [
+            {
+                "created_at": "2025-08-24 10:15:00",
+                "amount_dollars": 50,
+                "reason": "topup"
+            },
+            ...
+        ]
+    }
+    """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
+    data = request.get_json(silent=True) or {}
+    business_id = data.get('business_id')
+
+    if not business_id:
+        return jsonify({"error": "business_id is required"}), 400
+
+    try:
+        with get_db_cursor(database='appointment_db', commit=False, dictionary=True) as cursor:
+            cursor.execute("""
+                SELECT created_at, amount_cents, reason
+                FROM business_ledger
+                WHERE business_id = %s
+                ORDER BY created_at DESC
+            """, (business_id,))
+            rows = cursor.fetchall()
+
+            transactions = [
+                {
+                    "created_at": row["created_at"].strftime("%Y-%m-%d %H:%M:%S"),
+                    "amount_dollars": int(row["amount_cents"]) // 100,
+                    "reason": row["reason"]
+                }
+                for row in rows
+            ]
+
+        return jsonify({
+            "status": "success",
+            "business_id": business_id,
+            "transactions": transactions
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {str(err)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
