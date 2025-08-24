@@ -50,54 +50,111 @@ def _get_call_conversation(call_sid):
 @bp.route('/create', methods=['POST'])
 def create_or_update_call_meta():
     """
-    Create or update call metadata
-    
-    Request Body:
-    {
-        "call_sid": "CA123...",
-        "meta": { ... }  # Any JSON-serializable data
-    }
+    Upsert call_meta AND always debit 25.00 from the BUSINESS balance (can go negative).
+    Idempotent per call: replays won't double-debit.
     """
     payload, error = verify_bearer_token(request)
     if error:
         return jsonify({"error": error}), 401
 
     data = request.get_json()
-    
     if not data or 'call_sid' not in data or 'meta' not in data:
         return jsonify({"error": "call_sid and meta are required"}), 400
-    
-    call_sid = data['call_sid']
-    meta = data['meta']
-    business_id = data['business_id']
-    customer_id = data['customer_id']
-    call_duration = data['call_duration']
-    call_start = data['call_start']
-    call_end = data['call_end']
-    call_status = data['call_status']
+
+    call_sid      = data['call_sid']
+    meta          = data['meta']
+    business_id   = data.get('business_id')
+    customer_id   = data.get('customer_id')      # still stored on call_meta if you track who called
+    call_duration = data.get('call_duration')
+    call_start    = data.get('call_start')
+    call_end      = data.get('call_end')
+    call_status   = data.get('call_status')
+
+    if not business_id:
+        return jsonify({"error": "business_id is required"}), 400
+
+    DEBIT_CENTS   = 25                           # $0.25
+    LEDGER_REASON = 'call_charge'
+    REQUEST_ID    = f"{call_sid}-biz-{business_id}-debit-25"   # idempotency key per call/business
 
     try:
         meta_json = json.dumps(meta) if not isinstance(meta, str) else meta
-        
-        with get_db_cursor(database='appointment_db', commit=True) as cursor:
+
+        # Single transaction: upsert call_meta, then ledger insert + business balance update.
+        with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
+            # 1) Upsert call_meta (keeps full call details)
             cursor.execute("""
-                INSERT INTO call_meta (call_sid, meta, business_id, customer_id, call_duration, call_start, call_end, call_status)
+                INSERT INTO call_meta (
+                    call_sid, meta, business_id, customer_id,
+                    call_duration, call_start, call_end, call_status
+                )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
-                    meta = VALUES(meta),
-                    updated_at = NOW()
+                    meta          = VALUES(meta),
+                    business_id   = VALUES(business_id),
+                    customer_id   = VALUES(customer_id),
+                    call_duration = VALUES(call_duration),
+                    call_start    = VALUES(call_start),
+                    call_end      = VALUES(call_end),
+                    call_status   = VALUES(call_status),
+                    updated_at    = NOW()
             """, (call_sid, meta_json, business_id, customer_id, call_duration, call_start, call_end, call_status))
-            
+            call_meta_action = "created" if cursor.rowcount == 1 else "updated"
+
+            # 2) Lock the business row to serialize concurrent updates
+            cursor.execute("SELECT balance_cents FROM business WHERE business_id = %s FOR UPDATE", (business_id,))
+            row = cursor.fetchone()
+            if not row:
+                raise ValueError("Business not found")
+            current_balance = int(row["balance_cents"])
+
+            # 3) Insert business ledger row (negative amount for debit). Keep even if overdraft.
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO business_ledger (business_id, amount_cents, reason, request_id)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (business_id, -DEBIT_CENTS, LEDGER_REASON, REQUEST_ID)
+                )
+                ledger_inserted = True
+            except mysql.connector.IntegrityError as e:
+                # Duplicate request_id -> already processed; do not apply balance twice
+                if getattr(e, 'errno', None) == mysql.connector.errorcode.ER_DUP_ENTRY:
+                    ledger_inserted = False
+                else:
+                    raise
+
+            # 4) Apply balance update iff this isn't an idempotent replay
+            if ledger_inserted:
+                cursor.execute(
+                    "UPDATE business SET balance_cents = balance_cents - %s WHERE business_id = %s",
+                    (DEBIT_CENTS, business_id)
+                )
+
+            # Read the new balance to return (still under the Tx lock)
+            cursor.execute("SELECT balance_cents FROM business WHERE business_id = %s", (business_id,))
+            new_balance = int(cursor.fetchone()["balance_cents"])
+
             return jsonify({
                 "status": "success",
                 "call_sid": call_sid,
-                "action": "created" if cursor.rowcount == 1 else "updated"
+                "call_meta_action": call_meta_action,
+                "debit": {
+                    "amount_cents": DEBIT_CENTS,
+                    "applied": bool(ledger_inserted),      # False on idempotent replay
+                    "request_id": REQUEST_ID,
+                    "reason": LEDGER_REASON
+                },
+                "business_id": business_id,
+                "balance_cents": new_balance            # may be negative (overdraft allowed)
             }), 200
-            
+
     except mysql.connector.Error as err:
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
 
 @bp.route('/conversation', methods=['POST'])
 def get_call_conversation():

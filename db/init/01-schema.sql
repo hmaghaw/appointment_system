@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS business (
     timezone VARCHAR(50) NOT NULL DEFAULT 'America/Toronto',
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     subscription_plan_id INT DEFAULT 7,
+    balance_cents BIGINT NOT NULL DEFAULT 0 COMMENT 'Credit balance for top-ups',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(subscription_plan_id)
@@ -61,8 +62,6 @@ CREATE TABLE IF NOT EXISTS users (
 
     -- Stripe + payments
     stripe_customer_id VARCHAR(255) UNIQUE NULL COMMENT 'Stripe customer ID (cus_xxx)',
-    balance DECIMAL(10,2) DEFAULT 0.00 NOT NULL COMMENT 'Credit balance for top-ups',
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -381,3 +380,16 @@ CREATE TABLE IF NOT EXISTS premium_numbers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE INDEX idx_phone_number ON premium_numbers (phone_number);
+
+CREATE TABLE IF NOT EXISTS business_ledger (
+  ledger_id     BIGINT AUTO_INCREMENT PRIMARY KEY,
+  business_id   INT NOT NULL,
+  amount_cents  BIGINT NOT NULL,          -- +credit, -debit
+  reason        VARCHAR(100),
+  request_id    VARCHAR(64) NOT NULL,     -- idempotency key (unique per charge)
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (request_id),
+  INDEX (business_id),
+  CONSTRAINT fk_business_ledger_business
+    FOREIGN KEY (business_id) REFERENCES business(business_id)
+) ENGINE=InnoDB;
