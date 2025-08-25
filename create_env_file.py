@@ -7,8 +7,8 @@ PROD_TEMPLATE = """ENVIRONMENT=production
 DEBUG=True
 
 # Stripe Configuration
-STRIPE_API_KEY=
-STRIPE_ENDPOINT_SECRET=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
 
 # Database Configuration
 DB_HOST=db
@@ -45,11 +45,11 @@ OPENAI_API_KEY=
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
-NGROK_AUTH_TOKEN=
+NGROK_AUTHTOKEN=
 
 # Stripe Configuration
-STRIPE_API_KEY=
-STRIPE_ENDPOINT_SECRET=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
 
 # Database Configuration
 DB_HOST=localhost
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     import sys
 
     # Default values
-    environment = "production"
+    environment = "development"
     output_file = ".env"
 
     # # Check for command line arguments

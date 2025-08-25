@@ -4,13 +4,14 @@
 import json
 import os
 import stripe
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, current_app, g
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import Error, errorcode
 from appointment_app.database import get_db_connection, get_db_cursor
 from ..services.auth_token_validator import verify_bearer_token
-
+from ..database import get_db_connection
+from ..services.onboarding import choose_number
 import uuid
 
 # Load environment variables
@@ -20,8 +21,41 @@ load_dotenv()
 bp = Blueprint('stripe', __name__, url_prefix='/api/stripe')
 
 # Set the Stripe API key and endpoint secret from environment variables
-stripe.api_key = os.getenv('STRIPE_API_KEY')
-endpoint_secret = os.getenv('STRIPE_ENDPOINT_SECRET')
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+#endpoint_secret = os.getenv('STRIPE_SECRET_KEY')
+
+def get_transaction_reason(event):
+    type = 'topup'
+    metadata = event['data']['object']['metadata']
+    if 'type' in metadata:
+        type = metadata['type']
+    return type
+
+def process_event(event):
+    reason = get_transaction_reason(event)
+    idempotency_key = event['id']
+    metadata = event['data']['object']['metadata']
+    if reason == 'topup':
+        amount_cents = int(metadata['amount']) * 100
+        business_id = int(metadata['business_id'])
+        result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
+        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
+        print('Payment for {} succeeded'.format(payment_intent['amount']))
+    elif reason == 'onboarding':
+        payment_intent_id = event['data']['object']['id']
+        data = json.loads(metadata['signup_payload'])
+        business_id = data['create_account']['business_id']
+        business_name = data['create_account']['business_name']
+        user_id = data['create_account']['user_id']
+        phone_number = data['choose_number']['phone_number']
+        phone_number_price = data['choose_number']['price']
+        data['choose_number']['price']
+        response = choose_number(business_id, business_name, metadata['choose_number'], headers=headers)
+
+        business_id = start_onboarding(metadata=data)
+        amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
+        result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
+                             reason=reason)
 
 @bp.route('/webhook', methods=['POST'])
 def webhook():
@@ -47,34 +81,8 @@ def webhook():
     #     except stripe.error.SignatureVerificationError as e:
     #         print('⚠️  Webhook signature verification failed.' + str(e))
     #         return jsonify(success=False), 400
-
-    event_id = event['id']
-    id = event['data']['object']['id']
-
-    metadata = event['data']['object']['metadata']
-    #idempotency_key = event['request']['idempotency_key']
-    idempotency_key = event['id']
-    client_secret = event['data']['object']['client_secret']
-    event_type = event['type']
-    business_id = int(metadata['business_id'])
-    amount_cents = int(metadata['amount']) * 100
-    reason = metadata['type']
-    # Handle the event
     if event and event['type'] == 'payment_intent.succeeded':
-        type = 'topup'
-        metadata = event['data']['object']['metadata']
-        if 'type' in metadata:
-            type = metadata['type']
-        if type == 'topup':
-            result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
-            payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
-            print('Payment for {} succeeded'.format(payment_intent['amount']))
-        elif type == 'onboarding':
-            amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
-            result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
-                                 reason=reason)
-        # Add your payment success handling logic here
-        # handle_payment_intent_succeeded(payment_intent)
+        process_event(event)
     elif event['type'] == 'payment_method.attached':
         payment_method = event['data']['object']  # contains a stripe.PaymentMethod
         # Add your payment method handling logic here
@@ -84,27 +92,104 @@ def webhook():
     elif event['type'] == 'customer.subscription.created':
         pass
     elif event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        metadata = event['data']['object']['metadata']
-        result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
-        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
-        print('Payment for {} succeeded'.format(payment_intent['amount']))
-
-    # # Detect cancellation at period end
-    # if (
-    #     subscription.get('cancel_at_period_end') is True and
-    #     previous.get('cancel_at_period_end') is False
-    # ):
-    #     print(f"🚫 Subscription {subscription['id']} scheduled for cancellation at period end.")
-    #     print(f"  Customer: {subscription['customer']}")
-    #     print(f"  Cancel at timestamp: {subscription.get('cancel_at')}")
-    #     print(f"  Canceled at: {subscription.get('canceled_at')}")
-    #     print(f"  Reason: {subscription.get('cancellation_details', {}).get('reason')}")
-    # else:
-    #     # Unexpected event type
-    #     print('Unhandled event type {}'.format(event['type']))
+        process_event()
 
     return jsonify(success=True)
+
+@bp.route('/create-customer', methods=['POST'])
+def create_customer():
+    """
+    Create a Stripe customer for a business
+    
+    Request body:
+    {
+        "business_id": 123,
+        "email": "business@example.com",
+        "name": "Business Name"
+    }
+    
+    Returns:
+        JSON with Stripe customer ID or error message
+    """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
+    try:
+        data = request.get_json()
+        required_fields = ['business_id', 'user_id', 'phone', 'email', 'name']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields. Required: {required_fields}'
+            }), 400
+            
+        business_id = data['business_id']
+        email = data['email']
+        user_id = data['user_id']
+        phone = data['phone']
+        name = data['name']
+
+        # Create Stripe customer
+        customer_id = create_stripe_customer_for_business(business_id, user_id, phone, email, name)
+        
+        return jsonify({
+            'status': 'success',
+            'customer_id': customer_id,
+            'business_id': business_id
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error creating Stripe customer: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+def create_stripe_customer_for_business(business_id, user_id, phone, email, name):
+    """
+    Creates a Stripe Customer for a business if not already existing.
+
+    Args:
+        business_id: ID of the business in your DB
+        email: Business owner email
+        name: Business name
+
+    Returns:
+        stripe_customer_id (str)
+    """
+    with get_db_connection() as db_conn:
+        with db_conn.cursor(dictionary=True) as cursor:
+            # Check if already exists
+            cursor.execute("SELECT stripe_customer_id FROM business WHERE business_id = %s", (business_id,))
+            row = cursor.fetchone()
+            if row and row.get("stripe_customer_id"):
+                return row["stripe_customer_id"]
+                
+            # Create customer in Stripe
+            customer = stripe.Customer.create(
+                email=email,
+                name=name,
+                metadata={
+                    "business_id": business_id,
+                    "user_id": user_id,
+                    "phone": phone,
+                    "type": "business_customer"
+                }
+            )
+
+            # Save back to DB
+            cursor.execute(
+                "UPDATE business SET stripe_customer_id = %s WHERE business_id = %s",
+                (customer.id, business_id)
+            )
+            db_conn.commit()
+
+            return customer.id
+
 
 @bp.route('/create-payment-intent', methods=['POST'])
 def create_payment_intent():

@@ -21,7 +21,9 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from ..services.send_email_notification import send_email_notification
 import time
+import requests
 from ..services.auth_token_validator import generate_jwt_token, verify_bearer_token
+from flask import current_app
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -405,8 +407,52 @@ def signup():
             
             # Commit the transaction
             user_conn.commit()
+
+            # Create Stripe customer
+            stripe_customer_id = None
+            try:
+                stripe_url = f"{request.url_root.rstrip('/')}/api/stripe/create-customer"
+                headers = {
+                    'Authorization': request.headers.get('Authorization', ''),
+                    'Content-Type': 'application/json'
+                }
+                
+                stripe_data = {
+                    'business_id': business_id,
+                    'user_id': user_id,
+                    'phone': admin_phone,
+                    'email': email,
+                    'name': f"{business_name} - {first_name} {last_name}"
+                }
+                
+                response = requests.post(
+                    stripe_url,
+                    headers=headers,
+                    json=stripe_data
+                )
+                
+                if response.status_code == 200:
+                    stripe_response = response.json()
+                    stripe_customer_id = stripe_response.get('customer_id')
+                    
+                    # Update the business record with the stripe_customer_id
+                    if stripe_customer_id:
+                        update_cursor = user_conn.cursor(dictionary=True)
+                        update_cursor.execute(
+                            "UPDATE business SET stripe_customer_id = %s WHERE id = %s",
+                            (stripe_customer_id, business_id)
+                        )
+                        user_conn.commit()
+                        update_cursor.close()
+                else:
+                    current_app.logger.error(f"Failed to create Stripe customer: {response.text}")
+                    # Don't fail the registration if Stripe customer creation fails
+                
+            except Exception as e:
+                current_app.logger.error(f"Error creating Stripe customer: {str(e)}")
+                # Continue with registration even if Stripe fails
             
-            # Return success response with user data (user is inactive until email is verified)
+            # Prepare user data for response
             user = {
                 'id': user_id,
                 'email': email,
@@ -414,6 +460,7 @@ def signup():
                 'last_name': last_name,
                 'role': 'admin',
                 'business_id': business_id,
+                'business_name': business_name,
                 'auth_provider': 'email',
                 'active': False,
                 'email_verified': False,
@@ -421,15 +468,21 @@ def signup():
             }
             
             # Generate and send verification email (this also sends a welcome email)
-            verification_token =  generate_jwt_token(user)
-
+            verification_token = generate_jwt_token(user)
             send_verification_email(email, verification_token, first_name, last_name)
             
-            return jsonify({
+            # Add stripe_customer_id to the response if available
+            response_data = {
                 'success': True,
                 'message': 'Registration successful! Please check your email to verify your account.',
-                'user': user
-            }), 200
+                'user': user,
+                'stripe_status': 'customer_created' if stripe_customer_id else 'customer_creation_failed'
+            }
+            
+            if stripe_customer_id:
+                response_data['stripe_customer_id'] = stripe_customer_id
+                
+            return jsonify(response_data), 200
             
         except Exception as e:
             if 'user_conn' in locals() and user_conn:

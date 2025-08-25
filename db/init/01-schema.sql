@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS business (
     is_auto_recharge BOOLEAN NOT NULL DEFAULT 0 COMMENT 'Enable auto recharge if balance below threshold',
     recharge_threshold INT NOT NULL DEFAULT 10 COMMENT 'Threshold in cents to trigger auto recharge',
     recharge_amount INT NOT NULL DEFAULT 20 COMMENT 'Recharge amount in cents when triggered',
+    stripe_customer_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(subscription_plan_id)
