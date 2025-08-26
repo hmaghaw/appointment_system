@@ -11,7 +11,7 @@ from mysql.connector import Error, errorcode
 from appointment_app.database import get_db_connection, get_db_cursor
 from ..services.auth_token_validator import verify_bearer_token
 from ..database import get_db_connection
-from ..services.reserve_phone import reserve_phone_number
+#from ..services.reserve_phone import reserve_phone_number
 from ..services.create_payment import create_payment_intent
 import uuid
 
@@ -56,37 +56,43 @@ def process_event(event):
         phone_number = data['choose_number']['phone_number']
         phone_number_price = data['choose_number']['price']
         data['choose_number']['price']
-        response = reserve_phone_number(business_id, business_name, data['choose_number'])
-        if response['success']:
-            amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
-            result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
-                                 reason=reason)
-        else:
-            stripe.Refund.create(payment_intent=payment_intent_id)
-            #update_db_payment(intent_id, amount, customer_id, status="refunded")
+        # response = reserve_phone_number(business_id, business_name, data['choose_number'])
+        # if response['success']:
+        #     amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
+        #     result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
+        #                          reason=reason)
+        # else:
+        #     stripe.Refund.create(payment_intent=payment_intent_id)
+        #     #update_db_payment(intent_id, amount, customer_id, status="refunded")
 
+def can_complete_transaction(event):
+    pass
 @bp.route('/webhook', methods=['POST'])
 def webhook():
     """
     Handle Stripe webhook events
     """
-    event = None
-    payload = request.data
 
-    # try:
-    #     event = stripe.Webhook.construct_event(
-    #         payload, sig_header, os.getenv('STRIPE_WEBHOOK_SECRET')
-    #     )
-    # except ValueError as e:
-    #     # Invalid payload
-    #     return jsonify(success=False, error="Invalid payload"), 400
-    # except stripe.error.SignatureVerificationError as e:
-    #     # Invalid signature
-    #     return jsonify(success=False, error="Invalid signature"), 400
+    payload = request.data
+    sig_header = request.headers.get("Stripe-Signature")
+    event = None
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, os.getenv('STRIPE_WEBHOOK_SECRET')
+        )
+    except ValueError as e:
+        # Invalid payload
+        return jsonify(success=False, error="Invalid payload"), 400
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return jsonify(success=False, error="Invalid signature"), 400
 
     # Handle the event
     if event and event['type'] == 'payment_intent.succeeded':
-        process_event(event)
+        if can_complete_transaction():
+            pass
+        else:
+            stripe.Refund.create(payment_intent=payment_intent_id)
         pass
     elif event['type'] == 'checkout.session.completed':
         #process_event(event)
@@ -133,7 +139,7 @@ def create_itemized_payment_intent():
     try:
         data = request.get_json()
 
-        metadata = data['items']
+        cart = data['items']
         # Validate required fields
         if 'business_id' not in data or 'items' not in data:
             return jsonify({
@@ -261,7 +267,10 @@ def create_itemized_payment_intent():
             'payment_intent_id': result['stripe_payment_intent_id'],
             'amount_cents': result['amount_cents'],
             'currency': result['currency'].upper(),
-            'metadata': metadata
+            'metadata': {
+                'cart':cart,
+                'metadata': ''
+            }
         })
         
     except Exception as e:
@@ -658,3 +667,45 @@ def transaction_history():
         return jsonify({"error": f"Database error: {str(err)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/refund', methods=['POST'])
+def refund_payment():
+    """
+    Refund a full payment based on payment_intent_id
+    Payload:
+    {
+        "business_id": 17,
+        "payment_intent_id": "pi_3S0MBgRtn53X95sK1mhHuvWk",
+        "reason": "provisioning_failed"
+    }
+    """
+    data = request.get_json()
+    business_id = data.get("business_id")
+    payment_intent_id = data.get("payment_intent_id")
+    reason = data.get("reason", "unspecified")
+
+    if not payment_intent_id or not business_id:
+        return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+    try:
+        # 1. Trigger Stripe refund (full refund)
+        refund = stripe.Refund.create(
+            payment_intent=payment_intent_id,
+            idempotency_key=payment_intent_id  # Stripe-level idempotency
+        )
+        with get_db_cursor(database='appointment_db', commit=False, dictionary=True) as cursor:
+        # 2. Insert ledger entry (negative amount refunded)
+            cursor.execute("""
+                INSERT INTO business_ledger (business_id, amount_cents, reason, request_id)
+                VALUES (%s, %s, %s, %s)
+            """, (business_id, -refund.amount, reason, payment_intent_id))
+
+
+        return jsonify({"success": True, "refund_id": refund.id}), 200
+
+    except mysql.connector.IntegrityError:
+        # Duplicate refund attempt (payment_intent_id already used)
+        return jsonify({"success": True, "message": "Refund already processed"}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500

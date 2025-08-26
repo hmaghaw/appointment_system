@@ -362,6 +362,16 @@ def signup():
                 raise Exception("No business ID returned from database")
 
             create_weekly_business_hours(business_id)
+            
+            # Add default business language (English)
+            cursor.execute(
+                """
+                INSERT INTO business_languages (business_id, language_code, is_default, language_voice_id)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (business_id, 'en', True, 18)
+            )
+            
             # Commit the transaction
             conn.commit()
         except Exception as e:

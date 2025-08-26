@@ -9,7 +9,7 @@ DEBUG=True
 # Stripe Configuration
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
-
+STRIPE_WEBHOOK_SECRET=
 # Database Configuration
 DB_HOST=db
 DB_USER=
@@ -42,6 +42,7 @@ FROM_NAME=
 FRONTEND_URL=https://polydial.com
 
 OPENAI_API_KEY=
+API_BASE_URL=https://api.polydial.com
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
@@ -50,7 +51,7 @@ NGROK_AUTHTOKEN=
 # Stripe Configuration
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
-
+STRIPE_WEBHOOK_SECRET=
 # Database Configuration
 DB_HOST=localhost
 DB_USER=
@@ -84,6 +85,7 @@ FROM_NAME=
 FRONTEND_URL=https://1b508cc8-944c-4d37-9ed6-0934fa85b53c-00-2jwasb0kbfe30.spock.replit.dev
 
 OPENAI_API_KEY=
+API_BASE_URL=http://127.0.0.1:5000
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """

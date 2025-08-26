@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS business_phone (
     phone_sid VARCHAR(34) NOT NULL COMMENT 'Twilio Phone Number SID (starts with PN)',
     friendly_name VARCHAR(255),
     business_phone VARCHAR(20) NOT NULL,
-    language_code VARCHAR(10),
+    language_code VARCHAR(10) default 'en',
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -393,6 +393,7 @@ CREATE TABLE IF NOT EXISTS business_ledger (
   business_id   INT NOT NULL,
   amount_cents  BIGINT NOT NULL,          -- +credit, -debit
   reason        VARCHAR(100),
+  comments varchar(500) null,
   request_id    VARCHAR(64) NOT NULL,     -- idempotency key (unique per charge)
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (request_id),
@@ -412,4 +413,19 @@ CREATE TABLE orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_orders_business FOREIGN KEY (business_id) REFERENCES business(business_id)
+);
+CREATE TABLE provisioning (
+    provisioning_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    business_id     INT NOT NULL,
+    phone_number    VARCHAR(20) NOT NULL,
+    is_premium smallint default 0 null,
+    monthly_fee int default 0 null,
+    first_time_fee int default 0 null,
+    payment_intent_id VARCHAR(64) NOT NULL,
+    status          ENUM('pending','success','failed') DEFAULT 'pending',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_provisioning_business
+        FOREIGN KEY (business_id) REFERENCES business(business_id)
 );
