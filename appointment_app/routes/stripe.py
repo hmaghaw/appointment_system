@@ -11,9 +11,15 @@ from mysql.connector import Error, errorcode
 from appointment_app.database import get_db_connection, get_db_cursor
 from ..services.auth_token_validator import verify_bearer_token
 from ..database import get_db_connection
-from ..services.onboarding import choose_number
+from ..services.reserve_phone import reserve_phone_number
+from ..services.create_payment import create_payment_intent
 import uuid
 
+price_ids={'10':'price_1Rzfg3Rtn53X95sKx48R9iIQ',
+           '20':'price_1RzfgtRtn53X95sKF6Kob0th',
+           '50':'price_1RzfhGRtn53X95sKzo9avYpb',
+           '100':'price_1RzfhaRtn53X95sKbVl7SPk1',
+           'Monthly Fees':'price_1RzfjtRtn53X95sKzTWyLQ7H'}
 # Load environment variables
 load_dotenv()
 
@@ -50,12 +56,14 @@ def process_event(event):
         phone_number = data['choose_number']['phone_number']
         phone_number_price = data['choose_number']['price']
         data['choose_number']['price']
-        response = choose_number(business_id, business_name, metadata['choose_number'], headers=headers)
-
-        business_id = start_onboarding(metadata=data)
-        amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
-        result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
-                             reason=reason)
+        response = reserve_phone_number(business_id, business_name, data['choose_number'])
+        if response['success']:
+            amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
+            result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
+                                 reason=reason)
+        else:
+            stripe.Refund.create(payment_intent=payment_intent_id)
+            #update_db_payment(intent_id, amount, customer_id, status="refunded")
 
 @bp.route('/webhook', methods=['POST'])
 def webhook():
@@ -65,36 +73,204 @@ def webhook():
     event = None
     payload = request.data
 
-    try:
-        event = json.loads(payload)
-    except json.decoder.JSONDecodeError as e:
-        print('⚠️  Webhook error while parsing basic request.' + str(e))
-        return jsonify(success=False), 400
+    # try:
+    #     event = stripe.Webhook.construct_event(
+    #         payload, sig_header, os.getenv('STRIPE_WEBHOOK_SECRET')
+    #     )
+    # except ValueError as e:
+    #     # Invalid payload
+    #     return jsonify(success=False, error="Invalid payload"), 400
+    # except stripe.error.SignatureVerificationError as e:
+    #     # Invalid signature
+    #     return jsonify(success=False, error="Invalid signature"), 400
 
-    # if endpoint_secret:
-    #     # Verify the event with the endpoint secret
-    #     sig_header = request.headers.get('stripe-signature')
-    #     try:
-    #         event = stripe.Webhook.construct_event(
-    #             payload, sig_header, endpoint_secret
-    #         )
-    #     except stripe.error.SignatureVerificationError as e:
-    #         print('⚠️  Webhook signature verification failed.' + str(e))
-    #         return jsonify(success=False), 400
+    # Handle the event
     if event and event['type'] == 'payment_intent.succeeded':
         process_event(event)
+        pass
+    elif event['type'] == 'checkout.session.completed':
+        #process_event(event)
+        pass
     elif event['type'] == 'payment_method.attached':
         payment_method = event['data']['object']  # contains a stripe.PaymentMethod
         # Add your payment method handling logic here
-        # handle_payment_method_attached(payment_method)
-    elif event['type'] == 'customer.subscription.created':
+        pass
+    elif event['type'] == 'payment_intent.payment_failed':
         pass
     elif event['type'] == 'customer.subscription.created':
         pass
-    elif event['type'] == 'checkout.session.completed':
-        process_event()
 
     return jsonify(success=True)
+
+
+@bp.route('/payment_intent', methods=['POST'])
+def create_itemized_payment_intent():
+    """
+    Create a payment intent with itemized pricing
+    
+    Request body:
+    {
+        "stripe_customer_id": "temp_customer",
+        "items": [
+            {
+                "item": "Monthly Fees",
+                "price": 10
+            },
+            {
+                "item": "Phone Number Fee (First Month)",
+                "price": "450.00"
+            },
+            {
+                "item": "Account Top-up",
+                "price": 20
+            }
+        ]
+    }
+    
+    Returns:
+        JSON with payment intent details or error message
+    """
+    try:
+        data = request.get_json()
+
+        metadata = data['items']
+        # Validate required fields
+        if 'business_id' not in data or 'items' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'business_id and items are required'
+            }), 400
+            
+        business_id = data['business_id']
+        
+        # Get stripe_customer_id from database
+        with get_db_cursor(database='appointment_db', dictionary=True) as cursor:
+            cursor.execute(
+                "SELECT stripe_customer_id FROM business WHERE business_id = %s", 
+                (business_id,)
+            )
+            business = cursor.fetchone()
+            
+            if not business or not business.get('stripe_customer_id'):
+                return jsonify({
+                    'success': False,
+                    'error': 'No Stripe customer found for this business. Please create a customer first.'
+                }), 400
+                
+            stripe_customer_id = business['stripe_customer_id']
+            
+        # Validate items
+        items = data.get('items', [])
+        if not items or not isinstance(items, list):
+            return jsonify({
+                'success': False,
+                'error': 'items must be a non-empty array'
+            }), 400
+            
+        # Validate each item
+        for item in items:
+            if 'item' not in item or 'price' not in item:
+                return jsonify({
+                    'success': False,
+                    'error': 'Each item must have "item" and "price" fields'
+                }), 400
+                
+            try:
+                # Try to convert price to float to validate it
+                float(str(item['price']).replace(',', ''))
+            except (ValueError, TypeError):
+                return jsonify({
+                    'success': False,
+                    'error': f'Invalid price format for item: {item.get("item", "Unknown")}'
+                }), 400
+
+        items = []
+        total_amount = 0
+        for item in data['items']:
+            if item['item'] == 'Phone Number Fee (First Month)':
+                amount_cents = int(item['price']) * 100
+                items.append({
+                    "type": "ad-hoc",
+                    "name": item["item"],
+                    "qty": 1,
+                    "unit_price": amount_cents,
+                    "currency": "CAD"
+                })
+                total_amount += amount_cents
+            elif item['item'] == 'Account Top-up':
+                price_code = price_ids[f"{item['price']}"]
+                price_obj = stripe.Price.retrieve(price_code)
+                items.append({"price_id": price_code,
+                              "name": item["item"],
+                              "qty": 1,
+                              "unit_price": price_obj.unit_amount ,
+                              "currency": price_obj.currency})
+                total_amount += price_obj.unit_amount
+            elif item['item'] == 'Monthly Fees':
+                price_code = price_ids[item['item']]
+                price_obj = stripe.Price.retrieve(price_code)
+                items.append({"price_id": price_code,
+                              "name": item["item"],
+                              "qty": 1,
+                              "unit_price": price_obj.unit_amount ,
+                              "currency": price_obj.currency})
+                total_amount += price_obj.unit_amount
+
+        payment_intent = stripe.PaymentIntent.create(
+            amount=total_amount,
+            currency=price_obj.currency,
+            customer=stripe_customer_id,
+            automatic_payment_methods={"enabled": True},
+            metadata={"cart": str(data['items'])}  # optional: store cart details
+        )
+        result = {
+            'success': True,
+            'client_secret': payment_intent.client_secret,
+            'stripe_payment_intent_id': payment_intent.id,
+            'amount_cents': payment_intent.amount,
+            'currency': payment_intent.currency,
+            'status': payment_intent.status # optional: store cart details
+        }
+        try:
+            with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
+                cursor.execute("""
+                   INSERT INTO orders (business_id, amount_cents, currency, stripe_payment_intent_id, status)
+                   VALUES (%s, %s, %s, %s, %s)
+                   """, (
+                       business_id,
+                       result['amount_cents'],
+                       result['currency'],
+                       result['stripe_payment_intent_id'],
+                       "pending"
+                   ))
+        except mysql.connector.Error as err:
+            return jsonify({"error": f"Database error: {str(err)}"}), 500
+        except Exception as e:
+            return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+        if not result.get('success', False):
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to create payment intent'),
+                'error_type': result.get('error_type', 'UnknownError')
+            }), 500
+            
+        return jsonify({
+            'success': True,
+            'client_secret': result['client_secret'],
+            'payment_intent_id': result['stripe_payment_intent_id'],
+            'amount_cents': result['amount_cents'],
+            'currency': result['currency'].upper(),
+            'metadata': metadata
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Error creating payment intent: {str(e)}')
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
 
 @bp.route('/create-customer', methods=['POST'])
 def create_customer():
@@ -137,7 +313,7 @@ def create_customer():
         
         return jsonify({
             'status': 'success',
-            'customer_id': customer_id,
+            'stripr_customer_id': customer_id,
             'business_id': business_id
         })
         
@@ -192,7 +368,7 @@ def create_stripe_customer_for_business(business_id, user_id, phone, email, name
 
 
 @bp.route('/create-payment-intent', methods=['POST'])
-def create_payment_intent():
+def create_payment_intent_api():
     """
     Create a new payment intent
     Expected JSON payload: {"amount": 1000, "currency": "usd"}

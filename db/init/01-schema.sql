@@ -400,3 +400,16 @@ CREATE TABLE IF NOT EXISTS business_ledger (
   CONSTRAINT fk_business_ledger_business
     FOREIGN KEY (business_id) REFERENCES business(business_id)
 ) ENGINE=InnoDB;
+
+CREATE TABLE orders (
+    order_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
+    amount_cents BIGINT NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    status ENUM('pending','paid','failed','canceled') DEFAULT 'pending',
+    stripe_payment_intent_id VARCHAR(64) UNIQUE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_orders_business FOREIGN KEY (business_id) REFERENCES business(business_id)
+);
