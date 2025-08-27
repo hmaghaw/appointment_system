@@ -356,6 +356,7 @@ def update_business():
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+@bp.route('/phones', methods=['POST'])
 def list_business_phones():
     """
     List all phone numbers for a business
@@ -378,28 +379,27 @@ def list_business_phones():
         if not business_id:
             return jsonify({"error": "business_id is required"}), 400
             
-        conn, cursor = get_db_cursor(dictionary=True)
-        
-        # Get business phones
-        query = """
-            SELECT 
-                bp.phone_id,
-                bp.phone_number,
-                bp.phone_type,
-                bp.is_primary,
-                bp.is_active,
-                bp.created_at,
-                bp.updated_at
-            FROM business_phone bp
-            WHERE bp.business_id = %s
-            ORDER BY 
-                bp.is_primary DESC,
-                bp.phone_type,
-                bp.phone_number
-        """
-        
-        cursor.execute(query, (business_id,))
-        phones = cursor.fetchall()
+        with get_db_cursor(dictionary=True) as cursor:
+            # Get business phones
+            query = """
+                SELECT 
+                    bp.business_phone_id,
+                    bp.business_phone,
+                    bp.language_code,
+                    l.language_name,
+                    bp.is_primary,
+                    bp.created_at,
+                    bp.updated_at
+                FROM business_phone bp
+                LEFT JOIN language l ON bp.language_code = l.language_code
+                WHERE bp.business_id = %s
+                ORDER BY 
+                    bp.is_primary DESC,
+                    bp.business_phone
+            """
+            
+            cursor.execute(query, (business_id,))
+            phones = cursor.fetchall()
         
         # Convert datetime objects to string for JSON serialization
         for phone in phones:
@@ -417,10 +417,123 @@ def list_business_phones():
         return jsonify({"error": f"Database error: {err}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
+
+@bp.route('/phone/language', methods=['PUT'])
+def update_phone_language():
+    """
+    Update the language code for a business phone
     
-    return jsonify({"error": "Method not allowed"}), 405
+    Request body: {
+        "business_phone_id": 123,  # ID of the phone to update
+        "language_code": "en"      # New language code (e.g., 'en', 'es', 'fr')
+    }
+    
+    Returns: Updated phone information or error message
+    """
+    try:
+        # Verify bearer token
+        payload, error = verify_bearer_token(request)
+        if error:
+            return jsonify({"error": error}), 401
+            
+        data = request.get_json() or {}
+        business_phone_id = data.get('business_phone_id')
+        language_code = data.get('language_code')
+        
+        if not all([business_phone_id, language_code]):
+            return jsonify({
+                "success": False,
+                "error": "Both business_phone_id and language_code are required"
+            }), 400
+            
+        # First, verify the language code is valid
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute("SELECT language_code FROM language WHERE language_code = %s", (language_code,))
+            if not cursor.fetchone():
+                # If exact match not found, try case-insensitive search
+                cursor.execute("SELECT language_code FROM language WHERE LOWER(language_code) = LOWER(%s)", (language_code,))
+                lang = cursor.fetchone()
+                if not lang:
+                    # Get list of available languages for the error message
+                    cursor.execute("SELECT language_code, language_name FROM language")
+                    available_langs = cursor.fetchall()
+                    return jsonify({
+                        "success": False,
+                        "error": f"Invalid language code: {language_code}",
+                        "available_languages": available_langs
+                    }), 400
+                language_code = lang['language_code']  # Use the correct case from DB
+            
+        with get_db_cursor(dictionary=True, commit=True) as cursor:
+            # Check if the phone exists
+            cursor.execute(
+                "SELECT * FROM business_phone WHERE business_phone_id = %s",
+                (business_phone_id,)
+            )
+            phone = cursor.fetchone()
+            
+            if not phone:
+                return jsonify({
+                    "success": False,
+                    "error": "Phone not found"
+                }), 404
+            
+            # Update the language code
+            cursor.execute(
+                """
+                UPDATE business_phone 
+                SET language_code = %s,
+                    updated_at = NOW()
+                WHERE business_phone_id = %s
+                """,
+                (language_code, business_phone_id)
+            )
+            
+            # Commit the transaction to ensure the update is saved
+            
+            # Get the updated record
+            cursor.execute(
+                """
+                SELECT 
+                    bp.business_id,
+                    bp.business_phone_id,
+                    bp.language_code
+                FROM business_phone bp
+                WHERE bp.business_phone_id = %s
+                """,
+                (business_phone_id,)
+            )
+            updated_phone = cursor.fetchone()
+            
+            if not updated_phone:
+                return jsonify({
+                    "success": False,
+                    "error": "Failed to fetch updated phone information"
+                }), 500
+            
+            # Get the language name
+            cursor.execute(
+                "SELECT language_name FROM language WHERE language_code = %s",
+                (language_code,)
+            )
+            language_result = cursor.fetchone()
+            language_name = language_result['language_name'] if language_result else "Unknown"
+            
+            # Prepare response data
+            response_data = {
+                "business_id": updated_phone['business_id'],
+                "business_phone_id": updated_phone['business_phone_id'],
+                "language_code": updated_phone['language_code'],
+                "language_name": language_name
+            }
+            
+            return jsonify({
+                "success": True,
+                "message": "Phone language updated successfully",
+                "phone": response_data
+            }), 200
+            
+    except mysql.connector.Error as err:
+        return jsonify({"error": f"Database error: {err}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500

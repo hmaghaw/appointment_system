@@ -65,91 +65,16 @@ def handle_onboarding():
         
         # Step 1: Create the account
         signup_data = data.get('create_account', {})
-        try:
-            signup_response = requests.post(
-                f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/auth/signup",
-                json=signup_data,
-                timeout=30  # 30 seconds timeout
-            )
-            signup_response.raise_for_status()  # Raises an HTTPError for bad responses
-            
-        except requests.exceptions.RequestException as e:
-            error_message = str(e)
-            if hasattr(e, 'response') and e.response is not None:
-                try:
-                    error_details = e.response.json()
-                    error_message = error_details.get('message', str(e))
-                except:
-                    error_message = e.response.text or str(e)
-            
-            return jsonify({
-                "success": False,
-                "error": f"Failed to create account: {error_message}",
-                "step": "account_creation"
-            }), 500
-        
-        try:
-            signup_result = signup_response.json()
-            user_id = signup_result.get('user', {}).get('id')
-            business_id = signup_result.get('business', {}).get('id')
-            
-            if not user_id or not business_id:
-                return jsonify({
-                    "success": False,
-                    "error": "Incomplete signup response: missing user or business ID",
-                    "response": signup_result,
-                    "step": "account_creation"
-                }), 500
-                
-        except (ValueError, AttributeError) as e:
-            return jsonify({
-                "success": False,
-                "error": f"Invalid response from signup service: {str(e)}",
-                "step": "account_creation"
-            }), 500
-        
+        #signup_result = signup(signup_data)
+        # user_id = signup_result['user']['id']
+        # business_id = signup_result['user']['business_id']
+
+        user_id = "user_ee34eee9471a2d6c"
+        business_id = 31
+        business_name = data['create_account']['businessName']
         # Step 2: Handle phone number setup
         phone_data = data.get('choose_number', {})
-        phone_setup_success = False
-        
-        try:
-            if phone_data.get('is_premium'):
-                # Reserve premium number
-                reserve_response = requests.post(
-                    f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/premium-numbers/reserve",
-                    json={
-                        "phone_number": phone_data.get('phone_number'),
-                        "business_id": business_id,
-                        "friendly_name": f"{signup_data.get('businessName', 'Business')} - Main Line"
-                    },
-                    timeout=30
-                )
-            else:
-                # Purchase and configure regular number
-                reserve_response = requests.post(
-                    f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/twilio/purchase-and-configure",
-                    json={
-                        "business_id": business_id,
-                        "phone_number": phone_data.get('phone_number'),
-                        "friendly_name": f"{signup_data.get('businessName', 'Business')} - Main Line"
-                    },
-                    timeout=30
-                )
-            
-            reserve_response.raise_for_status()
-            phone_setup_success = True
-            
-        except requests.exceptions.RequestException as e:
-            error_message = str(e)
-            if hasattr(e, 'response') and e.response is not None:
-                try:
-                    error_details = e.response.json()
-                    error_message = error_details.get('message', str(e))
-                except:
-                    error_message = e.response.text or str(e)
-            
-            print(f"Warning: Phone number setup failed: {error_message}")
-            # Continue with onboarding even if phone setup fails
+        choose_number(business_id, business_name, phone_data)
         
         # Step 3: Update account with auto-recharge settings
         activate_data = data.get('activate_account', {})
@@ -198,3 +123,75 @@ def handle_onboarding():
             "details": str(e)
         }), 500
 
+def signup(signup_data):
+    try:
+        signup_response = requests.post(
+            f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/auth/signup",
+            json=signup_data,
+            timeout=30  # 30 seconds timeout
+        )
+        signup_response.raise_for_status()  # Raises an HTTPError for bad responses
+        signup_result = signup_response.json()
+    except requests.exceptions.RequestException as e:
+        error_message = str(e)
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_details = e.response.json()
+                error_message = error_details.get('message', str(e))
+            except:
+                error_message = e.response.text or str(e)
+
+        return jsonify({
+            "success": False,
+            "error": f"Failed to create account: {error_message}",
+            "step": "account_creation"
+        }), 500
+        signup_result = signup_response.json()
+
+    return signup_result
+
+def choose_number(business_id, business_name, phone_data):
+    phone_setup_success = False
+
+    try:
+        if phone_data.get('is_premium'):
+            # Reserve premium number
+            reserve_response = requests.post(
+                f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/premium-numbers/reserve",
+                json={
+                    "phone_number": phone_data.get('phone_number'),
+                    "business_id": business_id,
+                    "friendly_name": business_name
+                },
+                timeout=30
+            )
+            pass
+        else:
+            # Purchase and configure regular number
+            reserve_response = requests.post(
+                f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/twilio/purchase-and-configure",
+                json={
+                    "business_id": business_id,
+                    "phone_number": phone_data.get('phone_number'),
+                    "friendly_name": business_name
+                },
+                timeout=30
+            )
+
+        reserve_response.raise_for_status()
+        phone_setup_success = True
+
+    except requests.exceptions.RequestException as e:
+        error_message = str(e)
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_details = e.response.json()
+                error_message = error_details.get('message', str(e))
+            except:
+                error_message = e.response.text or str(e)
+
+        print(f"Warning: Phone number setup failed: {error_message}")
+        # Continue with onboarding even if phone setup fails
+
+
+value = {'signup_payload': '{"create_account":{"businessName":"CardaMax 1975","adminFirstName":"Hany","adminLastName":"Elgaml","email":"hanyelgaml@ideationmax.com","password":"password","confirmPassword":"password","adminPhone":"hanyelgaml@ideationmax.com"},"choose_number":{"phone_number":"+13656155550","price":50,"is_premium":true,"locality":"","region":""},"activate_account":{"top_up_value":20,"autoRechargeEnabled":false,"rechargeThreshold":10,"rechargeAmount":20}}', 'topup_amount': '20', 'type': 'onboarding'}
