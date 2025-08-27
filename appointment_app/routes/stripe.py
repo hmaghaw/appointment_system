@@ -192,9 +192,16 @@ def create_itemized_payment_intent():
 
         items = []
         total_amount = 0
+        phone_info = None
+        if 'phone_number' in data:
+            phone_info = {"phone_number":data['phone_number'],
+                          "is_premium":data['is_premium'],
+                          "monthly_fee":0,
+                          "first_time_fee":0}
+
         for item in data['items']:
             if item['item'] == 'Phone Number Fee (First Month)':
-                amount_cents = int(item['price']) * 100
+                amount_cents = int(float(item['price']))*100
                 items.append({
                     "type": "ad-hoc",
                     "name": item["item"],
@@ -202,6 +209,7 @@ def create_itemized_payment_intent():
                     "unit_price": amount_cents,
                     "currency": "CAD"
                 })
+                phone_info['first_time_fee'] = amount_cents
                 total_amount += amount_cents
             elif item['item'] == 'Account Top-up':
                 price_code = price_ids[f"{item['price']}"]
@@ -220,6 +228,7 @@ def create_itemized_payment_intent():
                               "qty": 1,
                               "unit_price": price_obj.unit_amount ,
                               "currency": price_obj.currency})
+                phone_info['monthly_fee'] = price_obj.unit_amount
                 total_amount += price_obj.unit_amount
 
         payment_intent = stripe.PaymentIntent.create(
@@ -239,16 +248,25 @@ def create_itemized_payment_intent():
         }
         try:
             with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
-                cursor.execute("""
-                   INSERT INTO orders (business_id, amount_cents, currency, stripe_payment_intent_id, status)
-                   VALUES (%s, %s, %s, %s, %s)
-                   """, (
-                       business_id,
-                       result['amount_cents'],
-                       result['currency'],
-                       result['stripe_payment_intent_id'],
-                       "pending"
-                   ))
+                if phone_info:
+                    cursor.execute("""
+                                   INSERT INTO provisioning (business_id,
+                                                             phone_number,
+                                                             is_premium,
+                                                             monthly_fee,
+                                                             first_time_fee,
+                                                             payment_intent_id,
+                                                             status)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                   """, (
+                                       business_id,
+                                       phone_info['phone_number'],
+                                       phone_info.get('is_premium', 0),
+                                       phone_info.get('monthly_fee', 0),
+                                       phone_info.get('first_time_fee', 0),
+                                       result['stripe_payment_intent_id'],
+                                       "pending"
+                                   ))
         except mysql.connector.Error as err:
             return jsonify({"error": f"Database error: {str(err)}"}), 500
         except Exception as e:
