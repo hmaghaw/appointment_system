@@ -3,6 +3,7 @@ from flask_cors import cross_origin
 import requests
 import os
 import json
+from typing import Dict, Any, Optional
 import logging
 from pyasn1_modules.rfc2985 import FriendlyName
 #from appointment_app.services.auth_token_validator import verify_bearer_token
@@ -293,13 +294,13 @@ def provision_phone_number(provisioning_id):
 
     if result["success"]:
         if business_phone_exists(result["business_id"], result["phone_number"]):
-            print("This looks like a repeated transaction: Phone number already exists for this business.")
+            logger.warning("This looks like a repeated transaction: Phone number already exists for this business.")
             success = True
             return {
-                "success": True
+                "success": True,
+                "message": "Phone number already exists for this business."
             }
         else:
-            print("Phone number is new, safe to insert")
             reserve_result = reserve_phone_number(
                 business_id=result["business_id"],
                 business_name=result["business_name"],
@@ -313,42 +314,67 @@ def provision_phone_number(provisioning_id):
                 return {
                     "success": True,
                     "provisioning_id": result["provisioning_id"],
-                    "reservation": reserve_result
+                    "reservation": reserve_result,
+                    "message": reserve_result['message']
                 }
             else:
-                payload = {
-                    "business_id": result["business_id"],
-                    "payment_intent_id": result["payment_intent_id"],
-                    "reason": "provisioning_failed"
-                }
-                try:
-                    response = requests.post(
-                        f"{os.getenv('API_BASE_URL', '')}/api/stripe/refund",
-                        json=payload,
-                        headers=headers
-                    )
-                    response.raise_for_status()
+                refund_result = process_refund(provisioning_id,
+                    business_id=result["business_id"],
+                    payment_intent_id=result["payment_intent_id"],
+                    headers=headers
+                )
+                return refund_result
 
-                    result = response.json()
-                    if not isinstance(result, dict):
-                        return {"success": False, "error": "Invalid response format"}
+def process_refund(provisioning_id, business_id: int, payment_intent_id: str, headers: Dict[str, str]) -> Dict[str, Any]:
+    """
+    Process a refund for a failed phone number provisioning.
+    
+    Args:
+        business_id: ID of the business requesting the refund
+        payment_intent_id: Stripe payment intent ID to refund
+        headers: Request headers for authentication
+        
+    Returns:
+        dict: {
+            "success": bool,  # Whether the refund was successful
+            "message": str,   # Status message
+            "data": dict      # Response data if successful, or error details if failed
+        }
+    """
+    payload = {
+        "business_id": business_id,
+        "payment_intent_id": payment_intent_id,
+        "reason": "provisioning_failed"
+    }
+    
+    try:
+        response = requests.post(
+            f"{os.getenv('API_BASE_URL', '')}/api/stripe/refund",
+            json=payload,
+            headers=headers
+        )
+        response.raise_for_status()
 
-                    # Normalize success flag
-                    if result.get("success") is True:
-                        return {"success": True, **result}
-                    else:
-                        return {"success": False, **result}
+        result = response.json()
+        if not isinstance(result, dict):
+            return {"success": False, "error": "Invalid response format"}
 
-                except requests.exceptions.RequestException as e:
-                    error_message = f"Failed to call refund API: {str(e)}"
-                    if hasattr(e, "response") and e.response is not None:
-                        try:
-                            error_details = e.response.json()
-                            error_message = error_details.get("message", error_message)
-                        except ValueError:
-                            error_message = e.response.text or error_message
+        # Normalize success flag
+        if result.get("success") is True:
+            update_provisioning_status(provisioning_id, 'failed')
+            return {"success": True, **result}
+        return {"success": False, **result}
 
-                    return {"success": False, "error": error_message}
+    except requests.exceptions.RequestException as e:
+        error_message = f"Failed to call refund API: {str(e)}"
+        if hasattr(e, "response") and e.response is not None:
+            try:
+                error_details = e.response.json()
+                error_message = error_details.get("message", error_message)
+            except ValueError:
+                error_message = e.response.text or error_message
+
+        return {"success": False, "error": error_message}
 
 
-provision_phone_number(1)
+provision_phone_number(2)
