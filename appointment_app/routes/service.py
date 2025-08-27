@@ -12,14 +12,6 @@ from ..services.auth_token_validator import verify_bearer_token
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-try:
-    from appointment_app.services.ai_translate import Translate
-    TRANSLATOR = Translate()
-    logger.info("Translation service initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize translation service: {str(e)}")
-    TRANSLATOR = None
-
 # Create a new Blueprint for service-related routes
 bp = Blueprint('service', __name__)
 
