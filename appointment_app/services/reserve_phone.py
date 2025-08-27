@@ -284,6 +284,8 @@ def update_provisioning_status(provisioning_id: int, status: str) -> dict:
         return {"success": False, "error": f"Unexpected error: {str(e)}"}
 
 def provision_phone_number(provisioning_id):
+    if provisioning_id == 0:
+        return
     user = {"id": 999, "email": "hanyelgaml@ideationmax.com", "business_id": 999, "role": "admin"}
     auth_token = generate_jwt_token(user, validity=3600)
     headers = {

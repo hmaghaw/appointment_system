@@ -123,41 +123,6 @@ bp = Blueprint('stripe', __name__, url_prefix='/api/stripe')
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 #endpoint_secret = os.getenv('STRIPE_SECRET_KEY')
 
-def get_transaction_reason(event):
-    type = 'topup'
-    metadata = event['data']['object']['metadata']
-    if 'type' in metadata:
-        type = metadata['type']
-    return type
-
-def process_event(event):
-    reason = get_transaction_reason(event)
-    idempotency_key = event['id']
-    metadata = event['data']['object']['metadata']
-    if reason == 'topup':
-        amount_cents = int(metadata['amount']) * 100
-        business_id = int(metadata['business_id'])
-        result = apply_topup(business_id=business_id ,amount_cents=amount_cents, request_id=idempotency_key,reason=reason )
-        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
-        print('Payment for {} succeeded'.format(payment_intent['amount']))
-    elif reason == 'onboarding':
-        payment_intent_id = event['data']['object']['id']
-        data = json.loads(metadata['signup_payload'])
-        business_id = data['create_account']['business_id']
-        business_name = data['create_account']['business_name']
-        user_id = data['create_account']['user_id']
-        phone_number = data['choose_number']['phone_number']
-        phone_number_price = data['choose_number']['price']
-        data['choose_number']['price']
-        # response = reserve_phone_number(business_id, business_name, data['choose_number'])
-        # if response['success']:
-        #     amount_cents = int(event['data']['object']['metadata']['topup_amount']) * 100
-        #     result = apply_topup(business_id=business_id, amount_cents=amount_cents, request_id=idempotency_key,
-        #                          reason=reason)
-        # else:
-        #     stripe.Refund.create(payment_intent=payment_intent_id)
-        #     #update_db_payment(intent_id, amount, customer_id, status="refunded")
-
 @bp.route('/webhook', methods=['POST'])
 def webhook():
     """
@@ -183,9 +148,11 @@ def webhook():
         metadata = event['data']['object']['metadata']
         account_topup_value = metadata['account_topup_value']
         business_id = metadata['business_id']
-        provisioning_id = metadata['provisioning_id']
-        result = apply_topup(business_id=business_id, amount_cents=account_topup_value, request_id=provisioning_id,
+
+        payment_intent_id = event['data']['object']['id']
+        result = apply_topup(business_id=business_id, amount_cents=account_topup_value, request_id=payment_intent_id,
                              reason="TopUp")
+        provisioning_id = int(metadata['provisioning_id'])
         provision_phone_number(provisioning_id)
         pass
     elif event['type'] == 'checkout.session.completed':
@@ -242,7 +209,7 @@ def create_itemized_payment_intent():
             }), 400
             
         business_id = data['business_id']
-        
+        provisioning_id = 0
         # Get stripe_customer_id from database
         with get_db_cursor(database='appointment_db', dictionary=True) as cursor:
             cursor.execute(
@@ -307,8 +274,8 @@ def create_itemized_payment_intent():
                 phone_info['first_time_fee'] = amount_cents
                 total_amount += amount_cents
             elif item['item'] == 'Account Top-up':
-                if item['price'] in price_ids:
-                    price_code = price_ids[f"{item['price']}"]
+                if str(item['price']) in price_ids:
+                    price_code = price_ids[str(item['price'])]
                     price_obj = stripe.Price.retrieve(price_code)
                     items.append({"price_id": price_code,
                                   "name": item["item"],
@@ -348,7 +315,8 @@ def create_itemized_payment_intent():
                       "business_id": business_id
                       }  # optional: store cart details
         )
-        update_provisioning_payment_intent(provisioning_id, payment_intent.id)
+        if provisioning_id:
+            update_provisioning_payment_intent(provisioning_id, payment_intent.id)
         result = {
             'success': True,
             'client_secret': payment_intent.client_secret,
