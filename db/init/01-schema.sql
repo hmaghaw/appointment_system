@@ -421,7 +421,7 @@ CREATE TABLE provisioning (
     is_premium smallint default 0 null,
     monthly_fee int default 0 null,
     first_time_fee int default 0 null,
-    payment_intent_id VARCHAR(64) NOT NULL,
+    payment_intent_id VARCHAR(64)  NULL,
     status          ENUM('pending','success','failed') DEFAULT 'pending',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

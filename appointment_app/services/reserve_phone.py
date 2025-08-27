@@ -9,7 +9,7 @@ from pyasn1_modules.rfc2985 import FriendlyName
 #from appointment_app.services.auth_token_validator import verify_bearer_token
 from appointment_app.database import get_db_cursor
 import mysql.connector
-from auth_token_validator import generate_jwt_token
+from appointment_app.services.auth_token_validator import generate_jwt_token
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -377,4 +377,4 @@ def process_refund(provisioning_id, business_id: int, payment_intent_id: str, he
         return {"success": False, "error": error_message}
 
 
-provision_phone_number(2)
+#provision_phone_number(2)

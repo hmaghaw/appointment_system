@@ -4,16 +4,109 @@
 import json
 import os
 import stripe
-from flask import Blueprint, jsonify, request, current_app, g
-from dotenv import load_dotenv
+from flask import Blueprint, request, jsonify, current_app
+from flask_cors import cross_origin
+import stripe
+import os
+import json
 import mysql.connector
-from mysql.connector import Error, errorcode
-from appointment_app.database import get_db_connection, get_db_cursor
+from datetime import datetime
+from dotenv import load_dotenv
+from database import get_db_cursor
+import logging
+from typing import Dict, Any, Optional, Tuple
 from ..services.auth_token_validator import verify_bearer_token
 from ..database import get_db_connection
-#from ..services.reserve_phone import reserve_phone_number
-from ..services.create_payment import create_payment_intent
+from ..services.reserve_phone import provision_phone_number
+#from ..services.create_payment import create_payment_intent
 import uuid
+
+
+def create_provisioning_record(business_id: int, phone_info: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create a provisioning record in the database.
+    
+    Args:
+        business_id: ID of the business
+        phone_info: Dictionary containing phone number details
+        payment_intent_id: Stripe payment intent ID
+        
+    Returns:
+        dict: {
+            "success": bool,  # Whether the operation was successful
+            "provisioning_id": int,  # ID of the created record (if successful)
+            "error": str  # Error message (if any)
+        }
+    """
+    try:
+        with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
+            cursor.execute("""
+                INSERT INTO provisioning (
+                    business_id,
+                    phone_number,
+                    is_premium,
+                    monthly_fee,
+                    first_time_fee,
+                    status
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                business_id,
+                phone_info['phone_number'],
+                phone_info.get('is_premium', 0),
+                phone_info.get('monthly_fee', 0),
+                phone_info.get('first_time_fee', 0),
+                "pending"
+            ))
+            
+            return {
+                "success": True,
+                "provisioning_id": cursor.lastrowid
+            }
+            
+    except mysql.connector.Error as err:
+        return {
+            "success": False,
+            "error": f"Database error: {str(err)}"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }
+
+def update_provisioning_payment_intent(provisioning_id: int, payment_intent_id: str) -> dict:
+    """
+    Update the payment_intent_id for a provisioning record.
+
+    Args:
+        provisioning_id (int): The ID of the provisioning record
+        payment_intent_id (str): The new Stripe PaymentIntent ID
+
+    Returns:
+        dict: { "success": True/False, "provisioning_id": ..., "payment_intent_id": ... }
+    """
+    try:
+        with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
+            cursor.execute("""
+                UPDATE provisioning
+                SET payment_intent_id = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE provisioning_id = %s
+            """, (payment_intent_id, provisioning_id))
+
+            if cursor.rowcount == 0:
+                return {"success": False, "error": "Provisioning record not found"}
+
+        return {
+            "success": True,
+            "provisioning_id": provisioning_id,
+            "payment_intent_id": payment_intent_id
+        }
+
+    except mysql.connector.Error as err:
+        return {"success": False, "error": f"Database error: {str(err)}"}
+    except Exception as e:
+        return {"success": False, "error": f"Unexpected error: {str(e)}"}
+
 
 price_ids={'10':'price_1Rzfg3Rtn53X95sKx48R9iIQ',
            '20':'price_1RzfgtRtn53X95sKF6Kob0th',
@@ -65,8 +158,6 @@ def process_event(event):
         #     stripe.Refund.create(payment_intent=payment_intent_id)
         #     #update_db_payment(intent_id, amount, customer_id, status="refunded")
 
-def can_complete_transaction(event):
-    pass
 @bp.route('/webhook', methods=['POST'])
 def webhook():
     """
@@ -89,10 +180,13 @@ def webhook():
 
     # Handle the event
     if event and event['type'] == 'payment_intent.succeeded':
-        if can_complete_transaction():
-            pass
-        else:
-            stripe.Refund.create(payment_intent=payment_intent_id)
+        metadata = event['data']['object']['metadata']
+        account_topup_value = metadata['account_topup_value']
+        business_id = metadata['business_id']
+        provisioning_id = metadata['provisioning_id']
+        result = apply_topup(business_id=business_id, amount_cents=account_topup_value, request_id=provisioning_id,
+                             reason="TopUp")
+        provision_phone_number(provisioning_id)
         pass
     elif event['type'] == 'checkout.session.completed':
         #process_event(event)
@@ -193,6 +287,7 @@ def create_itemized_payment_intent():
         items = []
         total_amount = 0
         phone_info = None
+        account_topup_value = 0
         if 'phone_number' in data:
             phone_info = {"phone_number":data['phone_number'],
                           "is_premium":data['is_premium'],
@@ -212,14 +307,16 @@ def create_itemized_payment_intent():
                 phone_info['first_time_fee'] = amount_cents
                 total_amount += amount_cents
             elif item['item'] == 'Account Top-up':
-                price_code = price_ids[f"{item['price']}"]
-                price_obj = stripe.Price.retrieve(price_code)
-                items.append({"price_id": price_code,
-                              "name": item["item"],
-                              "qty": 1,
-                              "unit_price": price_obj.unit_amount ,
-                              "currency": price_obj.currency})
-                total_amount += price_obj.unit_amount
+                if item['price'] in price_ids:
+                    price_code = price_ids[f"{item['price']}"]
+                    price_obj = stripe.Price.retrieve(price_code)
+                    items.append({"price_id": price_code,
+                                  "name": item["item"],
+                                  "qty": 1,
+                                  "unit_price": price_obj.unit_amount ,
+                                  "currency": price_obj.currency})
+                    account_topup_value = price_obj.unit_amount
+                    total_amount += price_obj.unit_amount
             elif item['item'] == 'Monthly Fees':
                 price_code = price_ids[item['item']]
                 price_obj = stripe.Price.retrieve(price_code)
@@ -231,13 +328,27 @@ def create_itemized_payment_intent():
                 phone_info['monthly_fee'] = price_obj.unit_amount
                 total_amount += price_obj.unit_amount
 
+        if phone_info:
+            provisioning_result = create_provisioning_record(
+                business_id=business_id,
+                phone_info=phone_info
+            )
+            if not provisioning_result['success']:
+                return jsonify({"error": provisioning_result['error']}), 500
+            provisioning_id = provisioning_result['provisioning_id']
+
         payment_intent = stripe.PaymentIntent.create(
             amount=total_amount,
             currency=price_obj.currency,
             customer=stripe_customer_id,
             automatic_payment_methods={"enabled": True},
-            metadata={"cart": str(data['items'])}  # optional: store cart details
+            metadata={"cart": str(data['items']),
+                      "account_topup_value":account_topup_value,
+                      "provisioning_id":provisioning_id,
+                      "business_id": business_id
+                      }  # optional: store cart details
         )
+        update_provisioning_payment_intent(provisioning_id, payment_intent.id)
         result = {
             'success': True,
             'client_secret': payment_intent.client_secret,
@@ -246,31 +357,7 @@ def create_itemized_payment_intent():
             'currency': payment_intent.currency,
             'status': payment_intent.status # optional: store cart details
         }
-        try:
-            with get_db_cursor(database='appointment_db', commit=True, dictionary=True) as cursor:
-                if phone_info:
-                    cursor.execute("""
-                                   INSERT INTO provisioning (business_id,
-                                                             phone_number,
-                                                             is_premium,
-                                                             monthly_fee,
-                                                             first_time_fee,
-                                                             payment_intent_id,
-                                                             status)
-                                   VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                   """, (
-                                       business_id,
-                                       phone_info['phone_number'],
-                                       phone_info.get('is_premium', 0),
-                                       phone_info.get('monthly_fee', 0),
-                                       phone_info.get('first_time_fee', 0),
-                                       result['stripe_payment_intent_id'],
-                                       "pending"
-                                   ))
-        except mysql.connector.Error as err:
-            return jsonify({"error": f"Database error: {str(err)}"}), 500
-        except Exception as e:
-            return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
 
         if not result.get('success', False):
             return jsonify({
@@ -284,11 +371,7 @@ def create_itemized_payment_intent():
             'client_secret': result['client_secret'],
             'payment_intent_id': result['stripe_payment_intent_id'],
             'amount_cents': result['amount_cents'],
-            'currency': result['currency'].upper(),
-            'metadata': {
-                'cart':cart,
-                'metadata': ''
-            }
+            'currency': result['currency'].upper()
         })
         
     except Exception as e:
