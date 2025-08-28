@@ -5,6 +5,7 @@ from appointment_app.database import get_db_cursor
 from functools import wraps
 from typing import List, Dict, Any, Optional, Tuple
 from appointment_app.services.auth_token_validator import verify_bearer_token
+from ..services.auth_token_validator import verify_bearer_token
 
 # Map day numbers to day names
 DAY_NAMES = {
@@ -417,6 +418,71 @@ def list_business_phones():
         return jsonify({"error": f"Database error: {err}"}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+@bp.route('/language/voice', methods=['POST'])
+def get_business_language_voice():
+    """
+    Get voice settings for a business language
+    
+    Request body: {
+        "business_id": 1,  # ID of the business
+        "language_code": "en"  # Language code (e.g., 'en', 'es', 'fr')
+    }
+    
+    Returns: Voice settings for the specified business and language
+    """
+    try:
+        data = request.get_json() or {}
+        business_id = data.get('business_id')
+        language_code = data.get('language_code')
+        
+        if not business_id or not language_code:
+            return jsonify({
+                "success": False,
+                "error": "Both business_id and language_code are required"
+            }), 400
+            
+        with get_db_cursor(dictionary=True) as cursor:
+            query = """
+                SELECT
+                    lv.language_code,
+                    CONCAT(lv.language_code, '-', lv.region_code) AS voice_language,
+                    lv.region_code,
+                    lv.voice_name,
+                    l.language_name
+                FROM business_languages bl
+                JOIN language_voice lv
+                    ON bl.language_voice_id = lv.language_voice_id
+                JOIN language l
+                    ON lv.language_code = l.language_code
+                WHERE bl.business_id = %s
+                AND lv.language_code = %s
+            """
+            
+            cursor.execute(query, (business_id, language_code))
+            voice_settings = cursor.fetchone()
+            
+            if not voice_settings:
+                return jsonify({
+                    "success": False,
+                    "error": "No voice settings found for the specified business and language"
+                }), 404
+                
+            return jsonify({
+                "success": True,
+                "data": voice_settings
+            }), 200
+            
+    except mysql.connector.Error as err:
+        return jsonify({
+            "success": False,
+            "error": f"Database error: {err}"
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }), 500
 
 @bp.route('/phone/language', methods=['PUT'])
 def update_phone_language():
