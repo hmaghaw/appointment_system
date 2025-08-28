@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from appointment_app.database import get_db_cursor
 import mysql.connector
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 # Create blueprint
 bp = Blueprint('premium_numbers', __name__)

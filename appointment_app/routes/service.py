@@ -6,7 +6,7 @@ from functools import wraps
 import logging
 from typing import List, Dict, Any, Optional
 from .create_service_endpoint import create_service_blueprint
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

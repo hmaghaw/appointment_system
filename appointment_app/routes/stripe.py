@@ -15,10 +15,10 @@ from dotenv import load_dotenv
 from appointment_app.database import get_db_cursor
 import logging
 from typing import Dict, Any, Optional, Tuple
-from ..services.auth_token_validator import verify_bearer_token
-from ..database import get_db_connection
-from ..services.reserve_phone import provision_phone_number
-#from ..services.create_payment import create_payment_intent
+from appointment_app.services.auth_token_validator import verify_bearer_token
+from appointment_app.database import get_db_connection
+from appointment_app.services.reserve_phone import provision_phone_number
+#from appointment_app.services.create_payment import create_payment_intent
 import uuid
 
 

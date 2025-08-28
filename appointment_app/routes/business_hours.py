@@ -3,7 +3,7 @@ from appointment_app.database import get_db_cursor
 import mysql.connector
 from datetime import datetime, time, timedelta
 from flask import jsonify, request, Blueprint
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 DAY_NAMES = {
     0: 'Monday',

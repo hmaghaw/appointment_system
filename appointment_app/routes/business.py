@@ -4,7 +4,7 @@ import mysql.connector
 from appointment_app.database import get_db_cursor
 from functools import wraps
 from typing import List, Dict, Any, Optional, Tuple
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 # Map day numbers to day names
 DAY_NAMES = {

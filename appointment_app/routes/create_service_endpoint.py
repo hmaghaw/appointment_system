@@ -3,8 +3,8 @@ import mysql.connector
 from appointment_app.database import get_db_cursor
 from functools import wraps
 import logging
-from ..services.ai_translate import AITranslate
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.ai_translate import AITranslate
+from appointment_app.services.auth_token_validator import verify_bearer_token
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

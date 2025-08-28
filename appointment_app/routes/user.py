@@ -19,10 +19,10 @@ import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
-from ..services.send_email_notification import send_email_notification
+from appointment_app.services.send_email_notification import send_email_notification
 import time
 import requests
-from ..services.auth_token_validator import generate_jwt_token, verify_bearer_token
+from appointment_app.services.auth_token_validator import generate_jwt_token, verify_bearer_token
 from flask import current_app
 
 logging.basicConfig(level=logging.INFO)

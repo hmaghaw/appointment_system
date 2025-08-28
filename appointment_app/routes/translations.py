@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from appointment_app.database import get_db_cursor
 import mysql.connector
 from typing import Dict, Any
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 bp = Blueprint('translations', __name__, url_prefix='/api/translations')
 

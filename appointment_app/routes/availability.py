@@ -2,8 +2,8 @@ from flask import Blueprint, request, jsonify
 from appointment_app.database import get_db_cursor
 from datetime import datetime, time, timedelta
 import mysql.connector
-from services.availability_service import get_daily_availability, get_weekly_availability
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.availability_service import get_daily_availability, get_weekly_availability
+from appointment_app.services.auth_token_validator import verify_bearer_token
 # Create blueprint
 bp = Blueprint('availability', __name__)
 

@@ -3,7 +3,7 @@ from appointment_app.database import get_db_cursor
 import mysql.connector
 from datetime import datetime, timedelta
 from appointment_app.services.appointment_service import validate_appointment
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 # Create blueprint
 bp = Blueprint('appointments', __name__)

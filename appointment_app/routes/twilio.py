@@ -10,8 +10,8 @@ import json
 from twilio.rest import Client
 import os
 from dotenv import load_dotenv
-from ..services.auth_token_validator import verify_bearer_token
-from ..services.evaluate_phone_number import evaluate_phone_numbers
+from appointment_app.services.auth_token_validator import verify_bearer_token
+from appointment_app.services.evaluate_phone_number import evaluate_phone_numbers
 
 # Load environment variables
 load_dotenv()

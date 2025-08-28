@@ -4,7 +4,7 @@ import mysql.connector
 import logging
 from typing import Dict, List, Any, Tuple, Optional, Union
 from functools import wraps
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 # Type aliases
 BusinessVoicesResponse = List[Dict[str, Any]]

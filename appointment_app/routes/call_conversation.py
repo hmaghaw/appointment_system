@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 import mysql.connector
 from appointment_app.database import get_db_cursor
 from datetime import datetime
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 bp = Blueprint('call_conversation', __name__, url_prefix='/api/call-conversation')
 

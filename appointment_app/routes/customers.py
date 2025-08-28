@@ -5,7 +5,7 @@ import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
 import re
-from ..services.auth_token_validator import verify_bearer_token
+from appointment_app.services.auth_token_validator import verify_bearer_token
 
 bp = Blueprint('customers', __name__, url_prefix='/api/customers')
 

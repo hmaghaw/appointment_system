@@ -3,8 +3,8 @@ from flask_cors import cross_origin
 import requests
 import os
 import json
-from ..services.auth_token_validator import verify_bearer_token
-from ..database import get_db_cursor
+from appointment_app.services.auth_token_validator import verify_bearer_token
+from appointment_app.database import get_db_cursor
 import mysql.connector
 
 # Create blueprint
