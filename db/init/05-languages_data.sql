@@ -2,7 +2,6 @@
 INSERT IGNORE INTO language (language_code, language_name) VALUES ('af', 'Afrikaans');
 INSERT IGNORE INTO language (language_code, language_name) VALUES ('am', 'Amharic');
 INSERT IGNORE INTO language (language_code, language_name) VALUES ('ar', 'Arabic');
-INSERT IGNORE INTO language (language_code, language_name) VALUES ('arb', 'Arabic');
 INSERT IGNORE INTO language (language_code, language_name) VALUES ('bg', 'Bulgarian');
 INSERT IGNORE INTO language (language_code, language_name) VALUES ('bn', 'Bengali');
 INSERT IGNORE INTO language (language_code, language_name) VALUES ('ca', 'Catalan');
@@ -62,8 +61,6 @@ INSERT IGNORE INTO language_voice (language_code, region_code, voice_provider, v
 VALUES ('ar', 'AE', 'Amazon Polly', 'Polly.Hala-Neural');
 INSERT IGNORE INTO language_voice (language_code, region_code, voice_provider, voice_name)
 VALUES ('ar', 'XA', 'Google Text-to-Speech', 'ar-XA-Chirp3-HD-Aoede');
-INSERT IGNORE INTO language_voice (language_code, region_code, voice_provider, voice_name)
-VALUES ('arb', 'ARB', 'Amazon Polly', 'Polly.Zeina');
 INSERT IGNORE INTO language_voice (language_code, region_code, voice_provider, voice_name)
 VALUES ('bg', 'BG', 'Google Text-to-Speech', 'bg-BG-Standard-A');
 INSERT IGNORE INTO language_voice (language_code, region_code, voice_provider, voice_name)
