@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, time, timedelta
 from email.utils import parsedate_to_datetime
 from app import create_app
-from database import get_db_cursor
+from appointment_app.database import get_db_cursor
 
 def parse_http_date(date_str):
     """Parse HTTP date string to datetime object"""

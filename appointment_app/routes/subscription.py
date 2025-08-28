@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from database import get_db_cursor
+from appointment_app.database import get_db_cursor
 from ..services.auth_token_validator import verify_bearer_token
 
 # Create blueprint

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from typing import Dict, Any, Optional, List
-from database import get_db_cursor
+from appointment_app.database import get_db_cursor
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime

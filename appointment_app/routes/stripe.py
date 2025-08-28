@@ -12,7 +12,7 @@ import json
 import mysql.connector
 from datetime import datetime
 from dotenv import load_dotenv
-from database import get_db_cursor
+from appointment_app.database import get_db_cursor
 import logging
 from typing import Dict, Any, Optional, Tuple
 from ..services.auth_token_validator import verify_bearer_token

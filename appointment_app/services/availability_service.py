@@ -1,5 +1,5 @@
 import os
-from database import get_db_cursor
+from appointment_app.database import get_db_cursor
 from datetime import datetime, time, timedelta
 
 

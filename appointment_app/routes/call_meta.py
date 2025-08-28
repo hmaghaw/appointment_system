@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request, current_app
 from datetime import datetime
 import mysql.connector
-from database import get_db_cursor, get_db_connection
+from appointment_app.database import get_db_cursor, get_db_connection
 from ..services.auth_token_validator import verify_bearer_token
 bp = Blueprint('call_history', __name__, url_prefix='/api/call-meta')
 

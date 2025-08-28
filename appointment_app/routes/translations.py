@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from database import get_db_cursor
+from appointment_app.database import get_db_cursor
 import mysql.connector
 from typing import Dict, Any
 from ..services.auth_token_validator import verify_bearer_token

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db_cursor
+from appointment_app.database import get_db_cursor
 from datetime import datetime, time, timedelta
 import mysql.connector
 from services.availability_service import get_daily_availability, get_weekly_availability

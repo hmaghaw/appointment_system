@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app
-from database import get_db_cursor, get_db_connection
+from appointment_app.database import get_db_cursor, get_db_connection
 import mysql.connector
 import logging
 from typing import Dict, List, Any, Tuple, Optional, Union
