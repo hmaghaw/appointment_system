@@ -423,7 +423,8 @@ def signup():
             try:
                 user = {"id": 999, "email": "hanyelgaml@ideationmax.com", "business_id": 999, "role": "admin"}
                 auth_token = generate_jwt_token(user, validity=3600)
-                stripe_url = f"{request.url_root.rstrip('/')}/api/stripe/create-customer"
+                stripe_url = f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/stripe/create-customer"
+
                 headers = {
                     'Authorization': f"Bearer {auth_token}",
                     'Content-Type': 'application/json'
