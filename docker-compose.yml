@@ -43,7 +43,8 @@ services:
       - .:/app
     command: >
       sh -c "python create_env_file.py production &&
-             cd /app/appointment_app && gunicorn --bind 0.0.0.0:5000 app:app"
+               cd /app/appointment_app &&
+               gunicorn --bind 0.0.0.0:5000 --timeout 120 --workers 2 --threads 2 app:app"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
