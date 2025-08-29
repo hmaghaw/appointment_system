@@ -274,3 +274,114 @@ def serialize_value(v):
     if isinstance(v, (datetime, time, timedelta)):
         return str(v)
     return v
+
+
+@bp.route('/business_hours/bulk-update', methods=['POST'])
+def bulk_update_business_hours():
+    """
+    Bulk update business hours for a business.
+    
+    Request body:
+    {
+        "business_id": 33,
+        "business_hours": [
+            {"day_of_week": 0, "is_closed": 0, "open_time": "08:00:00", "close_time": "16:00:00"},
+            {"day_of_week": 1, "is_closed": 0, "open_time": "08:00:00", "close_time": "16:00:00"},
+            ...
+        ]
+    }
+    
+    Returns:
+    {
+        "success": true,
+        "message": "Business hours updated successfully",
+        "updated_count": 7
+    }
+    """
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+    
+    data = request.get_json()
+    
+    if not data or 'business_id' not in data or 'business_hours' not in data:
+        return jsonify({"success": False, "error": "business_id and business_hours array are required"}), 400
+    
+    business_id = data['business_id']
+    business_hours = data['business_hours']
+    
+    if not isinstance(business_hours, list):
+        return jsonify({"success": False, "error": "business_hours must be an array"}), 400
+    
+    # Validate each entry in business_hours
+    for entry in business_hours:
+        entry['business_id']=business_id
+        # is_valid, error_msg = validate_business_hours(entry)
+        # if not is_valid:
+        #     return jsonify({"success": False, "error": f"Invalid business hours data: {error_msg}"}), 400
+    
+    try:
+        with get_db_cursor(commit=True, dictionary=True) as cursor:
+            # First, get existing business hours for this business
+            cursor.execute("""
+                SELECT business_hours_id, day_of_week 
+                FROM business_hours 
+                WHERE business_id = %s
+            """, (business_id,))
+            
+            existing_hours = {row['day_of_week']: row['business_hours_id'] for row in cursor.fetchall()}
+            updated_count = 0
+            
+            # Process each day in the request
+            for entry in business_hours:
+                day_of_week = entry['day_of_week']
+                is_closed = entry.get('is_closed', False)
+                # Always set open_time and close_time to None when is_closed is 1
+                open_time = None if is_closed else entry.get('open_time')
+                close_time = None if is_closed else entry.get('close_time')
+                
+                # If is_closed is 1, ensure we don't use any provided times
+                if is_closed:
+                    open_time = None
+                    close_time = None
+                
+                if day_of_week in existing_hours:
+                    # Update existing record
+                    query = """
+                        UPDATE business_hours 
+                        SET open_time = %s, 
+                            close_time = %s, 
+                            is_closed = %s
+                        WHERE business_hours_id = %s
+                    """
+                    cursor.execute(query, (
+                        open_time,  # Will be None if is_closed is 1
+                        close_time,  # Will be None if is_closed is 1
+                        is_closed,
+                        existing_hours[day_of_week]
+                    ))
+                else:
+                    # Insert new record
+                    query = """
+                        INSERT INTO business_hours 
+                        (business_id, day_of_week, open_time, close_time, is_closed)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(query, (
+                        business_id,
+                        day_of_week,
+                        open_time,  # Will be None if is_closed is 1
+                        close_time,  # Will be None if is_closed is 1
+                        is_closed
+                    ))
+                
+                updated_count += 1
+            
+            return jsonify({
+                "success": True,
+                "message": "Business hours updated successfully",
+                "updated_count": updated_count
+            })
+            
+    except mysql.connector.Error as err:
+        return jsonify({"success": False, "error": f"Database error: {str(err)}"}), 500
