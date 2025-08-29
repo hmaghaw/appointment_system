@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from appointment_app.database import get_db_cursor
 import mysql.connector
 from datetime import datetime, time, timedelta
-from flask import jsonify, request, Blueprint, make_response
+from flask import jsonify, request, Blueprint
 from appointment_app.services.auth_token_validator import verify_bearer_token
 
 DAY_NAMES = {
@@ -276,7 +276,7 @@ def serialize_value(v):
     return v
 
 
-@bp.route('/business_hours/bulk-update', methods=['POST', 'OPTIONS'])
+@bp.route('/business_hours/bulk-update', methods=['POST'])
 def bulk_update_business_hours():
     """
     Bulk update business hours for a business.
@@ -298,13 +298,6 @@ def bulk_update_business_hours():
         "updated_count": 7
     }
     """
-    if request.method == 'OPTIONS':
-        # Preflight response
-        response = make_response()
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-        return response, 200
 
     payload, error = verify_bearer_token(request)
     if error:
