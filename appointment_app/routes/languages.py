@@ -432,10 +432,13 @@ def update_business_phone_voice() -> tuple[jsonify, int]:
 @bp.route('/list_supported_languages', methods=['GET'])
 def list_supported_languages():
     """
-    Get all supported languages from the language table.
+    Get languages from the language table.
     
+    Query Parameters:
+        unsupported (bool): If true, returns unsupported languages. Default: false
+        
     Returns:
-        JSON response with list of supported languages and their codes
+        JSON response with list of languages and their codes
         {
             "languages": [
                 {
@@ -450,15 +453,18 @@ def list_supported_languages():
     if error:
         return jsonify({"error": error}), 401
 
+    show_unsupported = request.args.get('unsupported', 'false').lower() == 'true'
+    
     try:
         with get_db_connection() as conn:
             with conn.cursor(dictionary=True) as cursor:
-                cursor.execute("""
+                query = """
                     SELECT language_code, language_name
                     FROM language 
-                    WHERE supported = TRUE
+                    WHERE supported = %s
                     ORDER BY language_name
-                """)
+                """
+                cursor.execute(query, (not show_unsupported,))
                 languages = cursor.fetchall()
                 return jsonify({"languages": languages})
     except mysql.connector.Error as e:
