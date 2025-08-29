@@ -276,7 +276,7 @@ def serialize_value(v):
     return v
 
 
-@bp.route('/business_hours/bulk-update', methods=['POST'])
+@bp.route('/business_hours/bulk-update', methods=['POST', 'OPTIONS'])
 def bulk_update_business_hours():
     """
     Bulk update business hours for a business.
@@ -298,6 +298,9 @@ def bulk_update_business_hours():
         "updated_count": 7
     }
     """
+    if request.method == 'OPTIONS':
+        return '', 200
+
     payload, error = verify_bearer_token(request)
     if error:
         return jsonify({"error": error}), 401
