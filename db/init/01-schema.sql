@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS business_messages (
 CREATE TABLE IF NOT EXISTS language (
     language_code VARCHAR(10) NOT NULL,
     language_name VARCHAR(100) NOT NULL,
+    supported BOOLEAN NOT NULL DEFAULT TRUE,
     PRIMARY KEY (language_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

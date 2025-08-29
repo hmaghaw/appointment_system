@@ -456,6 +456,7 @@ def list_supported_languages():
                 cursor.execute("""
                     SELECT language_code, language_name
                     FROM language 
+                    WHERE supported = TRUE
                     ORDER BY language_name
                 """)
                 languages = cursor.fetchall()
