@@ -224,17 +224,19 @@ CREATE TABLE IF NOT EXISTS business_hours (
 CREATE TABLE IF NOT EXISTS appointment (
     appointment_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
-    customer_id INT NOT NULL,
-    service_id INT NOT NULL,
+    customer_id INT NULL,  -- can be NULL if anonymous or deleted
+    service_id INT NULL,   -- can be NULL if undecided or deleted
     start_time DATETIME NOT NULL,
     end_time DATETIME NOT NULL,
+    booking_type ENUM('appointment','anonymous','block', 'break', 'holiday') NOT NULL DEFAULT 'appointment',
     status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
     FOREIGN KEY (business_id) REFERENCES business(business_id) ON DELETE CASCADE,
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
-    FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE SET NULL,
+    FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Business Admin Phone Numbers
