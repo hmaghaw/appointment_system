@@ -487,6 +487,7 @@ def signup():
             # Add stripe_customer_id to the response if available
             response_data = {
                 'success': True,
+                'access_token': verification_token,
                 'message': 'Registration successful! Please check your email to verify your account.',
                 'user': user,
                 'stripe_status': 'customer_created' if stripe_customer_id else 'customer_creation_failed'
