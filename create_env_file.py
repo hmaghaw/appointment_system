@@ -11,7 +11,7 @@ STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 # Database Configuration
-DB_HOST=db
+DB_HOST=
 DB_USER=
 DB_PASSWORD=
 DB_NAME=appointment_db
@@ -54,8 +54,8 @@ STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 # Database Configuration
 DB_HOST=localhost
-DB_USER=
-DB_PASSWORD=
+DB_USER=user
+DB_PASSWORD=password
 DB_NAME=appointment_db
 
 # JWT Configuration
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     import sys
 
     # Default values
-    environment = "production"
+    environment = "development"
     output_file = ".env"
 
     # # Check for command line arguments

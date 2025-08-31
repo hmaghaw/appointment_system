@@ -1,28 +1,25 @@
 services:
-  db:
-    image: mysql:8.0
-    container_name: appointment_db
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: appointment_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "3306:3306"
-    volumes:
-      - ../db_data:/var/lib/mysql
-      - ./db/init/:/docker-entrypoint-initdb.d/
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
+#  db:
+#    image: mysql:8.0
+#    container_name: appointment_db
+#    environment:
+#      MYSQL_ROOT_PASSWORD: password
+#      MYSQL_DATABASE: appointment_db
+#      MYSQL_USER: user
+#      MYSQL_PASSWORD: password
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - ../db_data:/var/lib/mysql
+#      - ./db/init/:/docker-entrypoint-initdb.d/
+#    healthcheck:
+#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 10
+#    restart: unless-stopped
 
   api:
-    depends_on:
-      db:
-        condition: service_healthy
     build:
       context: .
       dockerfile: Dockerfile
@@ -33,9 +30,6 @@ services:
       - "5000:5000"
     environment:
       - PYTHONPATH=/app
-      - DB_HOST=db
-      - DB_USER=user
-      - DB_PASSWORD=password
       - DB_NAME=appointment_db
       - FLASK_APP=appointment_app.app:app
       - FLASK_ENV=production
@@ -52,6 +46,3 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-
-#volumes:
-#  db_data:
