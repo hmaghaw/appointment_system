@@ -369,7 +369,7 @@ def signup():
                 INSERT INTO business_languages (business_id, language_code, is_default, language_voice_id)
                 VALUES (%s, %s, %s, %s)
                 """,
-                (business_id, 'en', True, 16) ## Polly.Salli
+                (business_id, 'en', True, 14) ## Polly.Salli
             )
             
             # Commit the transaction
