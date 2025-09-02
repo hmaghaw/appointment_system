@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, abort
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import mysql.connector
+from dateutil.relativedelta import relativedelta
 from appointment_app.database import get_db_cursor
 from functools import wraps
 from typing import List, Dict, Any, Optional, Tuple
@@ -19,6 +20,127 @@ DAY_NAMES = {
 }
 
 bp = Blueprint('business', __name__, url_prefix='/api/business')
+
+@bp.route('/dashboard-metrics', methods=['POST'])
+def get_dashboard_metrics():
+    """
+    Get dashboard metrics for a business
+    
+    Request body: {
+        "business_id": 123  # ID of the business
+    }
+    
+    Returns: {
+        "total_calls": int,
+        "total_customers": int,
+        "calls_this_week": int,
+        "customers_this_week": int,
+        "average_call_duration": float,
+        "todays_appointments": [
+            {
+                "appointment_id": int,
+                "customer_name": str,
+                "start_time": str,
+                "end_time": str,
+                "status": str,
+                "service_name": str
+            },
+            ...
+        ]
+    }
+    """
+    data = request.get_json()
+    business_id = data['business_id']
+    
+    # Get current date and calculate start of week (Monday)
+    today = date.today()
+    start_of_week = today - timedelta(days=today.weekday())
+    
+    # Initialize response
+    response = {}
+    
+    with get_db_cursor() as cursor:
+        # 1. Total calls
+        cursor.execute("""
+            SELECT COUNT(*) as total_calls 
+            FROM call_meta 
+            WHERE business_id = %s
+        """, (business_id,))
+        response['total_calls'] = cursor.fetchone()['total_calls']
+        
+        # 2. Total customers
+        cursor.execute("""
+            SELECT COUNT(*) as total_customers 
+            FROM customer 
+            WHERE business_id = %s
+        """, (business_id,))
+        response['total_customers'] = cursor.fetchone()['total_customers']
+        
+        # 3. Calls this week
+        cursor.execute("""
+            SELECT COUNT(*) as calls_this_week 
+            FROM call_meta 
+            WHERE business_id = %s 
+            AND call_start >= %s
+        """, (business_id, start_of_week))
+        response['calls_this_week'] = cursor.fetchone()['calls_this_week']
+        
+        # 4. New customers this week
+        cursor.execute("""
+            SELECT COUNT(*) as customers_this_week 
+            FROM customer 
+            WHERE business_id = %s 
+            AND created_at >= %s
+        """, (business_id, start_of_week))
+        response['customers_this_week'] = cursor.fetchone()['customers_this_week']
+        
+        # 5. Average call duration
+        cursor.execute("""
+            SELECT AVG(call_duration) as avg_duration 
+            FROM call_meta 
+            WHERE business_id = %s 
+            AND call_duration IS NOT NULL
+        """, (business_id,))
+        avg_duration = cursor.fetchone()['avg_duration']
+        response['average_call_duration'] = float(avg_duration) if avg_duration is not None else 0.0
+        
+        # 6. Today's appointments
+        cursor.execute("""
+            SELECT 
+                a.appointment_id,
+                COALESCE(c.first_name, 'N/A') as customer_first_name,
+                COALESCE(c.last_name, '') as customer_last_name,
+                a.start_time,
+                a.end_time,
+                a.status,
+                s.name as service_name
+            FROM appointment a
+            LEFT JOIN customer c ON a.customer_id = c.customer_id
+            LEFT JOIN service s ON a.service_id = s.service_id
+            WHERE a.business_id = %s 
+            AND DATE(a.start_time) = %s
+            ORDER BY a.start_time ASC
+        """, (business_id, today))
+        
+        appointments = []
+        for row in cursor.fetchall():
+            customer_name = f"{row['customer_first_name']} {row['customer_last_name']}".strip()
+            if customer_name == 'N/A':
+                customer_name = "Anonymous"
+                
+            appointments.append({
+                'appointment_id': row['appointment_id'],
+                'customer_name': customer_name,
+                'start_time': row['start_time'].isoformat() if row['start_time'] else None,
+                'end_time': row['end_time'].isoformat() if row['end_time'] else None,
+                'status': row['status'],
+                'service_name': row['service_name'] or 'N/A'
+            })
+        
+        response['todays_appointments'] = appointments
+    
+    return jsonify(response), 200
+
 
 @bp.route('/messages', methods=['POST'])
 def handle_business_messages():
