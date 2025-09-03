@@ -7,7 +7,6 @@ PROD_TEMPLATE = """ENVIRONMENT=production
 DEBUG=True
 
 # Stripe Configuration
-STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 # Database Configuration
@@ -24,32 +23,26 @@ FLASK_APP=app.py
 FLASK_ENV=production
 # DEBUG=False  # Set to False in production
 
-# Database Connection Pool Settings
-DB_POOL_NAME=appointment_pool
-DB_POOL_SIZE=5
-DB_POOL_RECYCLE=3600
-
 # Twilio Configuration
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
-TWILIO_WEBHOOK_BASE_URL=https://twilio.polydial.com
+TWILIO_WEBHOOK_BASE_URL=
 
 # Email
 SEND_EMAIL_WEBHOOK=
 FROM_EMAIL=
 FROM_NAME=
 
-FRONTEND_URL=https://polydial.com
+FRONTEND_URL=
 
 OPENAI_API_KEY=
-API_BASE_URL=https://api.polydial.com
+API_BASE_URL=
 """
 
 DEV_TEMPLATE = """# NGROK Configuration
 NGROK_AUTHTOKEN=
 
 # Stripe Configuration
-STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 # Database Configuration
@@ -67,25 +60,20 @@ FLASK_ENV=development
 # SECRET_KEY=your-secret-key-here  # Uncomment and set for production
 # DEBUG=False  # Set to False in production
 
-# Database Connection Pool Settings
-DB_POOL_NAME=appointment_pool
-DB_POOL_SIZE=5
-DB_POOL_RECYCLE=3600
-
 # Twilio Configuration
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
-TWILIO_WEBHOOK_BASE_URL=https://twilio.polydial.com
+TWILIO_WEBHOOK_BASE_URL=
 
 # Email
 SEND_EMAIL_WEBHOOK=
 FROM_EMAIL=
 FROM_NAME=
 
-FRONTEND_URL=https://1b508cc8-944c-4d37-9ed6-0934fa85b53c-00-2jwasb0kbfe30.spock.replit.dev
+FRONTEND_URL=
 
 OPENAI_API_KEY=
-API_BASE_URL=http://127.0.0.1:5000
+API_BASE_URL=
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """
@@ -196,7 +184,11 @@ if __name__ == "__main__":
 
     # Get secrets and create .env file
     try:
-        secret_data = get_secret("polydial-keys", "us-east-1")
+        if environment == "production":
+            secret_name = "prod/polydial/keys"
+        else:
+            secret_name = "dev/polydial/keys"
+        secret_data = get_secret(secret_name, "us-east-1")
         create_env_from_template(secret_data, environment, output_file)
     except Exception as e:
         print(f"Error: {e}")
