@@ -126,7 +126,7 @@ def handle_onboarding():
 def signup(signup_data):
     try:
         signup_response = requests.post(
-            f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/auth/signup",
+            f"{os.getenv('API_BASE_URL')}/api/auth/signup",
             json=signup_data,
             timeout=30  # 30 seconds timeout
         )
@@ -157,7 +157,7 @@ def choose_number(business_id, business_name, phone_data):
         if phone_data.get('is_premium'):
             # Reserve premium number
             reserve_response = requests.post(
-                f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/premium-numbers/reserve",
+                f"{os.getenv('API_BASE_URL')}/api/premium-numbers/reserve",
                 json={
                     "phone_number": phone_data.get('phone_number'),
                     "business_id": business_id,
@@ -169,7 +169,7 @@ def choose_number(business_id, business_name, phone_data):
         else:
             # Purchase and configure regular number
             reserve_response = requests.post(
-                f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/twilio/purchase-and-configure",
+                f"{os.getenv('API_BASE_URL')}/api/twilio/purchase-and-configure",
                 json={
                     "business_id": business_id,
                     "phone_number": phone_data.get('phone_number'),

@@ -38,12 +38,7 @@ RESET_TOKEN_EXPIRATION = 24 * 60 * 60  # 24 hours in seconds
 # Email configuration
 SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
-GMAIL_CLIENT_ID = os.getenv('GMAIL_CLIENT_ID')
-GMAIL_CLIENT_SECRET = os.getenv('GMAIL_CLIENT_SECRET')
-GMAIL_REFRESH_TOKEN = os.getenv('GMAIL_REFRESH_TOKEN')
-GMAIL_USER = os.getenv('GMAIL_USER')
-EMAIL_FROM = os.getenv('EMAIL_FROM', GMAIL_USER or 'noreply@elitewellnessspa.com')
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://1b508cc8-944c-4d37-9ed6-0934fa85b53c-00-2jwasb0kbfe30.spock.replit.dev')
+FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 # Configure logging
 
@@ -52,19 +47,14 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://1b508cc8-944c-4d37-9ed6-0934fa
 
 # Database configuration
 DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'elite_wellness_spa'),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
+    'host': os.getenv('DB_HOST'),
+    'database': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
     'charset': 'utf8mb4',
     'use_unicode': True,
     'autocommit': True
 }
-
-# Google OAuth configuration
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-
 
 def get_db_connection():
     """Get database connection"""
@@ -423,7 +413,7 @@ def signup():
             try:
                 user = {"id": 999, "email": "hanyelgaml@ideationmax.com", "business_id": 999, "role": "admin"}
                 auth_token = generate_jwt_token(user, validity=3600)
-                stripe_url = f"{os.getenv('API_BASE_URL', 'http://localhost:5000')}/api/stripe/create-customer"
+                stripe_url = f"{os.getenv('API_BASE_URL')}/api/stripe/create-customer"
 
                 headers = {
                     'Authorization': f"Bearer {auth_token}",
