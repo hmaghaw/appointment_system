@@ -107,12 +107,18 @@ def update_provisioning_payment_intent(provisioning_id: int, payment_intent_id: 
     except Exception as e:
         return {"success": False, "error": f"Unexpected error: {str(e)}"}
 
-
-price_ids={'10':'price_1Rzfg3Rtn53X95sKx48R9iIQ',
-           '20':'price_1RzfgtRtn53X95sKF6Kob0th',
-           '50':'price_1RzfhGRtn53X95sKzo9avYpb',
-           '100':'price_1RzfhaRtn53X95sKbVl7SPk1',
-           'Monthly Fees':'price_1RzfjtRtn53X95sKzTWyLQ7H'}
+if os.getenv('ENVIRONMENT') == 'development':
+    price_ids={'10':'price_1Rzfg3Rtn53X95sKx48R9iIQ',
+               '20':'price_1RzfgtRtn53X95sKF6Kob0th',
+               '50':'price_1RzfhGRtn53X95sKzo9avYpb',
+               '100':'price_1RzfhaRtn53X95sKbVl7SPk1',
+               'Monthly Fees':'price_1RzfjtRtn53X95sKzTWyLQ7H'}
+else:
+    price_ids = {'10': 'price_1S3RLYRt6CaKyk965gMp6RRq',
+                 '20': 'price_1S3RM1Rt6CaKyk96pKe0nVDE',
+                 '50': 'price_1S3RMMRt6CaKyk960sDM70wt',
+                 '100': 'price_1S3RMaRt6CaKyk969XvpBXzv',
+                 'Monthly Fees': 'price_1S3RJdRt6CaKyk96wEsWdMgK'}
 # Load environment variables
 load_dotenv()
 

@@ -39,7 +39,8 @@ OPENAI_API_KEY=
 API_BASE_URL=
 """
 
-DEV_TEMPLATE = """# NGROK Configuration
+DEV_TEMPLATE = """ENVIRONMENT=development
+# NGROK Configuration
 NGROK_AUTHTOKEN=
 
 # Stripe Configuration
@@ -166,7 +167,7 @@ if __name__ == "__main__":
     import sys
 
     # Default values
-    environment = "production"
+    environment = "development"
     output_file = ".env"
 
     # # Check for command line arguments
