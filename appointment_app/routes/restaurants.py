@@ -338,3 +338,67 @@ def list_item_categories():
             'message': 'An unexpected error occurred',
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
+
+
+@bp.route('/list_menu_sections', methods=['POST'])
+def list_menu_sections():
+    """
+    List all sections for a given menu
+
+    Request body:
+    {
+        "menu_id": 1
+    }
+
+    Returns:
+        JSON response with list of menu sections
+    """
+    try:
+        # Get request data
+        data = request.get_json()
+        if not data or 'menu_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu ID is required',
+                'error_code': 'MISSING_MENU_ID'
+            }), 400
+
+        menu_id = data['menu_id']
+
+        # Query to get all sections for the menu
+        query = """
+                SELECT s.menu_section_id, \
+                       s.name AS section_name, \
+                       s.description, \
+                       s.display_order
+                FROM restaurant_menu_section s
+                WHERE s.menu_id = %s
+                ORDER BY s.display_order \
+                """
+
+        sections = execute_query(query, (menu_id,), fetch=True)
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'menu_id': menu_id,
+                'sections': sections,
+                'count': len(sections)
+            }
+        })
+
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in list_menu_sections: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+
+    except Exception as e:
+        logger.error(f"Unexpected error in list_menu_sections: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
