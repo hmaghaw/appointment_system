@@ -26,6 +26,7 @@ CREATE TABLE restaurant_menu (
 -- ======================
 CREATE TABLE restaurant_menu_item (
     item_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
     item_category_id INT NOT NULL,        -- global classification
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -33,6 +34,7 @@ CREATE TABLE restaurant_menu_item (
     is_combo BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     image_url VARCHAR(255),
+    FOREIGN KEY (business_id) REFERENCES business(business_id),
     FOREIGN KEY (item_category_id) REFERENCES restaurant_item_category(item_category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -64,10 +66,12 @@ CREATE TABLE restaurant_menu_item_option (
 -- ======================
 CREATE TABLE restaurant_availability (
     availability_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,           -- e.g., Breakfast Hours
     day_of_week ENUM('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday','All') DEFAULT 'All',
     start_time TIME NOT NULL,
-    end_time TIME NOT NULL
+    end_time TIME NOT NULL,
+    FOREIGN KEY (business_id) REFERENCES business(business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_menu_availability (
@@ -187,10 +191,12 @@ CREATE TABLE restaurant_order_combo_selection (
 
 CREATE TABLE restaurant_menu_section (
     menu_section_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
     menu_id INT NOT NULL,                     -- the menu it belongs to (Breakfast, Lunch, etc.)
     name VARCHAR(100) NOT NULL,               -- e.g., "Pizzas", "Drinks", "Desserts"
     description TEXT,                         -- optional text
     display_order INT,                        -- controls ordering on the screen
+    FOREIGN KEY (business_id) REFERENCES business(business_id),
     FOREIGN KEY (menu_id) REFERENCES restaurant_menu(menu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
