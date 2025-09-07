@@ -118,6 +118,7 @@ def get_business_info(business_id):
         return {
             'id': business['business_id'],
             'name': business['name'],
+            'business_type': business['business_type'],
             'slogan': "Business Slogan",
             'timezone': business['timezone'],
             'status': business['status']
