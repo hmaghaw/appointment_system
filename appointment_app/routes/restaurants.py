@@ -35,7 +35,7 @@ def get_db_connection():
         raise
 
 def execute_query(query, params=None, fetch=False):
-    """Execute database query"""
+    """Execute a database query and return the results if fetch is True"""
     conn = None
     cursor = None
     try:
@@ -49,16 +49,248 @@ def execute_query(query, params=None, fetch=False):
         else:
             conn.commit()
             return cursor.lastrowid
-    except mysql.connector.Error as err:
-        logger.error(f"Database error: {err}")
+    except Exception as e:
         if conn:
             conn.rollback()
-        raise
+        raise e
     finally:
         if cursor:
             cursor.close()
-        if conn and conn.is_connected():
+        if conn:
             conn.close()
+
+# Create Blueprint with /api/restaurants prefix
+bp = Blueprint('restaurants', __name__, url_prefix='/api/restaurants')
+
+# Database configuration
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'database': os.getenv('DB_NAME')
+}
+
+def get_db_connection():
+    """Get database connection"""
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        return conn
+    except mysql.connector.Error as err:
+        logger.error(f"Database connection error: {err}")
+        raise
+
+@bp.route('/create_modifier', methods=['POST'])
+def create_modifier():
+    """
+    Create a new modifier for a modifier group
+
+    Request body:
+    {
+        "modifier_group_id": 1,
+        "name": "Extra Cheese",
+        "price_delta": 1.50,
+        "is_active": true
+    }
+
+    Returns:
+        JSON response with the created modifier details
+    """
+    try:
+        data = request.get_json()
+        required_fields = ['modifier_group_id', 'name']
+        missing_fields = [field for field in required_fields if field not in data or data[field] is None]
+        
+        if missing_fields:
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields: {", ".join(missing_fields)}',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Set default values for optional fields
+        price_delta = float(data.get('price_delta', 0))
+        is_active = data.get('is_active', True)
+        
+        # Check if modifier group exists
+        check_query = """
+            SELECT 1 FROM restaurant_modifier_group 
+            WHERE modifier_group_id = %s
+        """
+        if not execute_query(check_query, (data['modifier_group_id'],), fetch=True):
+            return jsonify({
+                'status': 'error',
+                'message': 'Modifier group not found',
+                'error_code': 'NOT_FOUND'
+            }), 404
+
+        # Insert the new modifier
+        insert_query = """
+            INSERT INTO restaurant_modifier 
+            (modifier_group_id, name, price_delta, is_active)
+            VALUES (%s, %s, %s, %s)
+        """
+        params = (
+            data['modifier_group_id'],
+            data['name'],
+            price_delta,
+            is_active
+        )
+        
+        # Execute the insert and get the last inserted ID
+        modifier_id = execute_query(insert_query, params)
+        
+        # Get the created modifier using the returned ID
+        get_query = """
+            SELECT * FROM restaurant_modifier 
+            WHERE modifier_id = %s
+        """
+        modifier = execute_query(get_query, (modifier_id,), fetch=True)[0]
+
+        return jsonify({
+            'status': 'success',
+            'data': modifier,
+            'message': 'Modifier created successfully'
+        }), 201
+
+    except ValueError as ve:
+        logger.error(f"Invalid input value: {ve}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid input value',
+            'error_code': 'INVALID_INPUT'
+        }), 400
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in create_modifier: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        logger.error(f"Unexpected error in create_modifier: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': e
+        }), 500
+
+@bp.route('/update_modifier', methods=['POST'])
+def update_modifier():
+    """
+    Update an existing modifier
+
+    Request body:
+    {
+        "modifier_id": 1,  # Required
+        "name": "Gluten-Free Crust",  # Optional
+        "price_delta": 2.00,  # Optional
+        "is_active": true,  # Optional
+        "modifier_group_id": 1  # Optional (only needed if changing the group)
+    }
+
+    Returns:
+        JSON response with the updated modifier details
+    """
+    try:
+        data = request.get_json()
+        if 'modifier_id' not in data or data['modifier_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: modifier_id',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Check if modifier exists
+        check_query = """
+            SELECT modifier_group_id FROM restaurant_modifier 
+            WHERE modifier_id = %s
+        """
+        result = execute_query(check_query, (data['modifier_id'],), fetch=True)
+        if not result:
+            return jsonify({
+                'status': 'error',
+                'message': 'Modifier not found',
+                'error_code': 'NOT_FOUND'
+            }), 404
+            
+        current_group_id = result[0]['modifier_group_id']
+
+        # Build the update query dynamically based on provided fields
+        update_fields = []
+        params = []
+        
+        if 'name' in data and data['name'] is not None:
+            update_fields.append("name = %s")
+            params.append(data['name'])
+            
+        if 'price_delta' in data and data['price_delta'] is not None:
+            try:
+                update_fields.append("price_delta = %s")
+                params.append(float(data['price_delta']))
+            except (ValueError, TypeError):
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Invalid price_delta value',
+                    'error_code': 'INVALID_INPUT'
+                }), 400
+            
+        if 'is_active' in data and data['is_active'] is not None:
+            update_fields.append("is_active = %s")
+            params.append(bool(data['is_active']))
+        
+        if not update_fields:
+            return jsonify({
+                'status': 'error',
+                'message': 'No fields to update',
+                'error_code': 'NO_UPDATE_FIELDS'
+            }), 400
+            
+        # If modifier_group_id is provided, update it
+        if 'modifier_group_id' in data and data['modifier_group_id'] is not None:
+            update_fields.append("modifier_group_id = %s")
+            params.append(data['modifier_group_id'])
+            
+        # Add modifier_id to params for WHERE clause
+        params.append(data['modifier_id'])
+        
+        # Build and execute the update query
+        update_query = f"""
+            UPDATE restaurant_modifier 
+            SET {', '.join(update_fields)}
+            WHERE modifier_id = %s
+        """
+        
+        execute_query(update_query, params)
+        
+        # Get the updated modifier with group name
+        get_query = """
+            SELECT rm.*, rmg.name as group_name 
+            FROM restaurant_modifier rm
+            JOIN restaurant_modifier_group rmg ON rm.modifier_group_id = rmg.modifier_group_id
+            WHERE rm.modifier_id = %s
+        """
+        modifier = execute_query(get_query, (data['modifier_id'],), fetch=True)[0]
+        
+        return jsonify({
+            'status': 'success',
+            'data': modifier,
+            'message': 'Modifier updated successfully'
+        })
+
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in update_modifier: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        logger.error(f"Unexpected error in update_modifier: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
 
 @bp.route('/list_menus', methods=['POST'])
 def list_menus():
