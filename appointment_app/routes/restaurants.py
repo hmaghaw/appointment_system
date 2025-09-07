@@ -1136,3 +1136,249 @@ def delete_modifier():
             'message': 'An error occurred while deleting the modifier',
             'error_code': str(e)
         }), 500
+
+
+@bp.route('/create_modifier_group', methods=['POST'])
+def create_modifier_group():
+    """
+    Create a new modifier group
+
+    Request body:
+    {
+        "business_id": 1,      # Required
+        "name": "Toppings",    # Required
+        "is_required": false,  # Optional, defaults to false
+        "min_select": 0,       # Optional, defaults to 0
+        "max_select": 3        # Optional, defaults to 3
+    }
+
+    Returns:
+        JSON response with the created modifier group details
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['business_id', 'name']
+        missing_fields = [field for field in required_fields if field not in data or data[field] is None]
+
+        if missing_fields:
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields: {", ".join(missing_fields)}',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Set default values for optional fields
+        is_required = data.get('is_required', False)
+        min_select = data.get('min_select', 0)
+        max_select = data.get('max_select', 3)
+
+        # Insert the new modifier group
+        insert_query = """
+                       INSERT INTO restaurant_modifier_group
+                           (business_id, name, is_required, min_select, max_select)
+                       VALUES (%s, %s, %s, %s, %s) \
+                       """
+        params = (
+            data['business_id'],
+            data['name'],
+            is_required,
+            min_select,
+            max_select
+        )
+
+        modifier_group_id = execute_query(insert_query, params)
+
+        # Get the created modifier group
+        get_query = """
+                    SELECT * \
+                    FROM restaurant_modifier_group
+                    WHERE modifier_group_id = %s \
+                    """
+        modifier_group = execute_query(get_query, (modifier_group_id,), fetch=True)[0]
+
+        return jsonify({
+            'status': 'success',
+            'data': modifier_group,
+            'message': 'Modifier group created successfully'
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Error in create_modifier_group: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while creating the modifier group',
+            'error_code': str(e)
+        }), 500
+
+
+@bp.route('/update_modifier_group', methods=['POST'])
+def update_modifier_group():
+    """
+    Update an existing modifier group
+
+    Request body:
+    {
+        "modifier_group_id": 1,  # Required
+        "name": "Updated Name",  # Optional
+        "is_required": true,     # Optional
+        "min_select": 1,         # Optional
+        "max_select": 5          # Optional
+    }
+
+    Returns:
+        JSON response with the updated modifier group details
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'modifier_group_id' not in data or data['modifier_group_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: modifier_group_id',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Check if modifier group exists
+        check_query = """
+                      SELECT * \
+                      FROM restaurant_modifier_group
+                      WHERE modifier_group_id = %s \
+                      """
+        existing_group = execute_query(check_query, (data['modifier_group_id'],), fetch=True)
+
+        if not existing_group:
+            return jsonify({
+                'status': 'error',
+                'message': 'Modifier group not found',
+                'error_code': 'NOT_FOUND'
+            }), 404
+
+        # Build the update query dynamically based on provided fields
+        update_fields = []
+        params = []
+
+        if 'name' in data and data['name'] is not None:
+            update_fields.append("name = %s")
+            params.append(data['name'])
+
+        if 'is_required' in data and data['is_required'] is not None:
+            update_fields.append("is_required = %s")
+            params.append(bool(data['is_required']))
+
+        if 'min_select' in data and data['min_select'] is not None:
+            update_fields.append("min_select = %s")
+            params.append(int(data['min_select']))
+
+        if 'max_select' in data and data['max_select'] is not None:
+            update_fields.append("max_select = %s")
+            params.append(int(data['max_select']))
+
+        if not update_fields:
+            return jsonify({
+                'status': 'error',
+                'message': 'No fields to update',
+                'error_code': 'NO_UPDATE_FIELDS'
+            }), 400
+
+        # Add modifier_group_id to params for WHERE clause
+        params.append(data['modifier_group_id'])
+
+        # Build and execute the update query
+        update_query = f"""
+            UPDATE restaurant_modifier_group 
+            SET {', '.join(update_fields)}
+            WHERE modifier_group_id = %s
+        """
+        execute_query(update_query, params)
+
+        # Get the updated modifier group
+        get_query = """
+                    SELECT * \
+                    FROM restaurant_modifier_group
+                    WHERE modifier_group_id = %s \
+                    """
+        updated_group = execute_query(get_query, (data['modifier_group_id'],), fetch=True)[0]
+
+        return jsonify({
+            'status': 'success',
+            'data': updated_group,
+            'message': 'Modifier group updated successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error in update_modifier_group: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while updating the modifier group',
+            'error_code': str(e)
+        }), 500
+
+
+@bp.route('/delete_modifier_group', methods=['POST'])
+def delete_modifier_group():
+    """
+    Delete a modifier group
+
+    Request body:
+    {
+        "modifier_group_id": 1  # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'modifier_group_id' not in data or data['modifier_group_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: modifier_group_id',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Check if modifier group exists
+        check_query = """
+                      SELECT 1 \
+                      FROM restaurant_modifier_group
+                      WHERE modifier_group_id = %s \
+                      """
+        if not execute_query(check_query, (data['modifier_group_id'],), fetch=True):
+            return jsonify({
+                'status': 'error',
+                'message': 'Modifier group not found',
+                'error_code': 'NOT_FOUND'
+            }), 404
+
+        # First, delete all modifiers in this group to maintain referential integrity
+        delete_modifiers_query = """
+                                 DELETE \
+                                 FROM restaurant_modifier
+                                 WHERE modifier_group_id = %s \
+                                 """
+        execute_query(delete_modifiers_query, (data['modifier_group_id'],))
+
+        # Then delete the modifier group
+        delete_group_query = """
+                             DELETE \
+                             FROM restaurant_modifier_group
+                             WHERE modifier_group_id = %s \
+                             """
+        execute_query(delete_group_query, (data['modifier_group_id'],))
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Modifier group and all associated modifiers deleted successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error in delete_modifier_group: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while deleting the modifier group',
+            'error_code': str(e)
+        }), 500
