@@ -1382,3 +1382,267 @@ def delete_modifier_group():
             'message': 'An error occurred while deleting the modifier group',
             'error_code': str(e)
         }), 500
+
+
+@bp.route('/list_item_modifier_groups', methods=['POST'])
+def list_item_modifier_groups():
+    """
+    List all modifier groups associated with a specific menu item along with their modifiers
+
+    Request body:
+    {
+        "item_id": 1  # Required
+    }
+
+    Returns:
+        JSON response with list of modifier groups and their modifiers for the specified item
+        {
+            "status": "success",
+            "data": [
+                {
+                    "modifier_group_id": 1,
+                    "group_name": "Toppings",
+                    "is_required": 1,
+                    "min_select": 1,
+                    "max_select": 3,
+                    "modifiers": [
+                        {
+                            "modifier_id": 1,
+                            "name": "Extra Cheese",
+                            "price_delta": 1.50,
+                            "is_active": true
+                        },
+                        ...
+                    ]
+                }
+            ],
+            "count": 1
+        }
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'item_id' not in data or data['item_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: item_id',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Get all modifier groups for the item
+        groups_query = """
+                       SELECT g.modifier_group_id, \
+                              g.name AS group_name, \
+                              g.is_required, \
+                              g.min_select, \
+                              g.max_select
+                       FROM restaurant_item_modifier_group ig
+                                JOIN restaurant_modifier_group g
+                                     ON ig.modifier_group_id = g.modifier_group_id
+                       WHERE ig.item_id = %s
+                       ORDER BY g.name \
+                       """
+
+        modifier_groups = execute_query(groups_query, (data['item_id'],), fetch=True)
+
+        if not modifier_groups:
+            return jsonify({
+                'status': 'success',
+                'data': [],
+                'count': 0
+            })
+
+        # Get all modifier group IDs
+        group_ids = [str(group['modifier_group_id']) for group in modifier_groups]
+        placeholders = ','.join(['%s'] * len(group_ids))
+
+        # Get all active modifiers for these groups
+        modifiers_query = f"""
+            SELECT 
+                modifier_id,
+                modifier_group_id,
+                name,
+                price_delta,
+                is_active
+            FROM restaurant_modifier
+            WHERE modifier_group_id IN ({placeholders})
+            AND is_active = 1
+            ORDER BY name
+        """
+
+        modifiers = execute_query(modifiers_query, tuple(group_ids), fetch=True)
+
+        # Group modifiers by modifier_group_id
+        modifiers_by_group = {}
+        for modifier in modifiers:
+            group_id = modifier['modifier_group_id']
+            if group_id not in modifiers_by_group:
+                modifiers_by_group[group_id] = []
+            modifiers_by_group[group_id].append({
+                'modifier_id': modifier['modifier_id'],
+                'name': modifier['name'],
+                'price_delta': float(modifier['price_delta']),
+                'is_active': bool(modifier['is_active'])
+            })
+
+        # Add modifiers to each group
+        for group in modifier_groups:
+            group_id = group['modifier_group_id']
+            group['modifiers'] = modifiers_by_group.get(group_id, [])
+
+        return jsonify({
+            'status': 'success',
+            'data': modifier_groups,
+            'count': len(modifier_groups)
+        })
+
+    except Exception as e:
+        logger.error(f"Error in list_item_modifier_groups: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while retrieving modifier groups',
+            'error_code': str(e)
+        }), 500
+
+
+@bp.route('/add_item_modifier_group', methods=['POST'])
+def add_item_modifier_group():
+    """
+    Associate a modifier group with a menu item
+
+    Request body:
+    {
+        "item_id": 1,            # Required
+        "modifier_group_id": 1   # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Modifier group added to item successfully",
+            "data": {
+                "item_id": 1,
+                "modifier_group_id": 1
+            }
+        }
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['item_id', 'modifier_group_id']
+        missing_fields = [field for field in required_fields if field not in data or data[field] is None]
+
+        if missing_fields:
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields: {", ".join(missing_fields)}',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Check if the association already exists
+        check_query = """
+                      SELECT 1
+                      FROM restaurant_item_modifier_group
+                      WHERE item_id = %s \
+                        AND modifier_group_id = %s \
+                      """
+        if execute_query(check_query, (data['item_id'], data['modifier_group_id']), fetch=True):
+            return jsonify({
+                'status': 'error',
+                'message': 'This modifier group is already associated with the item',
+                'error_code': 'DUPLICATE_ASSOCIATION'
+            }), 400
+
+        # Insert the new association
+        insert_query = """
+                       INSERT INTO restaurant_item_modifier_group
+                           (item_id, modifier_group_id)
+                       VALUES (%s, %s) \
+                       """
+        execute_query(insert_query, (data['item_id'], data['modifier_group_id']))
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Modifier group added to item successfully',
+            'data': {
+                'item_id': data['item_id'],
+                'modifier_group_id': data['modifier_group_id']
+            }
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Error in add_item_modifier_group: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while adding the modifier group to the item',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/delete_item_modifier_group', methods=['POST'])
+def delete_item_modifier_group():
+    """
+    Remove the association between a menu item and a modifier group
+
+    Request body:
+    {
+        "item_id": 10,           # Required
+        "modifier_group_id": 5   # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['item_id', 'modifier_group_id']
+        missing_fields = [field for field in required_fields if field not in data or data[field] is None]
+
+        if missing_fields:
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields: {", ".join(missing_fields)}',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Check if the association exists first
+        check_query = """
+            SELECT 1 
+            FROM restaurant_item_modifier_group 
+            WHERE item_id = %s AND modifier_group_id = %s
+            LIMIT 1
+        """
+        if not execute_query(check_query, (data['item_id'], data['modifier_group_id']), fetch=True):
+            return jsonify({
+                'status': 'error',
+                'message': 'No matching association found between item and modifier group',
+                'error_code': 'NOT_FOUND'
+            }), 404
+
+        # Delete the association
+        delete_query = """
+            DELETE FROM restaurant_item_modifier_group
+            WHERE item_id = %s AND modifier_group_id = %s
+        """
+        execute_query(delete_query, (data['item_id'], data['modifier_group_id']))
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Modifier group removed from item successfully',
+            'data': {
+                'item_id': data['item_id'],
+                'modifier_group_id': data['modifier_group_id']
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error in delete_item_modifier_group: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while removing the modifier group from the item',
+            'error_code': str(e)
+        }), 500
