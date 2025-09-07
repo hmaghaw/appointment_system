@@ -149,3 +149,9 @@ VALUES
 INSERT INTO restaurant_item_modifier_group (item_id, modifier_group_id)
 VALUES
 (1, 1), (2, 1), (3, 1), (9, 1);
+
+INSERT INTO restaurant_modifier_group (business_id, name, is_required, min_select, max_select)
+VALUES
+(73, 'Pizza Sizes', TRUE, 1, 1),        -- Must choose exactly one size
+(73, 'Extra Toppings', FALSE, 0, 3),    -- Optional, up to 3 toppings
+(73, 'Choose a Drink', TRUE, 1, 1);
