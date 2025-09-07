@@ -1079,3 +1079,60 @@ def list_modifiers():
             'message': 'An unexpected error occurred',
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
+
+
+@bp.route('/delete_modifier', methods=['POST'])
+def delete_modifier():
+    """
+    Delete a modifier
+
+    Request body:
+    {
+        "modifier_id": 1  # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+    """
+    try:
+        data = request.get_json()
+        if 'modifier_id' not in data or data['modifier_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: modifier_id',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+
+        # Check if modifier exists
+        check_query = """
+                      SELECT 1 \
+                      FROM restaurant_modifier
+                      WHERE modifier_id = %s \
+                      """
+        if not execute_query(check_query, (data['modifier_id'],), fetch=True):
+            return jsonify({
+                'status': 'error',
+                'message': 'Modifier not found',
+                'error_code': 'NOT_FOUND'
+            }), 404
+
+        # Delete the modifier
+        delete_query = """
+                       DELETE \
+                       FROM restaurant_modifier
+                       WHERE modifier_id = %s \
+                       """
+        execute_query(delete_query, (data['modifier_id'],))
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Modifier deleted successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error in delete_modifier: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while deleting the modifier',
+            'error_code': str(e)
+        }), 500
