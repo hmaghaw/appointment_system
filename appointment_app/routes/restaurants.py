@@ -2020,16 +2020,17 @@ def create_availability():
             'error_code': str(e)
         }), 500
 
+
 @bp.route('/delete_availability', methods=['POST'])
 def delete_availability():
     """
     Delete an availability record and all its associated time slots
-    
+
     Request body:
     {
         "availability_id": 1  # Required
     }
-    
+
     Returns:
         JSON response with success/error message
         {
@@ -2040,60 +2041,71 @@ def delete_availability():
     """
     try:
         data = request.get_json()
-        
+
         if 'availability_id' not in data or data['availability_id'] is None:
             return jsonify({
                 'status': 'error',
                 'message': 'availability_id is required',
                 'error_code': 'MISSING_AVAILABILITY_ID'
             }), 400
-            
+
         conn = None
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            
+
             # Start transaction
             conn.start_transaction()
-            
+
             # First, check if the availability exists
             check_query = """
-                SELECT * FROM restaurant_availability 
-                WHERE availability_id = %s
-            """
+                          SELECT * \
+                          FROM restaurant_availability
+                          WHERE availability_id = %s \
+                          """
             cursor.execute(check_query, (data['availability_id'],))
             existing = cursor.fetchone()
-            
+
             if not existing:
                 return jsonify({
                     'status': 'error',
                     'message': 'Availability not found',
                     'error_code': 'NOT_FOUND'
                 }), 404
-            
-            # Delete the availability (related time slots will be deleted by CASCADE)
-            delete_query = """
-                DELETE FROM restaurant_availability 
-                WHERE availability_id = %s
-            """
-            cursor.execute(delete_query, (data['availability_id'],))
-            
-            # Also remove any menu associations
+
+            # First delete from restaurant_availability_detail
+            delete_details_query = """
+                                   DELETE \
+                                   FROM restaurant_availability_detail
+                                   WHERE availability_id = %s \
+                                   """
+            cursor.execute(delete_details_query, (data['availability_id'],))
+
+            # Then delete from restaurant_menu_availability
             delete_menu_assoc_query = """
-                DELETE FROM restaurant_menu_availability
-                WHERE availability_id = %s
-            """
+                                      DELETE \
+                                      FROM restaurant_menu_availability
+                                      WHERE availability_id = %s \
+                                      """
             cursor.execute(delete_menu_assoc_query, (data['availability_id'],))
-            
+
+            # Finally, delete the main availability record
+            delete_availability_query = """
+                                        DELETE \
+                                        FROM restaurant_availability
+                                        WHERE availability_id = %s \
+                                        """
+            cursor.execute(delete_availability_query, (data['availability_id'],))
+
             # Commit the transaction
             conn.commit()
-            
+
             return jsonify({
                 'status': 'success',
                 'message': 'Availability and all associated time slots deleted successfully',
                 'deleted_availability_id': data['availability_id']
             })
-            
+
         except mysql.connector.Error as err:
             if conn and conn.is_connected():
                 conn.rollback()
@@ -2107,7 +2119,7 @@ def delete_availability():
             if conn and conn.is_connected():
                 cursor.close()
                 conn.close()
-                
+
     except Exception as e:
         logger.error(f"Error in delete_availability: {e}")
         return jsonify({
@@ -2277,7 +2289,7 @@ def list_availabilities():
                         'start_time': str(row['start_time']),
                         'end_time': str(row['end_time'])
                     })
-            
+
             # Convert to list for response
             result = list(availabilities.values())
             
