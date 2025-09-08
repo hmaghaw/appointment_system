@@ -104,11 +104,40 @@ VALUES
 -- ======================
 -- AVAILABILITY
 -- ======================
-INSERT INTO restaurant_availability (availability_id, name, day_of_week, start_time, end_time)
+INSERT INTO restaurant_availability (availability_id, business_id, name)
 VALUES
-(1, 'Breakfast Hours', 'All', '06:00:00', '11:00:00'),
-(2, 'Lunch Hours', 'All', '11:00:00', '15:00:00'),
-(3, 'Dinner Hours', 'All', '17:00:00', '22:00:00');
+(1, 73, 'Breakfast Hours'),
+(2, 73, 'Lunch Hours'),
+(3, 73, 'Dinner Hours'),
+(4, 73, 'Weekend Brunch');
+
+-- Breakfast: daily
+INSERT INTO restaurant_availability_detail (availability_id, day_of_week, start_time, end_time)
+VALUES (1, 'All', '06:00:00', '11:00:00');
+
+-- Lunch: weekdays
+INSERT INTO restaurant_availability_detail (availability_id, day_of_week, start_time, end_time)
+VALUES
+(2, 'Monday', '11:00:00', '15:00:00'),
+(2, 'Tuesday', '11:00:00', '15:00:00'),
+(2, 'Wednesday', '11:00:00', '15:00:00'),
+(2, 'Thursday', '11:00:00', '15:00:00'),
+(2, 'Friday', '11:00:00', '15:00:00');
+
+-- Dinner: different hours by day
+INSERT INTO restaurant_availability_detail (availability_id, day_of_week, start_time, end_time)
+VALUES
+(3, 'Monday', '17:00:00', '22:00:00'),
+(3, 'Friday', '17:00:00', '23:30:00'),
+(3, 'Saturday', '17:00:00', '23:30:00'),
+(3, 'Sunday', '17:00:00', '22:00:00');
+
+-- Weekend Brunch
+INSERT INTO restaurant_availability_detail (availability_id, day_of_week, start_time, end_time)
+VALUES
+(4, 'Saturday', '10:00:00', '14:00:00'),
+(4, 'Sunday', '10:00:00', '14:00:00');
+
 
 INSERT INTO restaurant_menu_availability (menu_id, availability_id)
 VALUES

@@ -68,10 +68,17 @@ CREATE TABLE restaurant_availability (
     availability_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,           -- e.g., Breakfast Hours
-    day_of_week ENUM('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday','All') DEFAULT 'All',
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
     FOREIGN KEY (business_id) REFERENCES business(business_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE restaurant_availability_detail (
+    availability_detail_id INT AUTO_INCREMENT PRIMARY KEY,
+    availability_id INT NOT NULL,
+    day_of_week TINYINT NOT NULL,
+    open_time TIME,
+    close_time TIME,
+    is_closed BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (availability_id) REFERENCES restaurant_availability(availability_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_menu_availability (
@@ -123,6 +130,7 @@ CREATE TABLE restaurant_modifier (
     name VARCHAR(100) NOT NULL,           -- e.g., Extra Cheese
     price_delta DECIMAL(10,2) DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
+    display_order INT DEFAULT 0,
     FOREIGN KEY (modifier_group_id) REFERENCES restaurant_modifier_group(modifier_group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

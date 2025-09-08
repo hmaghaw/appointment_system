@@ -8,6 +8,7 @@ from flask import Blueprint, request, jsonify
 import mysql.connector
 import os
 import logging
+from datetime import timedelta
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -237,6 +238,17 @@ def update_modifier():
         if 'is_active' in data and data['is_active'] is not None:
             update_fields.append("is_active = %s")
             params.append(bool(data['is_active']))
+            
+        if 'display_order' in data and data['display_order'] is not None:
+            try:
+                update_fields.append("display_order = %s")
+                params.append(int(data['display_order']))
+            except (ValueError, TypeError):
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Invalid display_order value. Must be an integer.',
+                    'error_code': 'INVALID_INPUT'
+                }), 400
         
         if not update_fields:
             return jsonify({
@@ -1044,10 +1056,11 @@ def list_modifiers():
                 m.modifier_group_id,
                 m.name,
                 m.price_delta,
-                m.is_active
+                m.is_active,
+                m.display_order
             FROM restaurant_modifier m
             WHERE m.modifier_group_id = %s
-            ORDER BY m.name
+            ORDER BY m.display_order
         """
         
         modifiers = execute_query(query, (modifier_group_id,), fetch=True)
@@ -1864,5 +1877,431 @@ def list_combo_group_items():
         return jsonify({
             'status': 'error',
             'message': 'An error occurred while fetching combo group items',
+            'error_code': str(e)
+        }), 500
+
+
+@bp.route('/create_availability', methods=['POST'])
+def create_availability():
+    """
+    Create a new availability record with time slots based on business hours
+
+    Request body:
+    {
+        "business_id": 73,  # Required
+        "name": "Standard Hours"  # Optional, default empty string
+    }
+
+    Returns:
+        JSON response with created availability and its time slots
+    """
+    try:
+        data = request.get_json()
+
+        if 'business_id' not in data or data['business_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'business_id is required',
+                'error_code': 'MISSING_BUSINESS_ID'
+            }), 400
+
+        conn = None
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # Start transaction
+            conn.start_transaction()
+
+            # Create the main availability record
+            insert_availability = """
+                                  INSERT INTO restaurant_availability (business_id, name)
+                                  VALUES (%s, %s) \
+                                  """
+            name = data.get('name', '')
+            cursor.execute(insert_availability, (data['business_id'], name))
+            availability_id = cursor.lastrowid
+
+            # Get business hours for this business
+            get_business_hours = """
+                                 SELECT day_of_week, open_time, close_time, is_closed
+                                 FROM business_hours
+                                 WHERE business_id = %s \
+                                 """
+            cursor.execute(get_business_hours, (data['business_id'],))
+            business_hours = cursor.fetchall()
+
+            # Create availability details from business hours
+            if business_hours:
+                insert_detail = """
+                                INSERT INTO restaurant_availability_detail
+                                    (availability_id, day_of_week, open_time, close_time, is_closed)
+                                VALUES (%s, %s, %s, %s, %s) \
+                                """
+                for hour in business_hours:
+                    cursor.execute(insert_detail, (
+                        availability_id,
+                        hour['day_of_week'],
+                        hour['open_time'],
+                        hour['close_time'],
+                        hour.get('is_closed', False)
+                    ))
+
+            # Commit the transaction
+            conn.commit()
+
+            # Get the created availability with its details
+            get_availability = """
+                               SELECT a.*,
+                                      d.availability_detail_id, \
+                                      d.day_of_week,
+                                      d.open_time, \
+                                      d.close_time, \
+                                      d.is_closed
+                               FROM restaurant_availability a
+                                        LEFT JOIN restaurant_availability_detail d \
+                                                  ON a.availability_id = d.availability_id
+                               WHERE a.availability_id = %s
+                               ORDER BY d.day_of_week, d.open_time \
+                               """
+            cursor.execute(get_availability, (availability_id,))
+            rows = cursor.fetchall()
+
+            # Format the response
+            if not rows:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Failed to create availability',
+                    'error_code': 'CREATION_FAILED'
+                }), 500
+
+            availability = {
+                'availability_id': rows[0]['availability_id'],
+                'business_id': rows[0]['business_id'],
+                'name': rows[0]['name'],
+                'time_slots': []
+            }
+
+            for row in rows:
+                if row['availability_detail_id']:  # Only add if there are details
+                    availability['time_slots'].append({
+                        'detail_id': row['availability_detail_id'],
+                        'day_of_week': row['day_of_week'],
+                        'open_time': str(row['open_time']) if row['open_time'] else None,
+                        'close_time': str(row['close_time']) if row['close_time'] else None,
+                        'is_closed': bool(row['is_closed'])
+                    })
+
+            return jsonify({
+                'status': 'success',
+                'message': 'Availability created successfully',
+                'data': availability
+            })
+
+        except mysql.connector.Error as err:
+            if conn and conn.is_connected():
+                conn.rollback()
+            logger.error(f"Database error in create_availability: {err}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Database error',
+                'error_code': 'DATABASE_ERROR'
+            }), 500
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    except Exception as e:
+        logger.error(f"Error in create_availability: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while creating availability',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/delete_availability', methods=['POST'])
+def delete_availability():
+    """
+    Delete an availability record and all its associated time slots
+    
+    Request body:
+    {
+        "availability_id": 1  # Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Availability and all associated time slots deleted successfully",
+            "deleted_availability_id": 1
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        if 'availability_id' not in data or data['availability_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'availability_id is required',
+                'error_code': 'MISSING_AVAILABILITY_ID'
+            }), 400
+            
+        conn = None
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Start transaction
+            conn.start_transaction()
+            
+            # First, check if the availability exists
+            check_query = """
+                SELECT * FROM restaurant_availability 
+                WHERE availability_id = %s
+            """
+            cursor.execute(check_query, (data['availability_id'],))
+            existing = cursor.fetchone()
+            
+            if not existing:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Availability not found',
+                    'error_code': 'NOT_FOUND'
+                }), 404
+            
+            # Delete the availability (related time slots will be deleted by CASCADE)
+            delete_query = """
+                DELETE FROM restaurant_availability 
+                WHERE availability_id = %s
+            """
+            cursor.execute(delete_query, (data['availability_id'],))
+            
+            # Also remove any menu associations
+            delete_menu_assoc_query = """
+                DELETE FROM restaurant_menu_availability
+                WHERE availability_id = %s
+            """
+            cursor.execute(delete_menu_assoc_query, (data['availability_id'],))
+            
+            # Commit the transaction
+            conn.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Availability and all associated time slots deleted successfully',
+                'deleted_availability_id': data['availability_id']
+            })
+            
+        except mysql.connector.Error as err:
+            if conn and conn.is_connected():
+                conn.rollback()
+            logger.error(f"Database error in delete_availability: {err}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Database error',
+                'error_code': 'DATABASE_ERROR'
+            }), 500
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+                
+    except Exception as e:
+        logger.error(f"Error in delete_availability: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while deleting availability',
+            'error_code': str(e)
+        }), 500
+
+
+@bp.route('/assign_availability_to_menu', methods=['POST'])
+def assign_availability_to_menu():
+    """
+    Assign an availability to a menu
+    
+    Request body:
+    {
+        "availability_id": 1,  # Required
+        "menu_id": 1           # Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+    """
+    try:
+        data = request.get_json()
+        required_fields = ['availability_id', 'menu_id']
+        missing_fields = [field for field in required_fields if field not in data or data[field] is None]
+        
+        if missing_fields:
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields: {", ".join(missing_fields)}',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+            
+        # Check if assignment already exists
+        check_query = """
+            SELECT * FROM restaurant_menu_availability
+            WHERE menu_id = %s AND availability_id = %s
+        """
+        existing = execute_query(
+            check_query, 
+            (data['menu_id'], data['availability_id']), 
+            fetch=True
+        )
+        
+        if existing:
+            return jsonify({
+                'status': 'success',
+                'message': 'This availability is already assigned to the menu',
+                'data': existing[0]
+            })
+            
+        # Create new assignment
+        query = """
+            INSERT INTO restaurant_menu_availability (menu_id, availability_id)
+            VALUES (%s, %s)
+        """
+        execute_query(query, (data['menu_id'], data['availability_id']))
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Availability assigned to menu successfully'
+        }), 201
+        
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in assign_availability_to_menu: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        logger.error(f"Error in assign_availability_to_menu: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while assigning availability to menu',
+            'error_code': str(e)
+        }), 500
+
+
+@bp.route('/list_availabilities', methods=['POST'])
+def list_availabilities():
+    """
+    List all availabilities for a business with their time slots
+    
+    Request body:
+    {
+        "business_id": 1  # Required
+    }
+    
+    Returns:
+        JSON response with list of availabilities and their time slots
+        {
+            "status": "success",
+            "data": [
+                {
+                    "availability_id": 1,
+                    "business_id": 1,
+                    "name": "Lunch Hours",
+                    "created_at": "2025-09-08T12:00:00",
+                    "updated_at": "2025-09-08T12:00:00",
+                    "time_slots": [
+                        {
+                            "detail_id": 1,
+                            "day_of_week": "Monday",
+                            "start_time": "11:00:00",
+                            "end_time": "15:00:00"
+                        },
+                        ...
+                    ]
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        if 'business_id' not in data or data['business_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'business_id is required',
+                'error_code': 'MISSING_BUSINESS_ID'
+            }), 400
+            
+        conn = None
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Get all availabilities for the business with their time slots
+            query = """
+                SELECT 
+                    a.availability_id, a.business_id, a.name, 
+                    a.created_at, a.updated_at,
+                    d.detail_id, d.day_of_week, d.start_time, d.end_time
+                FROM restaurant_availability a
+                LEFT JOIN restaurant_availability_detail d ON a.availability_id = d.availability_id
+                WHERE a.business_id = %s
+                ORDER BY a.name, d.day_of_week, d.start_time
+            """
+            
+            cursor.execute(query, (data['business_id'],))
+            rows = cursor.fetchall()
+            
+            # Group time slots by availability
+            availabilities = {}
+            for row in rows:
+                availability_id = row['availability_id']
+                
+                if availability_id not in availabilities:
+                    availabilities[availability_id] = {
+                        'availability_id': availability_id,
+                        'business_id': row['business_id'],
+                        'name': row['name'],
+                        'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                        'updated_at': row['updated_at'].isoformat() if row['updated_at'] else None,
+                        'time_slots': []
+                    }
+                
+                # Add time slot if it exists
+                if row['detail_id']:
+                    availabilities[availability_id]['time_slots'].append({
+                        'detail_id': row['detail_id'],
+                        'day_of_week': row['day_of_week'],
+                        'start_time': str(row['start_time']),
+                        'end_time': str(row['end_time'])
+                    })
+            
+            # Convert to list for response
+            result = list(availabilities.values())
+            
+            return jsonify({
+                'status': 'success',
+                'data': result
+            })
+            
+        except mysql.connector.Error as err:
+            logger.error(f"Database error in list_availabilities: {err}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Database error',
+                'error_code': 'DATABASE_ERROR'
+            }), 500
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+                
+    except Exception as e:
+        logger.error(f"Error in list_availabilities: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while fetching availabilities',
             'error_code': str(e)
         }), 500
