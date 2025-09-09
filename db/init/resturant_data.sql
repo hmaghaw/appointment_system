@@ -206,3 +206,38 @@ VALUES
 (2, 1), (2, 2),
 -- Veggie Pizza
 (3, 1), (3, 2);
+
+INSERT INTO restaurant_tag (business_id, name) VALUES
+(73, 'Vegetarian'),
+(73, 'Vegan'),
+(73, 'Gluten Free'),
+(73, 'Low Carb'),
+(73, 'Halal'),
+(73, 'Kosher'),
+(73, 'Keto'),
+(73, 'Dairy Free'),
+(73, 'Nut Free'),
+(73, 'Organic');
+
+-- Margherita Pizza: Vegetarian, Halal
+INSERT INTO restaurant_item_tag (item_id, tag_id) VALUES
+(1, 1),  -- Vegetarian
+(1, 5);  -- Halal
+
+-- Pepperoni Pizza: Halal only
+INSERT INTO restaurant_item_tag (item_id, tag_id) VALUES
+(2, 5);  -- Halal
+
+-- Veggie Pizza: Vegetarian, Vegan, Halal
+INSERT INTO restaurant_item_tag (item_id, tag_id) VALUES
+(3, 1),  -- Vegetarian
+(3, 2),  -- Vegan
+(3, 5);  -- Halal
+
+-- Chicken Shawarma: Gluten Free, Halal, Low Carb
+INSERT INTO restaurant_item_tag (item_id, tag_id) VALUES
+(4, 3),  -- Gluten Free
+(4, 4),  -- Low Carb
+(4, 5);  -- Halal
+
+

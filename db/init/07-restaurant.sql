@@ -31,6 +31,8 @@ CREATE TABLE restaurant_item (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     base_price DECIMAL(10,2) NOT NULL,
+    calories INT,                         -- in kcal
+    preparation_time INT,                 -- in minutes
     is_combo BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     image_url VARCHAR(255),
@@ -221,3 +223,19 @@ CREATE TABLE restaurant_item_option_group (
     FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id),
     FOREIGN KEY (option_group_id) REFERENCES restaurant_option_group(option_group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE restaurant_tag (
+    tag_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL UNIQUE,  -- e.g., 'Vegetarian', 'Vegan', 'Halal'
+    FOREIGN KEY (business_id) REFERENCES business(business_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE restaurant_item_tag (
+    item_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (item_id, tag_id),
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id),
+    FOREIGN KEY (tag_id) REFERENCES restaurant_tag(tag_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

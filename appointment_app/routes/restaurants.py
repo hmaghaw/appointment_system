@@ -4179,3 +4179,782 @@ def delete_item_option_group():
             'error': str(e),
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
+
+@bp.route('/list_items_in_menu_section', methods=['POST'])
+def list_items_in_menu_section():
+    """
+    List all items in a specific menu section with their option groups and modifier groups
+    
+    Request body:
+    {
+        "menu_section_id": 6  # Required
+    }
+    
+    Returns:
+        JSON response containing menu section items with their details
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'menu_section_id' not in data or data['menu_section_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: menu_section_id',
+                'error_code': 'MISSING_REQUIRED_FIELD'
+            }), 400
+        
+        menu_section_id = data['menu_section_id']
+        
+        # Get menu section details
+        section = execute_query(
+            """
+            SELECT menu_section_id, name, description, display_order
+            FROM restaurant_menu_section 
+            WHERE menu_section_id = %s
+            """,
+            (menu_section_id,),
+            fetch=True
+        )
+        
+        if not section:
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu section not found',
+                'error_code': 'SECTION_NOT_FOUND'
+            }), 404
+        
+        # Get all items in the section with their details
+        items = execute_query(
+            """
+            SELECT 
+                i.item_id, 
+                i.name, 
+                i.description, 
+                i.base_price,                
+                i.image_url,
+                i.calories,
+                i.preparation_time,
+                i.vegetarian,
+                i.vegan,
+                i.gluten_free,
+                ms.display_order as section_display_order
+            FROM restaurant_menu_section_item msi
+            JOIN restaurant_item i ON msi.item_id = i.item_id
+            JOIN restaurant_menu_section ms ON msi.menu_section_id = ms.menu_section_id
+            WHERE msi.menu_section_id = %s
+            ORDER BY ms.display_order, msi.display_order
+            """,
+            (menu_section_id,),
+            fetch=True
+        )
+        
+        if not items:
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'section': section[0],
+                    'items': []
+                }
+            })
+        
+        # Get item IDs for batch queries
+        item_ids = [str(item['id']) for item in items]
+        item_ids_str = ','.join(item_ids)
+        
+        # Get all option groups for these items
+        option_groups = execute_query(
+            f"""
+            SELECT 
+                og.option_group_id,
+                og.name as option_group_name,
+                og.description as option_group_description,
+                og.min_selections,
+                og.max_selections,
+                og.is_required,
+                iog.item_id
+            FROM restaurant_item_option_group iog
+            JOIN restaurant_option_group og ON iog.option_group_id = og.option_group_id
+            WHERE iog.item_id IN ({item_ids_str})
+            ORDER BY iog.display_order
+            """,
+            fetch=True
+        )
+        
+        # Get all options for these option groups
+        if option_groups:
+            option_group_ids = [str(og['option_group_id']) for og in option_groups]
+            option_group_ids_str = ','.join(option_group_ids)
+            
+            options = execute_query(
+                f"""
+                SELECT 
+                    o.option_id,
+                    o.option_group_id,
+                    o.name,
+                    o.description,
+                    o.price_adjustment,
+                    o.display_order
+                FROM restaurant_option o
+                WHERE o.option_group_id IN ({option_group_ids_str})
+                ORDER BY o.display_order
+                """,
+                fetch=True
+            )
+            
+            # Group options by option group
+            option_groups_with_options = {}
+            for og in option_groups:
+                og_id = og['option_group_id']
+                option_groups_with_options[og_id] = {
+                    'id': og_id,
+                    'name': og['option_group_name'],
+                    'description': og['option_group_description'],
+                    'min_selections': og['min_selections'],
+                    'max_selections': og['max_selections'],
+                    'is_required': og['is_required'],
+                    'options': [o for o in options if o['option_group_id'] == og_id]
+                }
+        
+        # Get all modifier groups for these items
+        modifier_groups = execute_query(
+            f"""
+            SELECT 
+                mg.modifier_group_id,
+                mg.name as modifier_group_name,
+                mg.description as modifier_group_description,
+                mg.min_selections,
+                mg.max_selections,
+                mg.is_required,
+                img.item_id
+            FROM restaurant_item_modifier_group img
+            JOIN restaurant_modifier_group mg ON img.modifier_group_id = mg.modifier_group_id
+            WHERE img.item_id IN ({item_ids_str})
+            ORDER BY img.display_order
+            """,
+            fetch=True
+        )
+        
+        # Get all modifiers for these modifier groups
+        if modifier_groups:
+            modifier_group_ids = [str(mg['modifier_group_id']) for mg in modifier_groups]
+            modifier_group_ids_str = ','.join(modifier_group_ids)
+            
+            modifiers = execute_query(
+                f"""
+                SELECT 
+                    m.modifier_id,
+                    m.modifier_group_id,
+                    m.name,
+                    m.description,
+                    m.price_adjustment,
+                    m.display_order
+                FROM restaurant_modifier m
+                WHERE m.modifier_group_id IN ({modifier_group_ids_str})
+                ORDER BY m.display_order
+                """,
+                fetch=True
+            )
+            
+            # Group modifiers by modifier group
+            modifier_groups_with_modifiers = {}
+            for mg in modifier_groups:
+                mg_id = mg['modifier_group_id']
+                modifier_groups_with_modifiers[mg_id] = {
+                    'id': mg_id,
+                    'name': mg['modifier_group_name'],
+                    'description': mg['modifier_group_description'],
+                    'min_selections': mg['min_selections'],
+                    'max_selections': mg['max_selections'],
+                    'is_required': mg['is_required'],
+                    'modifiers': [m for m in modifiers if m['modifier_group_id'] == mg_id]
+                }
+        
+        # Build the response
+        response_data = {
+            'section': section[0],
+            'items': []
+        }
+        
+        for item in items:
+            item_id = item['id']
+            
+            # Get option groups for this item
+            item_option_groups = [
+                option_groups_with_options[og['option_group_id']]
+                for og in option_groups 
+                if og['item_id'] == item_id and og['option_group_id'] in option_groups_with_options
+            ]
+            
+            # Get modifier groups for this item
+            item_modifier_groups = [
+                modifier_groups_with_modifiers[mg['modifier_group_id']]
+                for mg in modifier_groups 
+                if mg['item_id'] == item_id and mg['modifier_group_id'] in modifier_groups_with_modifiers
+            ]
+            
+            # Add item with its option groups and modifier groups
+            response_data['items'].append({
+                'id': item_id,
+                'name': item['name'],
+                'description': item['description'],
+                'price': float(item['price']) if item['price'] is not None else None,
+                'display_order': item['display_order'],
+                'image_url': item['image_url'],
+                'calories': item['calories'],
+                'preparation_time': item['preparation_time'],
+                'dietary_info': {
+                    'vegetarian': bool(item['vegetarian']),
+                    'vegan': bool(item['vegan']),
+                    'gluten_free': bool(item['gluten_free'])
+                },
+                'option_groups': item_option_groups,
+                'modifier_groups': item_modifier_groups
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'data': response_data
+        })
+        
+    except mysql.connector.Error as err:
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error': str(err),
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error': str(e),
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
+
+@bp.route('/list_tags', methods=['POST'])
+def list_tags():
+    """
+    List all available restaurant tags for a business
+    
+    Request body:
+    {
+        "business_id": 73  // Required
+    }
+    
+    Returns:
+        JSON response with list of all tags for the business
+        {
+            "status": "success",
+            "data": [
+                {
+                    "tag_id": 1,
+                    "business_id": 73,
+                    "name": "Vegetarian"
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'business_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Business ID is required',
+                'error_code': 'MISSING_BUSINESS_ID'
+            }), 400
+            
+        business_id = data['business_id']
+        
+        # Get all tags for the business
+        tags = execute_query(
+            """
+            SELECT tag_id, business_id, name 
+            FROM restaurant_tag 
+            WHERE business_id = %s
+            ORDER BY name
+            """,
+            (business_id,),
+            fetch=True
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': tags or []
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in list_tags: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while fetching tags',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/create_tag', methods=['POST'])
+def create_tag():
+    """
+    Create a new restaurant tag
+    
+    Request body:
+    {
+        "business_id": 73,  // Required
+        "name": "Gluten Free"  // Required, must be unique per business
+    }
+    
+    Returns:
+        JSON response with the created tag
+        {
+            "status": "success",
+            "message": "Tag created successfully",
+            "data": {
+                "tag_id": 1,
+                "business_id": 73,
+                "name": "Gluten Free"
+            }
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'business_id' not in data or 'name' not in data or not data['name'].strip():
+            return jsonify({
+                'status': 'error',
+                'message': 'Business ID and tag name are required',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+            
+        business_id = data['business_id']
+        tag_name = data['name'].strip()
+        
+        # Check if tag already exists for this business
+        existing_tag = execute_query(
+            """
+            SELECT tag_id, name 
+            FROM restaurant_tag 
+            WHERE business_id = %s AND name = %s
+            """,
+            (business_id, tag_name),
+            fetch=True
+        )
+        
+        if existing_tag:
+            return jsonify({
+                'status': 'error',
+                'message': f'A tag with the name "{tag_name}" already exists for this business',
+                'error_code': 'DUPLICATE_TAG'
+            }), 400
+            
+        # Create new tag
+        tag_id = execute_query(
+            """
+            INSERT INTO restaurant_tag (business_id, name) 
+            VALUES (%s, %s)
+            """,
+            (business_id, tag_name)
+        )
+        
+        # Get the created tag
+        created_tag = execute_query(
+            """
+            SELECT tag_id, business_id, name 
+            FROM restaurant_tag 
+            WHERE tag_id = %s
+            """,
+            (tag_id,),
+            fetch=True
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Tag created successfully',
+            'data': created_tag[0] if created_tag else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in create_tag: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while creating the tag',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/update_tag', methods=['POST'])
+def update_tag():
+    """
+    Update an existing restaurant tag
+    
+    Request body:
+    {
+        "tag_id": 1,           // Required
+        "name": "Vegetarian"   // Required, new name for the tag
+    }
+    
+    Returns:
+        JSON response with the updated tag
+        {
+            "status": "success",
+            "message": "Tag updated successfully",
+            "data": {
+                "tag_id": 1,
+                "name": "Vegetarian"
+            }
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'tag_id' not in data or 'name' not in data or not data['name'].strip():
+            return jsonify({
+                'status': 'error',
+                'message': 'Tag ID and name are required',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+            
+        tag_id = data['tag_id']
+        new_name = data['name'].strip()
+        
+        # Check if tag exists
+        existing_tag = execute_query(
+            "SELECT tag_id FROM restaurant_tag WHERE tag_id = %s",
+            (tag_id,),
+            fetch=True
+        )
+        
+        if not existing_tag:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tag not found',
+                'error_code': 'TAG_NOT_FOUND'
+            }), 404
+            
+        # Check if new name is already taken
+        name_taken = execute_query(
+            "SELECT tag_id FROM restaurant_tag WHERE name = %s AND tag_id != %s",
+            (new_name, tag_id),
+            fetch=True
+        )
+        
+        if name_taken:
+            return jsonify({
+                'status': 'error',
+                'message': 'A tag with this name already exists',
+                'error_code': 'DUPLICATE_TAG'
+            }), 400
+            
+        # Update tag
+        execute_query(
+            "UPDATE restaurant_tag SET name = %s WHERE tag_id = %s",
+            (new_name, tag_id)
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Tag updated successfully',
+            'data': {
+                'tag_id': tag_id,
+                'name': new_name
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in update_tag: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while updating the tag',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/delete_tag', methods=['POST'])
+def delete_tag():
+    """
+    Delete a restaurant tag and its associations
+    
+    Request body:
+    {
+        "tag_id": 1  // Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Tag deleted successfully"
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'tag_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tag ID is required',
+                'error_code': 'MISSING_FIELD'
+            }), 400
+            
+        tag_id = data['tag_id']
+        
+        # Check if tag exists
+        existing_tag = execute_query(
+            "SELECT tag_id FROM restaurant_tag WHERE tag_id = %s",
+            (tag_id,),
+            fetch=True
+        )
+        
+        if not existing_tag:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tag not found',
+                'error_code': 'TAG_NOT_FOUND'
+            }), 404
+            
+        # First, delete all item associations
+        execute_query(
+            "DELETE FROM restaurant_item_tag WHERE tag_id = %s",
+            (tag_id,)
+        )
+        
+        # Then delete the tag
+        execute_query(
+            "DELETE FROM restaurant_tag WHERE tag_id = %s",
+            (tag_id,)
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Tag deleted successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in delete_tag: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while deleting the tag',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/list_item_tags', methods=['POST'])
+def list_item_tags():
+    """
+    List all tags for a specific menu item
+    
+    Request body:
+    {
+        "item_id": 1  // Required
+    }
+    
+    Returns:
+        JSON response with list of tags for the item
+        {
+            "status": "success",
+            "data": [
+                {
+                    "tag_id": 1,
+                    "name": "Vegetarian"
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'item_id' not in data or not data['item_id']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: item_id',
+                'error_code': 'MISSING_REQUIRED_FIELD'
+            }), 400
+            
+        item_id = data['item_id']
+        
+        # Get all tags for the item
+        tags = execute_query(
+            """
+            SELECT t.tag_id, t.name 
+            FROM restaurant_tag t
+            JOIN restaurant_item_tag it ON t.tag_id = it.tag_id
+            WHERE it.item_id = %s
+            ORDER BY t.name
+            """,
+            (item_id,),
+            fetch=True
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': tags or []
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in list_item_tags: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while fetching item tags',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/create_item_tag', methods=['POST'])
+def add_item_tag():
+    """
+    Add a tag to a menu item
+    
+    Request body:
+    {
+        "item_id": 1,  // Required
+        "tag_id": 1    // Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Tag added to item successfully"
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'item_id' not in data or 'tag_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item ID and Tag ID are required',
+                'error_code': 'MISSING_FIELDS'
+            }), 400
+            
+        item_id = data['item_id']
+        tag_id = data['tag_id']
+        
+        # Check if item exists
+        item = execute_query(
+            "SELECT item_id FROM restaurant_item WHERE item_id = %s",
+            (item_id,),
+            fetch=True
+        )
+        
+        if not item:
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu item not found',
+                'error_code': 'ITEM_NOT_FOUND'
+            }), 404
+            
+        # Check if tag exists
+        tag = execute_query(
+            "SELECT tag_id FROM restaurant_tag WHERE tag_id = %s",
+            (tag_id,),
+            fetch=True
+        )
+        
+        if not tag:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tag not found',
+                'error_code': 'TAG_NOT_FOUND'
+            }), 404
+            
+        # Check if association already exists
+        existing = execute_query(
+            "SELECT * FROM restaurant_item_tag WHERE item_id = %s AND tag_id = %s",
+            (item_id, tag_id),
+            fetch=True
+        )
+        
+        if existing:
+            return jsonify({
+                'status': 'error',
+                'message': 'This tag is already associated with the item',
+                'error_code': 'DUPLICATE_ASSOCIATION'
+            }), 400
+            
+        # Create the association
+        execute_query(
+            "INSERT INTO restaurant_item_tag (item_id, tag_id) VALUES (%s, %s)",
+            (item_id, tag_id)
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Tag added to item successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in add_item_tag: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while adding the tag to the item',
+            'error_code': str(e)
+        }), 500
+
+@bp.route('/delete_item_tag', methods=['POST'])
+def delete_item_tag():
+    """
+    Remove a tag association from a menu item
+    
+    Request body:
+    {
+        "item_id": 1,  # Required
+        "tag_id": 1    # Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Tag removed from item successfully"
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'item_id' not in data or 'tag_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'item_id and tag_id are required',
+                'error_code': 'MISSING_REQUIRED_FIELDS'
+            }), 400
+            
+        item_id = data['item_id']
+        tag_id = data['tag_id']
+        
+        # Check if the association exists first
+        association = execute_query(
+            "SELECT * FROM restaurant_item_tag WHERE item_id = %s AND tag_id = %s",
+            (item_id, tag_id),
+            fetch=True
+        )
+        
+        if not association:
+            return jsonify({
+                'status': 'error',
+                'message': 'The specified tag is not associated with this item',
+                'error_code': 'ASSOCIATION_NOT_FOUND'
+            }), 404
+            
+        # Delete the association
+        execute_query(
+            "DELETE FROM restaurant_item_tag WHERE item_id = %s AND tag_id = %s",
+            (item_id, tag_id)
+        )
+            
+        return jsonify({
+            'status': 'success',
+            'message': 'Tag removed from item successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in delete_item_tag: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while removing the tag from the item',
+            'error_code': str(e)
+        }), 500
