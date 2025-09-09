@@ -39,29 +39,6 @@ CREATE TABLE restaurant_item (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ======================
--- ITEM OPTIONS (VARIATIONS)
--- ======================
-CREATE TABLE restaurant_item_option_group (
-    option_group_id INT AUTO_INCREMENT PRIMARY KEY,
-    item_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,           -- e.g., Size, Toppings
-    is_required BOOLEAN DEFAULT FALSE,
-    min_select INT DEFAULT 0,
-    max_select INT DEFAULT 1,
-    display_order INT,
-    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE restaurant_item_option (
-    option_id INT AUTO_INCREMENT PRIMARY KEY,
-    option_group_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,           -- e.g., Small, Medium, Large
-    price_delta DECIMAL(10,2) DEFAULT 0,
-    is_default BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (option_group_id) REFERENCES restaurant_item_option_group(option_group_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ======================
 -- AVAILABILITY (Menus can have multiple time slots)
 -- ======================
 CREATE TABLE restaurant_availability (
@@ -175,7 +152,7 @@ CREATE TABLE restaurant_order_item_option (
     option_id INT NOT NULL,
     price_delta DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id),
-    FOREIGN KEY (option_id) REFERENCES restaurant_item_option(option_id)
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_order_item_modifier (
@@ -214,4 +191,33 @@ CREATE TABLE restaurant_menu_section_item (
     PRIMARY KEY (item_id, menu_section_id),
     FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id),
     FOREIGN KEY (menu_section_id) REFERENCES restaurant_menu_section(menu_section_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE restaurant_option_group (
+    option_group_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,          -- e.g., Size, Crust
+    is_required BOOLEAN DEFAULT FALSE,
+    min_select INT DEFAULT 0,
+    max_select INT DEFAULT 1,
+    display_order INT DEFAULT 0,
+    FOREIGN KEY (business_id) REFERENCES business(business_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE restaurant_option (
+    option_id INT AUTO_INCREMENT PRIMARY KEY,
+    option_group_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,          -- e.g., Small, Medium, Large
+    price_delta DECIMAL(10,2) DEFAULT 0,
+    is_default BOOLEAN DEFAULT FALSE,
+    display_order INT DEFAULT 0,
+    FOREIGN KEY (option_group_id) REFERENCES restaurant_option_group(option_group_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE restaurant_item_option_group (
+    item_id INT NOT NULL,
+    option_group_id INT NOT NULL,
+    PRIMARY KEY (item_id, option_group_id),
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id),
+    FOREIGN KEY (option_group_id) REFERENCES restaurant_option_group(option_group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

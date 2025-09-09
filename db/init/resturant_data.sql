@@ -184,3 +184,25 @@ VALUES
 (73, 'Pizza Sizes', TRUE, 1, 1),        -- Must choose exactly one size
 (73, 'Extra Toppings', FALSE, 0, 3),    -- Optional, up to 3 toppings
 (73, 'Choose a Drink', TRUE, 1, 1);
+
+
+INSERT INTO restaurant_option_group
+(business_id, name, is_required, min_select, max_select, display_order)
+VALUES
+(73, 'Pizza Sizes', TRUE, 1, 1, 1),
+(73, 'Crust Type', TRUE, 1, 1, 2);
+
+INSERT INTO restaurant_option (option_group_id, name, price_delta, is_default, display_order)
+VALUES
+(1, 'Small', 0.00, TRUE, 1),
+(1, 'Medium', 2.00, FALSE, 2),
+(1, 'Large', 4.00, FALSE, 3);
+
+INSERT INTO restaurant_item_option_group (item_id, option_group_id)
+VALUES
+-- Margherita Pizza
+(1, 1), (1, 2),
+-- Pepperoni Pizza
+(2, 1), (2, 2),
+-- Veggie Pizza
+(3, 1), (3, 2);
