@@ -338,14 +338,16 @@ def list_menus():
                 m.is_active,
                 a.availability_id,
                 a.name AS availability_name,
-                a.day_of_week,
-                a.start_time,
-                a.end_time
+                ad.day_of_week,
+                ad.open_time AS start_time,
+                ad.close_time AS end_time,
+                ad.is_closed
             FROM restaurant_menu m
             LEFT JOIN restaurant_menu_availability ma ON m.menu_id = ma.menu_id
             LEFT JOIN restaurant_availability a ON ma.availability_id = a.availability_id
+            LEFT JOIN restaurant_availability_detail ad ON a.availability_id = ad.availability_id
             WHERE m.business_id = %s 
-            ORDER BY m.menu_id, a.day_of_week, a.start_time
+            ORDER BY m.menu_id, a.availability_id, ad.day_of_week, ad.open_time
         """
         
         results = execute_query(query, (business_id,), fetch=True)
@@ -441,9 +443,9 @@ def list_menu_items():
             FROM restaurant_menu m
             JOIN restaurant_menu_section s 
                 ON m.menu_id = s.menu_id
-            JOIN restaurant_menu_item_section_map sm 
+            JOIN restaurant_menu_section_item sm 
                 ON s.menu_section_id = sm.menu_section_id
-            JOIN restaurant_menu_item i 
+            JOIN restaurant_item i 
                 ON sm.item_id = i.item_id
             WHERE m.menu_id = %s
             ORDER BY s.display_order, i.name
@@ -638,7 +640,6 @@ def list_menu_sections():
             'message': 'Database error',
             'error_code': 'DATABASE_ERROR'
         }), 500
-
     except Exception as e:
         logger.error(f"Unexpected error in list_menu_sections: {e}")
         return jsonify({
@@ -685,7 +686,7 @@ def list_items():
                     i.image_url,
                     i.item_category_id,
                     ic.name AS category_name
-                FROM restaurant_menu_item i
+                FROM restaurant_item i
                 LEFT JOIN restaurant_item_category ic 
                     ON i.item_category_id = ic.item_category_id
                 WHERE ic.business_id = %s
@@ -1706,7 +1707,7 @@ def list_combos():
                 description,
                 base_price,
                 image_url
-            FROM restaurant_menu_item
+            FROM restaurant_item
             WHERE business_id = %s 
             AND is_combo = TRUE
             AND is_active = TRUE
@@ -1857,7 +1858,7 @@ def list_combo_group_items():
                 i.item_category_id,
                 ic.name AS category_name
             FROM restaurant_combo_group_item gi
-            JOIN restaurant_menu_item i 
+            JOIN restaurant_item i 
                 ON gi.allowed_item_id = i.item_id
             LEFT JOIN restaurant_item_category ic 
                 ON i.item_category_id = ic.item_category_id
@@ -2486,7 +2487,7 @@ def delete_menu_section():
         
         # First, delete all menu item associations with this section
         cursor.execute(
-            "DELETE FROM restaurant_menu_item_section_map WHERE menu_section_id = %s",
+            "DELETE FROM restaurant_menu_section_item WHERE menu_section_id = %s",
             (menu_section_id,)
         )
         
@@ -2535,6 +2536,237 @@ def delete_menu_section():
         if 'conn' in locals() and conn is not None and conn.is_connected():
             conn.close()
 
+
+@bp.route('/add_item_to_menu_section', methods=['POST'])
+def add_item_to_menu_section():
+    """
+    Add a menu item to a menu section
+    
+    Request body:
+    {
+        "item_id": 1,           // Required
+        "menu_section_id": 10   // Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Menu item added to section successfully",
+            "data": {
+                "item_id": 1,
+                "menu_section_id": 10
+            }
+        }
+    """
+    data = request.get_json()
+    
+    # Validate required fields
+    if not data or 'item_id' not in data or 'menu_section_id' not in data:
+        return jsonify({
+            'status': 'error',
+            'message': 'Both item_id and menu_section_id are required'
+        }), 400
+        
+    item_id = data['item_id']
+    menu_section_id = data['menu_section_id']
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Check if the item exists
+        cursor.execute(
+            "SELECT item_id FROM restaurant_item WHERE item_id = %s",
+            (item_id,)
+        )
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu item not found'
+            }), 404
+        
+        # Check if the menu section exists
+        cursor.execute(
+            "SELECT menu_section_id FROM restaurant_menu_section WHERE menu_section_id = %s",
+            (menu_section_id,)
+        )
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu section not found'
+            }), 404
+            
+        # Check if the association already exists
+        cursor.execute(
+            """
+            SELECT * FROM restaurant_menu_section_item 
+            WHERE item_id = %s AND menu_section_id = %s
+            """,
+            (item_id, menu_section_id)
+        )
+        if cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'This menu item is already in the specified section'
+            }), 400
+        
+        # Create the association
+        cursor.execute(
+            """
+            INSERT INTO restaurant_menu_section_item 
+            (item_id, menu_section_id)
+            VALUES (%s, %s)
+            """,
+            (item_id, menu_section_id)
+        )
+        
+        conn.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Menu item added to section successfully',
+            'data': {
+                'item_id': item_id,
+                'menu_section_id': menu_section_id
+            }
+        }), 201
+        
+    except mysql.connector.Error as err:
+        conn.rollback()
+        logger.error(f"Database error in add_item_to_menu_section: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'details': str(err)
+        }), 500
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+        logger.error(f"Error in add_item_to_menu_section: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'details': str(e)
+        }), 500
+        
+    finally:
+        if 'cursor' in locals() and cursor is not None:
+            cursor.close()
+        if 'conn' in locals() and conn is not None and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/delete_item_from_menu_section', methods=['POST'])
+def delete_item_from_menu_section():
+    """
+    Remove a menu item from a menu section
+
+    Request body:
+    {
+        "menu_section_id": 6,  # Required
+        "item_id": 10          # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Item removed from menu section successfully",
+            "data": {
+                "item_id": 10,
+                "menu_section_id": 6
+            }
+        }
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if not data or 'menu_section_id' not in data or 'item_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'menu_section_id and item_id are required'
+            }), 400
+
+        menu_section_id = data['menu_section_id']
+        item_id = data['item_id']
+
+        # First check if the menu section exists
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        try:
+            # Check if the menu section exists
+            cursor.execute(
+                "SELECT menu_section_id FROM menu_section WHERE menu_section_id = %s",
+                (menu_section_id,)
+            )
+            if not cursor.fetchone():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Menu section not found'
+                }), 404
+
+            # Check if the item exists in the menu section
+            cursor.execute(
+                """
+                SELECT item_id, menu_section_id
+                FROM menu_section_item
+                WHERE item_id = %s
+                  AND menu_section_id = %s
+                """,
+                (item_id, menu_section_id)
+            )
+            if not cursor.fetchone():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Item not found in the specified menu section'
+                }), 404
+
+            # Delete the item from the menu section
+            cursor.execute(
+                """
+                DELETE
+                FROM menu_section_item
+                WHERE item_id = %s
+                  AND menu_section_id = %s
+                """,
+                (item_id, menu_section_id)
+            )
+
+            conn.commit()
+
+            return jsonify({
+                'status': 'success',
+                'message': 'Item removed from menu section successfully',
+                'data': {
+                    'item_id': item_id,
+                    'menu_section_id': menu_section_id
+                }
+            })
+
+        except mysql.connector.Error as err:
+            conn.rollback()
+            logger.error(f"Database error: {err}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Database error',
+                'details': str(err)
+            }), 500
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    except Exception as e:
+        logger.error(f"Error in delete_item_from_menu_section: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while removing item from menu section',
+            'details': str(e)
+        }), 500
 
 @bp.route('/list_availabilities', methods=['POST'])
 def list_availabilities():
@@ -2736,7 +2968,6 @@ def list_availability_details():
             'error_code': str(e)
         }), 500
 
-
 @bp.route('/update_availability_detail', methods=['POST'])
 def update_availability_detail():
     """
@@ -2868,6 +3099,7 @@ def update_availability_detail():
                 # Format open_time
                 if updated_detail['open_time'] is not None:
                     if isinstance(updated_detail['open_time'], timedelta):
+                        # Convert timedelta to HH:MM:SS string
                         total_seconds = int(updated_detail['open_time'].total_seconds())
                         hours = total_seconds // 3600
                         minutes = (total_seconds % 3600) // 60
@@ -2879,6 +3111,7 @@ def update_availability_detail():
                 # Format close_time
                 if updated_detail['close_time'] is not None:
                     if isinstance(updated_detail['close_time'], timedelta):
+                        # Convert timedelta to HH:MM:SS string
                         total_seconds = int(updated_detail['close_time'].total_seconds())
                         hours = total_seconds // 3600
                         minutes = (total_seconds % 3600) // 60
@@ -2923,4 +3156,300 @@ def update_availability_detail():
             'status': 'error',
             'message': 'An error occurred while updating availability detail',
             'error_code': str(e)
+        }), 500
+
+@bp.route('/create_item_category', methods=['POST'])
+def create_item_category():
+    """
+    Create a new item category
+    
+    Request body:
+    {
+        "business_id": 1,              # Required
+        "name": "Appetizers",         # Required
+        "description": "Starters"     # Optional
+    }
+    
+    Returns:
+        JSON response with the created category details or error message
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['business_id', 'name']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}',
+                    'error_code': 'MISSING_REQUIRED_FIELD'
+                }), 400
+        
+        business_id = data['business_id']
+        name = data['name']
+        description = data.get('description', '')
+        
+        # Check if category with same name already exists for this business
+        existing = execute_query(
+            "SELECT * FROM restaurant_item_category WHERE business_id = %s AND name = %s",
+            (business_id, name),
+            fetch=True
+        )
+        
+        if existing:
+            return jsonify({
+                'status': 'error',
+                'message': 'An item category with this name already exists for this business',
+                'error_code': 'DUPLICATE_CATEGORY_NAME'
+            }), 400
+        
+        # Create new category
+        result = execute_query(
+            """
+            INSERT INTO restaurant_item_category (business_id, name, description)
+            VALUES (%s, %s, %s)
+            """,
+            (business_id, name, description),
+            fetch=False
+        )
+        
+        # Get the newly created category
+        new_category = execute_query(
+            "SELECT * FROM restaurant_item_category WHERE business_id = %s AND name = %s",
+            (business_id, name),
+            fetch=True
+        )
+        
+        if not new_category:
+            raise Exception("Failed to create item category")
+            
+        return jsonify({
+            'status': 'success',
+            'message': 'Item category created successfully',
+            'data': new_category[0]
+        }), 201
+        
+    except mysql.connector.Error as err:
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error': str(err),
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error': str(e),
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
+
+@bp.route('/update_item_category', methods=['POST'])
+def update_item_category():
+    """
+    Update an existing item category
+    
+    Request body:
+    {
+        "item_category_id": 1,         # Required
+        "name": "Updated Name",        # Optional
+        "description": "New description" # Optional
+    }
+    
+    Returns:
+        JSON response with the updated category details or error message
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'item_category_id' not in data or not data['item_category_id']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: item_category_id',
+                'error_code': 'MISSING_REQUIRED_FIELD'
+            }), 400
+        
+        item_category_id = data['item_category_id']
+        
+        # Check if category exists
+        category = execute_query(
+            "SELECT * FROM restaurant_item_category WHERE item_category_id = %s",
+            (item_category_id,),
+            fetch=True
+        )
+        
+        if not category:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item category not found',
+                'error_code': 'CATEGORY_NOT_FOUND'
+            }), 404
+            
+        category = category[0]  # Get the first (and should be only) result
+        
+        # Prepare update fields
+        update_fields = []
+        update_values = []
+        
+        if 'name' in data and data['name'] != category['name']:
+            # Check if the new name already exists for this business
+            existing = execute_query(
+                """
+                SELECT * FROM restaurant_item_category 
+                WHERE business_id = %s AND name = %s AND item_category_id != %s
+                """,
+                (category['business_id'], data['name'], item_category_id),
+                fetch=True
+            )
+            
+            if existing:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'An item category with this name already exists for this business',
+                    'error_code': 'DUPLICATE_CATEGORY_NAME'
+                }), 400
+            
+            update_fields.append("name = %s")
+            update_values.append(data['name'])
+        
+        if 'description' in data and data['description'] != category.get('description'):
+            update_fields.append("description = %s")
+            update_values.append(data['description'])
+        
+        # If no fields to update, return current data
+        if not update_fields:
+            return jsonify({
+                'status': 'success',
+                'message': 'No changes detected',
+                'data': category
+            })
+        
+        # Add the WHERE clause value
+        update_values.append(item_category_id)
+        
+        # Build and execute update query
+        update_query = """
+            UPDATE restaurant_item_category 
+            SET """ + ", ".join(update_fields) + """
+            WHERE item_category_id = %s
+        """
+        
+        # Execute the update
+        execute_query(update_query, update_values, fetch=False)
+        
+        # Get the updated category
+        updated_category = execute_query(
+            "SELECT * FROM restaurant_item_category WHERE item_category_id = %s",
+            (item_category_id,),
+            fetch=True
+        )
+        
+        if not updated_category:
+            raise Exception("Failed to update item category")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Item category updated successfully',
+            'data': updated_category[0]
+        })
+        
+    except mysql.connector.Error as err:
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error': str(err),
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error': str(e),
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
+
+
+@bp.route('/delete_item_category', methods=['POST'])
+def delete_item_category():
+    """
+    Delete an item category
+
+    Request body:
+    {
+        "item_category_id": 1  # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'item_category_id' not in data or not data['item_category_id']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: item_category_id',
+                'error_code': 'MISSING_REQUIRED_FIELD'
+            }), 400
+
+        item_category_id = data['item_category_id']
+
+        # Check if category exists and get its details
+        category = execute_query(
+            "SELECT * FROM restaurant_item_category WHERE item_category_id = %s",
+            (item_category_id,),
+            fetch=True
+        )
+
+        if not category:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item category not found',
+                'error_code': 'CATEGORY_NOT_FOUND'
+            }), 404
+
+        # Check if there are items using this category
+        item_count = execute_query(
+            "SELECT COUNT(*) as item_count FROM restaurant_item WHERE item_category_id = %s",
+            (item_category_id,),
+            fetch=True
+        )
+
+        if item_count and item_count[0]['item_count'] > 0:
+            return jsonify({
+                'status': 'error',
+                'message': f'Cannot delete category: {item_count[0]["item_count"]} item(s) are using this category',
+                'error_code': 'CATEGORY_IN_USE',
+                'item_count': item_count[0]['item_count']
+            }), 400
+
+        # Delete the category
+        execute_query(
+            "DELETE FROM restaurant_item_category WHERE item_category_id = %s",
+            (item_category_id,),
+            fetch=False
+        )
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Item category deleted successfully',
+            'deleted_id': item_category_id
+        })
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error': str(err),
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error': str(e),
+            'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
