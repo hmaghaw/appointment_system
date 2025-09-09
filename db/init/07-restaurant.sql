@@ -24,7 +24,7 @@ CREATE TABLE restaurant_menu (
 -- ======================
 -- MENU ITEMS
 -- ======================
-CREATE TABLE restaurant_menu_item (
+CREATE TABLE restaurant_item (
     item_id INT AUTO_INCREMENT PRIMARY KEY,
     business_id INT NOT NULL,
     item_category_id INT NOT NULL,        -- global classification
@@ -49,7 +49,7 @@ CREATE TABLE restaurant_menu_item_option_group (
     min_select INT DEFAULT 0,
     max_select INT DEFAULT 1,
     display_order INT,
-    FOREIGN KEY (item_id) REFERENCES restaurant_menu_item(item_id)
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_menu_item_option (
@@ -99,7 +99,7 @@ CREATE TABLE restaurant_combo_group (
     min_select INT DEFAULT 1,
     max_select INT DEFAULT 1,
     display_order INT,
-    FOREIGN KEY (item_id) REFERENCES restaurant_menu_item(item_id)
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_combo_group_item (
@@ -108,7 +108,7 @@ CREATE TABLE restaurant_combo_group_item (
     allowed_item_id INT NOT NULL,
     price_delta DECIMAL(10,2) DEFAULT 0,
     FOREIGN KEY (combo_group_id) REFERENCES restaurant_combo_group(combo_group_id),
-    FOREIGN KEY (allowed_item_id) REFERENCES restaurant_menu_item(item_id)
+    FOREIGN KEY (allowed_item_id) REFERENCES restaurant_item(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ======================
@@ -138,7 +138,7 @@ CREATE TABLE restaurant_item_modifier_group (
     item_id INT NOT NULL,
     modifier_group_id INT NOT NULL,
     PRIMARY KEY (item_id, modifier_group_id),
-    FOREIGN KEY (item_id) REFERENCES restaurant_menu_item(item_id),
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id),
     FOREIGN KEY (modifier_group_id) REFERENCES restaurant_modifier_group(modifier_group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -166,7 +166,7 @@ CREATE TABLE restaurant_order_item (
     base_price DECIMAL(10,2) NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (order_id) REFERENCES restaurant_order(order_id),
-    FOREIGN KEY (item_id) REFERENCES restaurant_menu_item(item_id)
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_order_item_option (
@@ -194,7 +194,7 @@ CREATE TABLE restaurant_order_combo_selection (
     selected_item_id INT NOT NULL,
     FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id),
     FOREIGN KEY (combo_group_id) REFERENCES restaurant_combo_group(combo_group_id),
-    FOREIGN KEY (selected_item_id) REFERENCES restaurant_menu_item(item_id)
+    FOREIGN KEY (selected_item_id) REFERENCES restaurant_item(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_menu_section (
@@ -212,6 +212,6 @@ CREATE TABLE restaurant_menu_section_item (
     item_id INT NOT NULL,
     menu_section_id INT NOT NULL,
     PRIMARY KEY (item_id, menu_section_id),
-    FOREIGN KEY (item_id) REFERENCES restaurant_menu_item(item_id),
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id),
     FOREIGN KEY (menu_section_id) REFERENCES restaurant_menu_section(menu_section_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

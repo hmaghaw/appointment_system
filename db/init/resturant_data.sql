@@ -38,7 +38,7 @@ VALUES
 -- ======================
 -- MENU ITEMS
 -- ======================
-INSERT INTO restaurant_menu_item (item_id, item_category_id, name, description, base_price, is_combo, is_active, image_url)
+INSERT INTO restaurant_item (item_id, item_category_id, name, description, base_price, is_combo, is_active, image_url)
 VALUES
 (1, 1, 'Margherita Pizza', 'Classic cheese & tomato', 9.99, FALSE, TRUE, NULL),
 (2, 1, 'Pepperoni Pizza', 'Spicy pepperoni & cheese', 11.99, FALSE, TRUE, NULL),
