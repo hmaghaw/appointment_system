@@ -2201,6 +2201,341 @@ def assign_availability_to_menu():
         }), 500
 
 
+@bp.route('/create_menu_section', methods=['POST'])
+def create_menu_section():
+    """
+    Create a new menu section
+    
+    Request body:
+    {
+        "menu_id": 1,           # Required
+        "name": "Appetizers",   # Required
+        "description": "Start your meal right",  # Optional
+        "display_order": 1      # Optional, defaults to 0
+    }
+    
+    Returns:
+        JSON response with the created menu section details
+        {
+            "status": "success",
+            "data": {
+                "menu_section_id": 1,
+                "menu_id": 1,
+                "name": "Appetizers",
+                "description": "Start your meal right",
+                "display_order": 1
+            }
+        }
+    """
+    data = request.get_json()
+    
+    # Validate required fields
+    if not data or 'menu_id' not in data or 'name' not in data:
+        return jsonify({
+            'status': 'error',
+            'message': 'menu_id and name are required fields'
+        }), 400
+        
+    menu_id = data['menu_id']
+    name = data['name']
+    description = data.get('description', '')
+    display_order = data.get('display_order', 0)
+    
+    # Get business_id from menu to validate ownership
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get business_id from menu
+        cursor.execute(
+            "SELECT business_id FROM restaurant_menu WHERE menu_id = %s",
+            (menu_id,)
+        )
+        menu = cursor.fetchone()
+        
+        if not menu:
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu not found'
+            }), 404
+            
+        business_id = menu['business_id']
+        
+        # Insert the new menu section
+        insert_query = """
+            INSERT INTO restaurant_menu_section 
+            (business_id, menu_id, name, description, display_order)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(
+            insert_query,
+            (business_id, menu_id, name, description, display_order)
+        )
+        menu_section_id = cursor.lastrowid
+        
+        # Get the created menu section
+        cursor.execute(
+            "SELECT * FROM restaurant_menu_section WHERE menu_section_id = %s",
+            (menu_section_id,)
+        )
+        created_section = cursor.fetchone()
+        
+        conn.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'data': created_section
+        }), 201
+        
+    except mysql.connector.Error as err:
+        conn.rollback()
+        logger.error(f"Database error in create_menu_section: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'details': str(err)
+        }), 500
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+        logger.error(f"Error in create_menu_section: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'details': str(e)
+        }), 500
+        
+    finally:
+        if 'cursor' in locals() and cursor is not None:
+            cursor.close()
+        if 'conn' in locals() and conn is not None and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/update_menu_section', methods=['POST'])
+def update_menu_section():
+    """
+    Update an existing menu section
+    
+    Request body:
+    {
+        "menu_section_id": 1,      # Required
+        "name": "Updated Name",    # Optional
+        "description": "Updated description",  # Optional
+        "display_order": 2         # Optional
+    }
+    
+    Returns:
+        JSON response with the updated menu section details
+        {
+            "status": "success",
+            "data": {
+                "menu_section_id": 1,
+                "menu_id": 1,
+                "name": "Updated Name",
+                "description": "Updated description",
+                "display_order": 2
+            }
+        }
+    """
+    data = request.get_json()
+    
+    # Validate required fields
+    if not data or 'menu_section_id' not in data:
+        return jsonify({
+            'status': 'error',
+            'message': 'menu_section_id is required'
+        }), 400
+        
+    menu_section_id = data['menu_section_id']
+    
+    # Build the update query based on provided fields
+    update_fields = []
+    params = []
+    
+    if 'name' in data:
+        update_fields.append("name = %s")
+        params.append(data['name'])
+        
+    if 'description' in data:
+        update_fields.append("description = %s")
+        params.append(data['description'])
+        
+    if 'display_order' in data:
+        update_fields.append("display_order = %s")
+        params.append(data['display_order'])
+    
+    if not update_fields:
+        return jsonify({
+            'status': 'error',
+            'message': 'No fields to update. Provide at least one field to update (name, description, or display_order)'
+        }), 400
+    
+    params.append(menu_section_id)  # For the WHERE clause
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Check if menu section exists
+        cursor.execute(
+            "SELECT * FROM restaurant_menu_section WHERE menu_section_id = %s",
+            (menu_section_id,)
+        )
+        menu_section = cursor.fetchone()
+        
+        if not menu_section:
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu section not found'
+            }), 404
+        
+        # Build and execute the update query
+        update_query = """
+            UPDATE restaurant_menu_section
+            SET {}
+            WHERE menu_section_id = %s
+        """.format(", ".join(update_fields))
+        
+        cursor.execute(update_query, params)
+        
+        # Get the updated menu section
+        cursor.execute(
+            "SELECT * FROM restaurant_menu_section WHERE menu_section_id = %s",
+            (menu_section_id,)
+        )
+        updated_section = cursor.fetchone()
+        
+        conn.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'data': updated_section
+        })
+        
+    except mysql.connector.Error as err:
+        conn.rollback()
+        logger.error(f"Database error in update_menu_section: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'details': str(err)
+        }), 500
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+        logger.error(f"Error in update_menu_section: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'details': str(e)
+        }), 500
+        
+    finally:
+        if 'cursor' in locals() and cursor is not None:
+            cursor.close()
+        if 'conn' in locals() and conn is not None and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/delete_menu_section', methods=['POST'])
+def delete_menu_section():
+    """
+    Delete a menu section
+    
+    Request body:
+    {
+        "menu_section_id": 1  # Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Menu section deleted successfully",
+            "deleted_id": 1
+        }
+    """
+    data = request.get_json()
+    
+    # Validate required fields
+    if not data or 'menu_section_id' not in data:
+        return jsonify({
+            'status': 'error',
+            'message': 'menu_section_id is required'
+        }), 400
+        
+    menu_section_id = data['menu_section_id']
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Check if menu section exists
+        cursor.execute(
+            "SELECT menu_section_id FROM restaurant_menu_section WHERE menu_section_id = %s",
+            (menu_section_id,)
+        )
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu section not found'
+            }), 404
+        
+        # First, delete all menu item associations with this section
+        cursor.execute(
+            "DELETE FROM restaurant_menu_item_section_map WHERE menu_section_id = %s",
+            (menu_section_id,)
+        )
+        
+        # Then delete the menu section
+        cursor.execute(
+            "DELETE FROM restaurant_menu_section WHERE menu_section_id = %s",
+            (menu_section_id,)
+        )
+        
+        if cursor.rowcount == 0:
+            return jsonify({
+                'status': 'error',
+                'message': 'No menu section was deleted. It may have already been deleted.'
+            }), 404
+        
+        conn.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Menu section deleted successfully',
+            'deleted_id': menu_section_id
+        })
+        
+    except mysql.connector.Error as err:
+        conn.rollback()
+        logger.error(f"Database error in delete_menu_section: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'details': str(err)
+        }), 500
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+        logger.error(f"Error in delete_menu_section: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'details': str(e)
+        }), 500
+        
+    finally:
+        if 'cursor' in locals() and cursor is not None:
+            cursor.close()
+        if 'conn' in locals() and conn is not None and conn.is_connected():
+            conn.close()
+
+
 @bp.route('/list_availabilities', methods=['POST'])
 def list_availabilities():
     """
@@ -2224,56 +2559,57 @@ def list_availabilities():
             ]
         }
     """
-    try:
-        data = request.get_json()
-
-        if 'business_id' not in data or data['business_id'] is None:
-            return jsonify({
-                'status': 'error',
-                'message': 'business_id is required',
-                'error_code': 'MISSING_BUSINESS_ID'
-            }), 400
-
-        conn = None
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-
-            # Get all availabilities for the business
-            query = """
-                    SELECT availability_id, name
-                    FROM restaurant_availability
-                    WHERE business_id = %s
-                    ORDER BY name \
-                    """
-
-            cursor.execute(query, (data['business_id'],))
-            availabilities = cursor.fetchall()
-
-            return jsonify({
-                'status': 'success',
-                'data': availabilities
-            })
-
-        except mysql.connector.Error as err:
-            logger.error(f"Database error in list_availabilities: {err}")
-            return jsonify({
-                'status': 'error',
-                'message': 'Database error',
-                'error_code': 'DATABASE_ERROR'
-            }), 500
-        finally:
-            if conn and conn.is_connected():
-                cursor.close()
-                conn.close()
-
-    except Exception as e:
-        logger.error(f"Error in list_availabilities: {e}")
+    data = request.get_json()
+    
+    # Validate required fields
+    if not data or 'business_id' not in data:
         return jsonify({
             'status': 'error',
-            'message': 'An error occurred while fetching availabilities',
-            'error_code': str(e)
+            'message': 'business_id is required'
+        }), 400
+        
+    business_id = data['business_id']
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Query to get all availabilities for the business
+        query = """
+            SELECT availability_id, name
+            FROM restaurant_availability
+            WHERE business_id = %s
+            ORDER BY name
+        """
+        cursor.execute(query, (business_id,))
+        availabilities = cursor.fetchall()
+        
+        return jsonify({
+            'status': 'success',
+            'data': availabilities
+        })
+        
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in list_availabilities: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'details': str(err)
         }), 500
+        
+    except Exception as e:
+        logger.error(f"Error in list_availabilities: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'details': str(e)
+        }), 500
+        
+    finally:
+        if 'cursor' in locals() and cursor is not None:
+            cursor.close()
+        if 'conn' in locals() and conn is not None and conn.is_connected():
+            conn.close()
 
 
 @bp.route('/list_availability_details', methods=['POST'])
