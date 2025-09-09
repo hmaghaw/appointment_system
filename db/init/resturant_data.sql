@@ -72,14 +72,14 @@ VALUES
 -- ======================
 -- ITEM OPTIONS (Pizza sizes)
 -- ======================
-INSERT INTO restaurant_menu_item_option_group (option_group_id, item_id, name, is_required, min_select, max_select, display_order)
+INSERT INTO restaurant_item_option_group (option_group_id, item_id, name, is_required, min_select, max_select, display_order)
 VALUES
 (1, 1, 'Size', TRUE, 1, 1, 1),
 (2, 2, 'Size', TRUE, 1, 1, 1),
 (3, 3, 'Size', TRUE, 1, 1, 1),
 (4, 9, 'Size', TRUE, 1, 1, 1);
 
-INSERT INTO restaurant_menu_item_option (option_id, option_group_id, name, price_delta, is_default)
+INSERT INTO restaurant_item_option (option_id, option_group_id, name, price_delta, is_default)
 VALUES
 -- Margherita Pizza
 (1, 1, 'Small', 0.00, TRUE),

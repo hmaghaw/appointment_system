@@ -41,7 +41,7 @@ CREATE TABLE restaurant_item (
 -- ======================
 -- ITEM OPTIONS (VARIATIONS)
 -- ======================
-CREATE TABLE restaurant_menu_item_option_group (
+CREATE TABLE restaurant_item_option_group (
     option_group_id INT AUTO_INCREMENT PRIMARY KEY,
     item_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,           -- e.g., Size, Toppings
@@ -52,13 +52,13 @@ CREATE TABLE restaurant_menu_item_option_group (
     FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE restaurant_menu_item_option (
+CREATE TABLE restaurant_item_option (
     option_id INT AUTO_INCREMENT PRIMARY KEY,
     option_group_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,           -- e.g., Small, Medium, Large
     price_delta DECIMAL(10,2) DEFAULT 0,
     is_default BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (option_group_id) REFERENCES restaurant_menu_item_option_group(option_group_id)
+    FOREIGN KEY (option_group_id) REFERENCES restaurant_item_option_group(option_group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ======================
@@ -175,7 +175,7 @@ CREATE TABLE restaurant_order_item_option (
     option_id INT NOT NULL,
     price_delta DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id),
-    FOREIGN KEY (option_id) REFERENCES restaurant_menu_item_option(option_id)
+    FOREIGN KEY (option_id) REFERENCES restaurant_item_option(option_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_order_item_modifier (
