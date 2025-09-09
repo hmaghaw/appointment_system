@@ -600,7 +600,6 @@ def list_menu_sections():
         JSON response with list of menu sections
     """
     try:
-        # Get request data
         data = request.get_json()
         if not data or 'menu_id' not in data:
             return jsonify({
@@ -831,9 +830,11 @@ def update_menu():
         if 'name' in data:
             update_fields.append("name = %s")
             params.append(data['name'])
+
         if 'description' in data:
             update_fields.append("description = %s")
             params.append(data['description'])
+
         if 'is_active' in data:
             update_fields.append("is_active = %s")
             params.append(data['is_active'])
@@ -848,13 +849,13 @@ def update_menu():
         # Add menu_id to params
         params.append(menu_id)
 
-        # Build and execute update query
-        query = f"""
+        # Build and execute the update query
+        update_query = f"""
             UPDATE restaurant_menu 
             SET {', '.join(update_fields)}
             WHERE menu_id = %s
         """
-        execute_query(query, params)
+        execute_query(update_query, params)
 
         # Get the updated menu
         query = "SELECT * FROM restaurant_menu WHERE menu_id = %s"
@@ -946,6 +947,7 @@ def delete_menu():
             'error_code': e
         }), 500
 
+
 @bp.route('/list_modifier_groups', methods=['POST'])
 def list_modifier_groups():
     """
@@ -1013,6 +1015,7 @@ def list_modifier_groups():
             'message': 'An unexpected error occurred',
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
+
 
 @bp.route('/list_modifiers', methods=['POST'])
 def list_modifiers():
@@ -1416,7 +1419,7 @@ def list_item_modifier_groups():
                 {
                     "modifier_group_id": 1,
                     "group_name": "Toppings",
-                    "is_required": 1,
+                    "is_required": true,
                     "min_select": 1,
                     "max_select": 3,
                     "modifiers": [
@@ -1556,6 +1559,9 @@ def add_item_modifier_group():
                 'error_code': 'MISSING_FIELDS'
             }), 400
 
+        item_id = data['item_id']
+        option_group_id = data['modifier_group_id']
+
         # Check if the association already exists
         check_query = """
                       SELECT 1
@@ -1563,7 +1569,7 @@ def add_item_modifier_group():
                       WHERE item_id = %s \
                         AND modifier_group_id = %s \
                       """
-        if execute_query(check_query, (data['item_id'], data['modifier_group_id']), fetch=True):
+        if execute_query(check_query, (item_id, option_group_id), fetch=True):
             return jsonify({
                 'status': 'error',
                 'message': 'This modifier group is already associated with the item',
@@ -1576,14 +1582,14 @@ def add_item_modifier_group():
                            (item_id, modifier_group_id)
                        VALUES (%s, %s) \
                        """
-        execute_query(insert_query, (data['item_id'], data['modifier_group_id']))
+        execute_query(insert_query, (item_id, option_group_id))
 
         return jsonify({
             'status': 'success',
             'message': 'Modifier group added to item successfully',
             'data': {
-                'item_id': data['item_id'],
-                'modifier_group_id': data['modifier_group_id']
+                'item_id': item_id,
+                'modifier_group_id': option_group_id
             }
         }), 201
 
@@ -1623,6 +1629,9 @@ def delete_item_modifier_group():
                 'error_code': 'MISSING_FIELDS'
             }), 400
 
+        item_id = data['item_id']
+        option_group_id = data['modifier_group_id']
+
         # Check if the association exists first
         check_query = """
             SELECT 1 
@@ -1630,7 +1639,7 @@ def delete_item_modifier_group():
             WHERE item_id = %s AND modifier_group_id = %s
             LIMIT 1
         """
-        if not execute_query(check_query, (data['item_id'], data['modifier_group_id']), fetch=True):
+        if not execute_query(check_query, (item_id, option_group_id), fetch=True):
             return jsonify({
                 'status': 'error',
                 'message': 'No matching association found between item and modifier group',
@@ -1642,14 +1651,14 @@ def delete_item_modifier_group():
             DELETE FROM restaurant_item_modifier_group
             WHERE item_id = %s AND modifier_group_id = %s
         """
-        execute_query(delete_query, (data['item_id'], data['modifier_group_id']))
+        execute_query(delete_query, (item_id, option_group_id))
 
         return jsonify({
             'status': 'success',
             'message': 'Modifier group removed from item successfully',
             'data': {
-                'item_id': data['item_id'],
-                'modifier_group_id': data['modifier_group_id']
+                'item_id': item_id,
+                'modifier_group_id': option_group_id
             }
         })
 
@@ -3297,8 +3306,11 @@ def update_item_category():
             # Check if the new name already exists for this business
             existing = execute_query(
                 """
-                SELECT * FROM restaurant_item_category 
-                WHERE business_id = %s AND name = %s AND item_category_id != %s
+                SELECT * 
+                FROM restaurant_item_category 
+                WHERE business_id = %s 
+                  AND name = %s 
+                  AND item_category_id != %s
                 """,
                 (category['business_id'], data['name'], item_category_id),
                 fetch=True
@@ -3369,7 +3381,6 @@ def update_item_category():
             'error': str(e),
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
-
 
 @bp.route('/delete_item_category', methods=['POST'])
 def delete_item_category():
@@ -3485,15 +3496,9 @@ def list_item_option_groups():
             """
             SELECT 
                 option_group_id, 
-                item_id, 
-                name, 
-                is_required, 
-                min_select, 
-                max_select, 
-                display_order
+                item_id
             FROM restaurant_item_option_group
             WHERE item_id = %s
-            ORDER BY display_order, name
             """,
             (item_id,),
             fetch=True
@@ -3528,12 +3533,8 @@ def create_item_option_group():
 
     Request body:
     {
-        "item_id": 1,           # Required
-        "name": "Size",         # Required
-        "is_required": true,    # Optional, defaults to true
-        "min_select": 1,        # Optional, defaults to 1
-        "max_select": 1,        # Optional, defaults to 1
-        "display_order": 1      # Optional, defaults to 0
+        "item_id": 1,          # Required
+        "option_group_id": 1   # Required
     }
 
     Returns:
@@ -3543,69 +3544,72 @@ def create_item_option_group():
         data = request.get_json()
 
         # Validate required fields
-        required_fields = ['item_id', 'name']
+        required_fields = ['item_id', 'option_group_id']
         for field in required_fields:
-            if field not in data or not data[field]:
+            if field not in data or data[field] is None:
                 return jsonify({
                     'status': 'error',
                     'message': f'Missing required field: {field}',
                     'error_code': 'MISSING_REQUIRED_FIELD'
                 }), 400
 
-        # Set default values for optional fields
-        is_required = data.get('is_required', True)
-        min_select = data.get('min_select', 1)
-        max_select = data.get('max_select', 1)
-        display_order = data.get('display_order', 0)
+        item_id = data['item_id']
+        option_group_id = data['option_group_id']
 
-        # Check if item exists
-        item = execute_query(
-            "SELECT * FROM restaurant_item WHERE item_id = %s",
-            (data['item_id'],),
-            fetch=True
-        )
-
-        if not item:
-            return jsonify({
-                'status': 'error',
-                'message': 'Item not found',
-                'error_code': 'ITEM_NOT_FOUND'
-            }), 404
-
-        # Check if option group with same name already exists for this item
-        existing_group = execute_query(
+        # Check if the option group is already associated with the item
+        existing = execute_query(
             """
             SELECT * 
             FROM restaurant_item_option_group 
-            WHERE item_id = %s 
-              AND name = %s
+            WHERE item_id = %s AND option_group_id = %s
             """,
-            (data['item_id'], data['name']),
+            (item_id, option_group_id),
             fetch=True
         )
-
-        if existing_group:
+        
+        if existing:
             return jsonify({
                 'status': 'error',
-                'message': f'An option group with name "{data["name"]}" already exists for this item',
-                'error_code': 'DUPLICATE_OPTION_GROUP'
-            }), 400
+                'message': 'This option group is already associated with the specified item',
+                'error_code': 'DUPLICATE_OPTION_GROUP',
+                'item_id': item_id,
+                'option_group_id': option_group_id
+            }), 409  # 409 Conflict
 
-        # Create the option group
+        # Check if the item exists
+        item = execute_query(
+            "SELECT * FROM restaurant_item WHERE item_id = %s",
+            (item_id,),
+            fetch=True
+        )
+        if not item:
+            return jsonify({
+                'status': 'error',
+                'message': f'Item with ID {item_id} not found',
+                'error_code': 'ITEM_NOT_FOUND'
+            }), 404
+
+        # Check if the option group exists
+        option_group = execute_query(
+            "SELECT * FROM restaurant_option_group WHERE option_group_id = %s",
+            (option_group_id,),
+            fetch=True
+        )
+        if not option_group:
+            return jsonify({
+                'status': 'error',
+                'message': f'Option group with ID {option_group_id} not found',
+                'error_code': 'OPTION_GROUP_NOT_FOUND'
+            }), 404
+
+        # Insert the new option group
         execute_query(
             """
             INSERT INTO restaurant_item_option_group 
-                (item_id, name, is_required, min_select, max_select, display_order)
-            VALUES (%s, %s, %s, %s, %s, %s)
+                (item_id, option_group_id)
+            VALUES (%s, %s)
             """,
-            (
-                data['item_id'],
-                data['name'],
-                is_required,
-                min_select,
-                max_select,
-                display_order
-            ),
+            (item_id, option_group_id),
             fetch=False
         )
 
@@ -3614,8 +3618,9 @@ def create_item_option_group():
             """
             SELECT * 
             FROM restaurant_item_option_group 
-            WHERE option_group_id = LAST_INSERT_ID()
+            WHERE item_id = %s AND option_group_id = %s
             """,
+            (item_id, option_group_id),
             fetch=True
         )
 
@@ -3640,230 +3645,6 @@ def create_item_option_group():
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
 
-    
-@bp.route('/update_item_option_group', methods=['POST'])
-def update_item_option_group():
-    """
-    Update an existing option group
-    
-    Request body:
-    {
-        "option_group_id": 1,  # Required
-        "name": "New Name",    # Optional
-        "is_required": true,   # Optional
-        "min_select": 1,       # Optional
-        "max_select": 1,       # Optional
-        "display_order": 0     # Optional
-    }
-    
-    Returns:
-        JSON response with the updated option group details
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        if 'option_group_id' not in data or not data['option_group_id']:
-            return jsonify({
-                'status': 'error',
-                'message': 'Missing required field: option_group_id',
-                'error_code': 'MISSING_REQUIRED_FIELD'
-            }), 400
-        
-        option_group_id = data['option_group_id']
-        
-        # Check if option group exists
-        existing_group = execute_query(
-            "SELECT * FROM restaurant_item_option_group WHERE option_group_id = %s",
-            (option_group_id,),
-            fetch=True
-        )
-        
-        if not existing_group:
-            return jsonify({
-                'status': 'error',
-                'message': 'Option group not found',
-                'error_code': 'OPTION_GROUP_NOT_FOUND'
-            }), 404
-        
-        current_group = existing_group[0]
-        
-        # Check for duplicate name if name is being updated
-        if 'name' in data and data['name'] != current_group['name']:
-            duplicate = execute_query(
-                """
-                SELECT * 
-                FROM restaurant_item_option_group 
-                WHERE item_id = %s 
-                  AND name = %s 
-                  AND option_group_id != %s
-                """,
-                (current_group['item_id'], data['name'], option_group_id),
-                fetch=True
-            )
-            
-            if duplicate:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'An option group with name "{data["name"]}" already exists for this item',
-                    'error_code': 'DUPLICATE_OPTION_GROUP'
-                }), 400
-        
-        # Prepare update fields
-        update_fields = []
-        params = []
-        
-        if 'name' in data:
-            update_fields.append("name = %s")
-            params.append(data['name'])
-            
-        if 'is_required' in data:
-            update_fields.append("is_required = %s")
-            params.append(data['is_required'])
-            
-        if 'min_select' in data:
-            update_fields.append("min_select = %s")
-            params.append(data['min_select'])
-            
-        if 'max_select' in data:
-            update_fields.append("max_select = %s")
-            params.append(data['max_select'])
-            
-        if 'display_order' in data:
-            update_fields.append("display_order = %s")
-            params.append(data['display_order'])
-        
-        # If no fields to update
-        if not update_fields:
-            return jsonify({
-                'status': 'success',
-                'message': 'No changes detected',
-                'data': current_group
-            })
-        
-        # Add option_group_id to params for WHERE clause
-        params.append(option_group_id)
-        
-        # Build and execute update query
-        update_query = f"""
-            UPDATE restaurant_item_option_group
-            SET {', '.join(update_fields)}
-            WHERE option_group_id = %s
-        """
-        
-        execute_query(update_query, tuple(params), fetch=False)
-        
-        # Get the updated option group
-        updated_group = execute_query(
-            "SELECT * FROM restaurant_item_option_group WHERE option_group_id = %s",
-            (option_group_id,),
-            fetch=True
-        )
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Option group updated successfully',
-            'data': updated_group[0] if updated_group else None
-        })
-        
-    except mysql.connector.Error as err:
-        return jsonify({
-            'status': 'error',
-            'message': 'Database error',
-            'error': str(err),
-            'error_code': 'DATABASE_ERROR'
-        }), 500
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': 'An unexpected error occurred',
-            'error': str(e),
-            'error_code': 'INTERNAL_SERVER_ERROR'
-        }), 500
-
-
-@bp.route('/delete_item_option_group', methods=['POST'])
-def delete_item_option_group():
-    """
-    Delete an option group
-    
-    Request body:
-    {
-        "option_group_id": 1  # Required
-    }
-    
-    Returns:
-        JSON response with success/error message
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        if 'option_group_id' not in data or not data['option_group_id']:
-            return jsonify({
-                'status': 'error',
-                'message': 'Missing required field: option_group_id',
-                'error_code': 'MISSING_REQUIRED_FIELD'
-            }), 400
-        
-        option_group_id = data['option_group_id']
-        
-        # Check if option group exists
-        option_group = execute_query(
-            "SELECT * FROM restaurant_item_option_group WHERE option_group_id = %s",
-            (option_group_id,),
-            fetch=True
-        )
-        
-        if not option_group:
-            return jsonify({
-                'status': 'error',
-                'message': 'Option group not found',
-                'error_code': 'OPTION_GROUP_NOT_FOUND'
-            }), 404
-        
-        # Check if there are any options in this group
-        option_count = execute_query(
-            "SELECT COUNT(*) as count FROM restaurant_option WHERE option_group_id = %s",
-            (option_group_id,),
-            fetch=True
-        )
-        
-        if option_count and option_count[0]['count'] > 0:
-            return jsonify({
-                'status': 'error',
-                'message': f'Cannot delete option group: {option_count[0]["count"]} option(s) exist in this group',
-                'error_code': 'OPTION_GROUP_NOT_EMPTY',
-                'option_count': option_count[0]['count']
-            }), 400
-        
-        # Delete the option group
-        execute_query(
-            "DELETE FROM restaurant_item_option_group WHERE option_group_id = %s",
-            (option_group_id,),
-            fetch=False
-        )
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Option group deleted successfully',
-            'deleted_id': option_group_id
-        })
-        
-    except mysql.connector.Error as err:
-        return jsonify({
-            'status': 'error',
-            'message': 'Database error',
-            'error': str(err),
-            'error_code': 'DATABASE_ERROR'
-        }), 500
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': 'An unexpected error occurred',
-            'error': str(e),
-            'error_code': 'INTERNAL_SERVER_ERROR'
-        }), 500
 
 @bp.route('/list_option', methods=['POST'])
 def list_item_options():
@@ -4298,6 +4079,90 @@ def delete_item_option():
             'status': 'success',
             'message': 'Option deleted successfully',
             'deleted_id': option_id
+        })
+        
+    except mysql.connector.Error as err:
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error': str(err),
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error': str(e),
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
+
+@bp.route('/delete_item_option_group', methods=['POST'])
+def delete_item_option_group():
+    """
+    Delete an option group association from an item
+    
+    Request body:
+    {
+        "item_id": 4,          # Required
+        "option_group_id": 2   # Required
+    }
+    
+    Returns:
+        JSON response with success/error message
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['item_id', 'option_group_id']
+        for field in required_fields:
+            if field not in data or data[field] is None:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}',
+                    'error_code': 'MISSING_REQUIRED_FIELD'
+                }), 400
+        
+        item_id = data['item_id']
+        option_group_id = data['option_group_id']
+        
+        # Check if the association exists
+        existing = execute_query(
+            """
+            SELECT * 
+            FROM restaurant_item_option_group 
+            WHERE item_id = %s AND option_group_id = %s
+            """,
+            (item_id, option_group_id),
+            fetch=True
+        )
+        
+        if not existing:
+            return jsonify({
+                'status': 'error',
+                'message': 'No matching association found between item and option group',
+                'error_code': 'ASSOCIATION_NOT_FOUND',
+                'item_id': item_id,
+                'option_group_id': option_group_id
+            }), 404
+        
+        # Delete the association
+        execute_query(
+            """
+            DELETE FROM restaurant_item_option_group 
+            WHERE item_id = %s AND option_group_id = %s
+            """,
+            (item_id, option_group_id),
+            fetch=False
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Option group association removed successfully',
+            'data': {
+                'item_id': item_id,
+                'option_group_id': option_group_id
+            }
         })
         
     except mysql.connector.Error as err:
