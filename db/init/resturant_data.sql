@@ -54,7 +54,7 @@ VALUES
 -- ======================
 -- MAP ITEMS TO MENU SECTIONS
 -- ======================
-INSERT INTO restaurant_menu_item_section_map (item_id, menu_section_id)
+INSERT INTO restaurant_menu_section_item (item_id, menu_section_id)
 VALUES
 -- Breakfast Menu
 (9, 1), (4, 2), (5, 2), (6, 2),

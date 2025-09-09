@@ -208,7 +208,7 @@ CREATE TABLE restaurant_menu_section (
     FOREIGN KEY (menu_id) REFERENCES restaurant_menu(menu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE restaurant_menu_item_section_map (
+CREATE TABLE restaurant_menu_section_item (
     item_id INT NOT NULL,
     menu_section_id INT NOT NULL,
     PRIMARY KEY (item_id, menu_section_id),
