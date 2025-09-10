@@ -241,3 +241,29 @@ INSERT INTO restaurant_item_tag (item_id, tag_id) VALUES
 (4, 5);  -- Halal
 
 
+-- Margherita Pizza: Pizzas, Vegetarian Dishes, Halal Specials
+INSERT INTO restaurant_item_category_map (item_id, item_category_id) VALUES
+(1, 1),
+(2, 1),
+(3, 1);
+
+-- Pepperoni Pizza: Pizzas, Halal Specials
+INSERT INTO restaurant_item_category_map (item_id, item_category_id) VALUES
+(4, 3),
+(8, 3),
+(7, 3);
+
+-- Veggie Pizza: Pizzas, Vegetarian Dishes
+INSERT INTO restaurant_item_category_map (item_id, item_category_id) VALUES
+(4, 2),
+(5, 2),
+(6, 2);
+
+-- French Fries: Sides, Kids Menu
+INSERT INTO restaurant_item_category_map (item_id, item_category_id) VALUES
+(4, 3),
+(4, 4);
+
+-- Chicken Shawarma: Halal Specials, Main Dish (if you had that category)
+INSERT INTO restaurant_item_category_map (item_id, item_category_id) VALUES
+(5, 5);

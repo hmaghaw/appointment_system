@@ -1360,7 +1360,7 @@ def delete_modifier_group():
 
         # Check if modifier group exists
         check_query = """
-                      SELECT 1 \
+                      SELECT * \
                       FROM restaurant_modifier_group
                       WHERE modifier_group_id = %s \
                       """
@@ -3742,280 +3742,251 @@ def list_item_options():
 
 
 @bp.route('/create_option', methods=['POST'])
-def create_item_option():
+def create_option():
     """
     Create a new option for an option group
-    
+
     Request body:
     {
-        "option_group_id": 1,  # Required
-        "name": "Large",       # Required
-        "price_delta": 2.50,   # Optional, defaults to 0
-        "is_default": false    # Optional, defaults to false
+        "option_group_id": 1,  // Required
+        "name": "Large",      // Required
+        "price": 2.99,        // Optional, defaults to 0
+        "is_default": true,   // Optional, defaults to false
+        "is_available": true  // Optional, defaults to true
     }
-    
-    Returns:
-        JSON response with the created option details
     """
+    conn = None
+    cursor = None
+
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         required_fields = ['option_group_id', 'name']
-        for field in required_fields:
-            if field not in data or data[field] is None:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Missing required field: {field}',
-                    'error_code': 'MISSING_REQUIRED_FIELD'
-                }), 400
-        
-        # Set default values for optional fields
-        price_delta = data.get('price_delta', 0)
-        is_default = data.get('is_default', False)
-        
+        if not all(field in data for field in required_fields):
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields: {required_fields}',
+                'error_code': 'MISSING_REQUIRED_FIELDS'
+            }), 400
+
+        # Set default values
+        price = float(data.get('price', 0))
+        is_default = bool(data.get('is_default', False))
+        is_available = bool(data.get('is_available', True))
+
+        # Get database connection and cursor
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
         # Check if option group exists
-        option_group = execute_query(
+        cursor.execute(
             "SELECT * FROM restaurant_option_group WHERE option_group_id = %s",
-            (data['option_group_id'],),
-            fetch=True
+            (data['option_group_id'],)
         )
-        
+        option_group = cursor.fetchone()
+
         if not option_group:
             return jsonify({
                 'status': 'error',
                 'message': 'Option group not found',
                 'error_code': 'OPTION_GROUP_NOT_FOUND'
             }), 404
-        
-        # Check for duplicate option name in the same group
-        existing_option = execute_query(
-            """
-            SELECT * 
-            FROM restaurant_option 
-            WHERE option_group_id = %s AND name = %s
-            """,
-            (data['option_group_id'], data['name']),
-            fetch=True
+
+        # Check if this is the first option in the group
+        cursor.execute(
+            "SELECT COUNT(*) as count FROM restaurant_option WHERE option_group_id = %s",
+            (data['option_group_id'],)
         )
-        
-        if existing_option:
-            return jsonify({
-                'status': 'error',
-                'message': f'An option with name "{data["name"]}" already exists in this group',
-                'error_code': 'DUPLICATE_OPTION_NAME'
-            }), 400
-        
-        # If setting as default, unset any existing default in this group
+        count_result = cursor.fetchone()
+        is_first_option = count_result['count'] == 0
+
+        # If this is the first option, set it as default
+        if is_first_option:
+            is_default = True
+
+        # If this option is being set as default, update other options in the group
         if is_default:
-            execute_query(
-                """
-                UPDATE restaurant_option 
-                SET is_default = FALSE 
-                WHERE option_group_id = %s AND is_default = TRUE
-                """,
-                (data['option_group_id'],),
-                fetch=False
+            cursor.execute(
+                "UPDATE restaurant_option SET is_default = FALSE WHERE option_group_id = %s",
+                (data['option_group_id'],)
             )
-        
+
         # Create the option
-        execute_query(
+        cursor.execute(
             """
-            INSERT INTO restaurant_option 
+            INSERT INTO restaurant_option
                 (option_group_id, name, price_delta, is_default)
             VALUES (%s, %s, %s, %s)
             """,
             (
                 data['option_group_id'],
-                data['name'],
-                price_delta,
+                data['name'].strip(),
+                price,
                 is_default
-            ),
-            fetch=False
+            )
         )
-        
+
+        option_id = cursor.lastrowid
+
         # Get the created option
-        new_option = execute_query(
-            """
-            SELECT * 
-            FROM restaurant_option 
-            WHERE option_id = LAST_INSERT_ID()
-            """,
-            fetch=True
+        cursor.execute(
+            "SELECT * FROM restaurant_option WHERE option_id = %s",
+            (option_id,)
         )
-        
+        new_option = cursor.fetchone()
+
+        conn.commit()
+
         return jsonify({
             'status': 'success',
             'message': 'Option created successfully',
-            'data': new_option[0] if new_option else None
+            'data': {
+                'option_id': new_option['option_id'],
+                'option_group_id': new_option['option_group_id'],
+                'name': new_option['name'],
+                'price': float(new_option['price_delta']),
+                'is_default': bool(new_option['is_default'])
+            }
         }), 201
-        
-    except mysql.connector.Error as err:
-        return jsonify({
-            'status': 'error',
-            'message': 'Database error',
-            'error': str(err),
-            'error_code': 'DATABASE_ERROR'
-        }), 500
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': 'An unexpected error occurred',
-            'error': str(e),
-            'error_code': 'INTERNAL_SERVER_ERROR'
-        }), 500
 
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Error in create_option: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while creating the option',
+            'error_code': str(e)
+        }), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
 
 @bp.route('/update_option', methods=['POST'])
-def update_item_option():
+def update_option():
     """
     Update an existing option
-    
+
     Request body:
     {
-        "option_id": 1,        # Required
-        "name": "Extra Large", # Optional
-        "price_delta": 3.00,   # Optional
-        "is_default": true     # Optional
+        "option_id": 1,          // Required
+        "name": "Updated Name",  // Optional
+        "price": 3.99,           // Optional
+        "is_default": true,      // Optional
+        "is_available": true     // Optional
     }
-    
-    Returns:
-        JSON response with the updated option details
     """
+    conn = None
+    cursor = None
+
     try:
         data = request.get_json()
-        
+
         # Validate required fields
-        if 'option_id' not in data or not data['option_id']:
+        if 'option_id' not in data:
             return jsonify({
                 'status': 'error',
-                'message': 'Missing required field: option_id',
-                'error_code': 'MISSING_REQUIRED_FIELD'
+                'message': 'option_id is required',
+                'error_code': 'MISSING_OPTION_ID'
             }), 400
-        
-        option_id = data['option_id']
-        
-        # Check if option exists
-        existing_option = execute_query(
-            """
-            SELECT o.*
-            FROM restaurant_option o
-            WHERE o.option_id = %s
-            """,
-            (option_id,),
-            fetch=True
-        )
 
-        if not existing_option:
+        option_id = data['option_id']
+
+        # Get database connection and cursor
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if option exists and get its current data
+        cursor.execute(
+            "SELECT * FROM restaurant_option WHERE option_id = %s",
+            (option_id,)
+        )
+        option = cursor.fetchone()
+
+        if not option:
             return jsonify({
                 'status': 'error',
                 'message': 'Option not found',
                 'error_code': 'OPTION_NOT_FOUND'
             }), 404
 
-        current_option = existing_option[0]
-        
-        # Check for duplicate name if name is being updated
-        if 'name' in data and data['name'] != current_option['name']:
-            duplicate = execute_query(
-                """
-                SELECT * 
-                FROM restaurant_option 
-                WHERE option_group_id = %s 
-                  AND name = %s 
-                  AND option_id != %s
-                """,
-                (current_option['option_group_id'], data['name'], option_id),
-                fetch=True
-            )
-            
-            if duplicate:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'An option with name "{data["name"]}" already exists in this group',
-                    'error_code': 'DUPLICATE_OPTION_NAME'
-                }), 400
-        
-        # If setting as default, unset any existing default in this group
-        if 'is_default' in data and data['is_default'] and not current_option['is_default']:
-            execute_query(
-                """
-                UPDATE restaurant_option 
-                SET is_default = FALSE 
-                WHERE option_group_id = %s AND is_default = TRUE
-                """,
-                (current_option['option_group_id'],),
-                fetch=False
-            )
-        
-        # Prepare update fields
+        # Build update fields
         update_fields = []
         params = []
-        
+
         if 'name' in data:
             update_fields.append("name = %s")
-            params.append(data['name'])
-            
+            params.append(data['name'].strip())
+
         if 'price_delta' in data:
             update_fields.append("price_delta = %s")
-            params.append(data['price_delta'])
-            
-        if 'is_default' in data:
+            params.append(float(data['price_delta']))
+
+        # Handle is_default
+        is_default_changed = 'is_default' in data
+        new_is_default = bool(data.get('is_default', False))
+
+        if is_default_changed:
             update_fields.append("is_default = %s")
-            params.append(data['is_default'])
-        
-        # If no fields to update
-        if not update_fields:
-            return jsonify({
-                'status': 'success',
-                'message': 'No changes detected',
-                'data': current_option
-            })
-        
-        # Add option_id to params for WHERE clause
-        params.append(option_id)
-        
-        # Build and execute update query
-        update_query = f"""
-            UPDATE restaurant_option
-            SET {', '.join(update_fields)}
-            WHERE option_id = %s
-        """
-        
-        execute_query(update_query, tuple(params), fetch=False)
-        
-        # Get the updated option
-        updated_option = execute_query(
+            params.append(new_is_default)
+
+            # If setting to default, update other options in the group
+            if new_is_default:
+                cursor.execute(
+                    "UPDATE restaurant_option SET is_default = FALSE WHERE option_group_id = %s AND option_id != %s",
+                    (option['option_group_id'], option_id)
+                )
+
+        # If there are fields to update
+        if update_fields:
+            params.append(option_id)  # For the WHERE clause
+
+            query = f"""
+                UPDATE restaurant_option 
+                SET {', '.join(update_fields)}
+                WHERE option_id = %s
             """
-            SELECT o.*
-            FROM restaurant_option o
-            WHERE o.option_id = %s
-            """,
-            (option_id,),
-            fetch=True
+
+            cursor.execute(query, tuple(params))
+
+        # Get the updated option
+        cursor.execute(
+            "SELECT * FROM restaurant_option WHERE option_id = %s",
+            (option_id,)
         )
-        
+        updated_option = cursor.fetchone()
+
+        conn.commit()
+
         return jsonify({
             'status': 'success',
             'message': 'Option updated successfully',
-            'data': updated_option[0] if updated_option else None
+            'data': {
+                'option_id': updated_option['option_id'],
+                'option_group_id': updated_option['option_group_id'],
+                'name': updated_option['name'],
+                'price': float(updated_option['price_delta']),
+                'is_default': bool(updated_option['is_default'])
+            }
         })
-        
-    except mysql.connector.Error as err:
-        return jsonify({
-            'status': 'error',
-            'message': 'Database error',
-            'error': str(err),
-            'error_code': 'DATABASE_ERROR'
-        }), 500
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': 'An unexpected error occurred',
-            'error': str(e),
-            'error_code': 'INTERNAL_SERVER_ERROR'
-        }), 500
 
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Error in update_option: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while updating the option',
+            'error_code': str(e)
+        }), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
 
 @bp.route('/delete_option', methods=['POST'])
 def delete_item_option():
@@ -4046,9 +4017,8 @@ def delete_item_option():
         # Check if option exists
         option = execute_query(
             """
-            SELECT o.*, g.item_id 
+            SELECT o.*
             FROM restaurant_option o
-            JOIN restaurant_option_group g ON o.option_group_id = g.option_group_id
             WHERE o.option_id = %s
             """,
             (option_id,),
@@ -5471,6 +5441,780 @@ def delete_option_group():
             'message': 'An error occurred while deleting the option group',
             'error_code': str(e)
         }), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/list_item_category_map', methods=['POST'])
+def list_item_category_map():
+    """
+    List all category mappings for an item
+    
+    Request body:
+    {
+        "item_id": 1  # Required
+    }
+    
+    Returns:
+        JSON response with list of category mappings for the specified item
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'item_id' not in data or not data['item_id']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item ID is required',
+                'error_code': 'MISSING_ITEM_ID'
+            }), 400
+            
+        # Get category mappings for the item
+        category_mappings = execute_query(
+            """
+            SELECT m.item_id, m.item_category_id, c.name as category_name
+            FROM restaurant_item_category_map m
+            JOIN restaurant_item_category c ON m.item_category_id = c.item_category_id
+            WHERE m.item_id = %s
+            ORDER BY c.name
+            """,
+            (data['item_id'],),
+            fetch=True
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': category_mappings or [],
+            'count': len(category_mappings) if category_mappings else 0
+        })
+        
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in list_item_category_map: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR'
+        }), 500
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in list_item_category_map: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
+
+@bp.route('/create_item', methods=['POST'])
+def create_item():
+    """
+    Create a new menu item
+
+    Request body:
+    {
+        "business_id": 1,           # Required
+        "name": "Cheeseburger",     # Required
+        "description": "Delicious cheeseburger with cheese",  # Optional
+        "base_price": 9.99,        # Required
+        "calories": 800,           # Optional
+        "preparation_time": 15,     # Optional, in minutes
+        "is_combo": false,         # Optional, defaults to false
+        "is_active": true,         # Optional, defaults to true
+        "image_url": "http://example.com/burger.jpg"  # Optional
+    }
+
+    Returns:
+        JSON response with the created item details or error message
+    """
+    conn = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['business_id', 'name', 'base_price']
+        for field in required_fields:
+            if field not in data or data[field] is None:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}',
+                    'error_code': f'MISSING_{field.upper()}'
+                }), 400
+
+        # Set default values for optional fields
+        description = data.get('description', '')
+        calories = data.get('calories')
+        preparation_time = data.get('preparation_time')
+        is_combo = data.get('is_combo', False)
+        is_active = data.get('is_active', True)
+        image_url = data.get('image_url')
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if business exists
+        cursor.execute(
+            "SELECT business_id FROM business WHERE business_id = %s",
+            (data['business_id'],)
+        )
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'Business not found',
+                'error_code': 'BUSINESS_NOT_FOUND'
+            }), 404
+
+        # Check for duplicate item name in the same business
+        cursor.execute(
+            """
+            SELECT item_id
+            FROM restaurant_item
+            WHERE business_id = %s
+              AND name = %s
+            """,
+            (data['business_id'], data['name'].strip())
+        )
+        if cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'An item with this name already exists for this business',
+                'error_code': 'DUPLICATE_ITEM_NAME'
+            }), 400
+
+        # Create the item
+        cursor.execute(
+            """
+            INSERT INTO restaurant_item (business_id, name, description, base_price,
+                                         calories, preparation_time, is_combo, is_active, image_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                data['business_id'],
+                data['name'].strip(),
+                description,
+                float(data['base_price']),
+                calories,
+                preparation_time,
+                is_combo,
+                is_active,
+                image_url
+            )
+        )
+
+        item_id = cursor.lastrowid
+
+        # Get the created item
+        cursor.execute(
+            """
+            SELECT *
+            FROM restaurant_item
+            WHERE item_id = %s
+            """,
+            (item_id,)
+        )
+
+        item = cursor.fetchone()
+        conn.commit()
+
+        # Convert Decimal to float for JSON serialization
+        if item:
+            item['base_price'] = float(item['base_price']) if item['base_price'] is not None else None
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Menu item created successfully',
+            'data': item
+        }), 201
+
+    except ValueError as ve:
+        if conn:
+            conn.rollback()
+        logger.error(f"Value error in create_item: {ve}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid value provided',
+            'error_code': 'INVALID_VALUE',
+            'details': str(ve)
+        }), 400
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        logger.error(f"Database error in create_item: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Unexpected error in create_item: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/update_item', methods=['POST'])
+def update_item():
+    """
+    Update an existing menu item
+
+    Request body:
+    {
+        "item_id": 1,                   # Required
+        "name": "Updated Burger",       # Optional
+        "description": "New description", # Optional
+        "base_price": 10.99,           # Optional
+        "calories": 850,                # Optional
+        "preparation_time": 20,         # Optional, in minutes
+        "is_combo": false,              # Optional
+        "is_active": true,              # Optional
+        "image_url": "http://example.com/new.jpg"  # Optional (set to empty string to remove)
+    }
+
+    Returns:
+        JSON response with the updated item details or error message
+    """
+    conn = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'item_id' not in data or data['item_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item ID is required',
+                'error_code': 'MISSING_ITEM_ID'
+            }), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if item exists
+        cursor.execute(
+            "SELECT * FROM restaurant_item WHERE item_id = %s",
+            (data['item_id'],)
+        )
+        existing_item = cursor.fetchone()
+
+        if not existing_item:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item not found',
+                'error_code': 'ITEM_NOT_FOUND'
+            }), 404
+
+        # Prepare update fields
+        update_fields = []
+        params = []
+
+        # Check each possible field to update
+        if 'name' in data and data['name'] is not None:
+            # Check for duplicate name in the same business
+            cursor.execute(
+                """
+                SELECT item_id
+                FROM restaurant_item
+                WHERE business_id = %s
+                  AND name = %s
+                  AND item_id != %s
+                """,
+                (existing_item['business_id'], data['name'].strip(), data['item_id'])
+            )
+            if cursor.fetchone():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'An item with this name already exists for this business',
+                    'error_code': 'DUPLICATE_ITEM_NAME'
+                }), 400
+
+            update_fields.append("name = %s")
+            params.append(data['name'].strip())
+
+        if 'description' in data:
+            update_fields.append("description = %s")
+            params.append(data['description'])
+
+        if 'base_price' in data and data['base_price'] is not None:
+            try:
+                price = float(data['base_price'])
+                update_fields.append("base_price = %s")
+                params.append(price)
+            except (ValueError, TypeError):
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Invalid price format',
+                    'error_code': 'INVALID_PRICE_FORMAT'
+                }), 400
+
+        if 'calories' in data:
+            update_fields.append("calories = %s")
+            params.append(data['calories'] if data['calories'] is not None else None)
+
+        if 'preparation_time' in data:
+            update_fields.append("preparation_time = %s")
+            params.append(data['preparation_time'] if data['preparation_time'] is not None else None)
+
+        if 'is_combo' in data and data['is_combo'] is not None:
+            update_fields.append("is_combo = %s")
+            params.append(bool(data['is_combo']))
+
+        if 'is_active' in data and data['is_active'] is not None:
+            update_fields.append("is_active = %s")
+            params.append(bool(data['is_active']))
+
+        if 'image_url' in data:
+            update_fields.append("image_url = %s")
+            # Allow empty string to remove the image URL
+            params.append(data['image_url'] if data['image_url'] else None)
+
+        # If no fields to update
+        if not update_fields:
+            return jsonify({
+                'status': 'success',
+                'message': 'No changes detected',
+                'data': existing_item
+            })
+
+        # Add item_id to params for WHERE clause
+        params.append(data['item_id'])
+
+        # Build and execute update query
+        update_query = f"""
+            UPDATE restaurant_item
+            SET {', '.join(update_fields)}
+            WHERE item_id = %s
+        """
+
+        cursor.execute(update_query, tuple(params))
+
+        # Get the updated item
+        cursor.execute(
+            """
+            SELECT *
+            FROM restaurant_item
+            WHERE item_id = %s
+            """,
+            (data['item_id'],)
+        )
+
+        updated_item = cursor.fetchone()
+        conn.commit()
+
+        # Convert Decimal to float for JSON serialization
+        if updated_item and 'base_price' in updated_item:
+            updated_item['base_price'] = float(updated_item['base_price']) if updated_item[
+                                                                                  'base_price'] is not None else None
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Menu item updated successfully',
+            'data': updated_item
+        })
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        logger.error(f"Database error in update_item: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Unexpected error in update_item: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/delete_item', methods=['POST'])
+def delete_item():
+    """
+    Delete a menu item
+
+    Request body:
+    {
+        "item_id": 1  # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+    """
+    conn = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'item_id' not in data or data['item_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item ID is required',
+                'error_code': 'MISSING_ITEM_ID'
+            }), 400
+
+        item_id = data['item_id']
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if item exists
+        cursor.execute(
+            "SELECT * FROM restaurant_item WHERE item_id = %s",
+            (item_id,)
+        )
+        item = cursor.fetchone()
+
+        if not item:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item not found',
+                'error_code': 'ITEM_NOT_FOUND'
+            }), 404
+
+        # Check for existing references in other tables
+        # For example, check if the item is used in any orders or menus
+        # This is a simplified example - you might want to add more checks
+
+        # Check if item is in any menu sections
+        cursor.execute(
+            "SELECT 1 FROM restaurant_menu_section_item WHERE item_id = %s LIMIT 1",
+            (item_id,)
+        )
+        if cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'Cannot delete item as it is currently used in one or more menu sections',
+                'error_code': 'ITEM_IN_USE'
+            }), 400
+
+        # Check if item has any category mappings
+        cursor.execute(
+            "SELECT 1 FROM restaurant_item_category_map WHERE item_id = %s LIMIT 1",
+            (item_id,)
+        )
+        if cursor.fetchone():
+            # Option 1: Return error
+            return jsonify({
+                'status': 'error',
+                'message': 'Cannot delete item as it has category mappings. Please remove all category mappings first.',
+                'error_code': 'ITEM_HAS_CATEGORIES'
+            }), 400
+
+            # Option 2: Or automatically delete the mappings (uncomment if preferred)
+            # cursor.execute(
+            #     "DELETE FROM restaurant_item_category_map WHERE item_id = %s",
+            #     (item_id,)
+            # )
+
+        # Delete the item
+        cursor.execute(
+            "DELETE FROM restaurant_item WHERE item_id = %s",
+            (item_id,)
+        )
+
+        conn.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Menu item deleted successfully',
+            'deleted_item_id': item_id
+        })
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        logger.error(f"Database error in delete_item: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Unexpected error in delete_item: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/create_item_category_map', methods=['POST'])
+def create_item_category_map():
+    """
+    Create a mapping between an item and a category
+
+    Request body:
+    {
+        "item_id": 1,           # Required
+        "item_category_id": 2   # Required
+    }
+
+    Returns:
+        JSON response with the created mapping or error message
+    """
+    conn = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['item_id', 'item_category_id']
+        for field in required_fields:
+            if field not in data or data[field] is None:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}',
+                    'error_code': f'MISSING_{field.upper()}'
+                }), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if item exists
+        cursor.execute(
+            "SELECT 1 FROM restaurant_item WHERE item_id = %s",
+            (data['item_id'],)
+        )
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'Item not found',
+                'error_code': 'ITEM_NOT_FOUND'
+            }), 404
+
+        # Check if category exists
+        cursor.execute(
+            "SELECT 1 FROM restaurant_item_category WHERE item_category_id = %s",
+            (data['item_category_id'],)
+        )
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'Category not found',
+                'error_code': 'CATEGORY_NOT_FOUND'
+            }), 404
+
+        # Check if mapping already exists
+        cursor.execute(
+            """
+            SELECT *
+            FROM restaurant_item_category_map
+            WHERE item_id = %s
+              AND item_category_id = %s
+            """,
+            (data['item_id'], data['item_category_id'])
+        )
+        if cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'This category is already mapped to the item',
+                'error_code': 'DUPLICATE_MAPPING'
+            }), 400
+
+        # Create the mapping
+        cursor.execute(
+            """
+            INSERT INTO restaurant_item_category_map (item_id, item_category_id)
+            VALUES (%s, %s)
+            """,
+            (data['item_id'], data['item_category_id'])
+        )
+
+        # Get the created mapping with details
+        cursor.execute(
+            """
+            SELECT m.*, i.name as item_name, c.name as category_name
+            FROM restaurant_item_category_map m
+                     JOIN restaurant_item i ON m.item_id = i.item_id
+                     JOIN restaurant_item_category c ON m.item_category_id = c.item_category_id
+            WHERE m.item_id = %s
+              AND m.item_category_id = %s
+            """,
+            (data['item_id'], data['item_category_id'])
+        )
+
+        mapping = cursor.fetchone()
+        conn.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Category mapping created successfully',
+            'data': mapping
+        }), 201
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        logger.error(f"Database error in create_item_category_map: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Unexpected error in create_item_category_map: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/delete_item_category_map', methods=['POST'])
+def delete_item_category_map():
+    """
+    Delete a mapping between an item and a category
+
+    Request body:
+    {
+        "item_id": 1,           # Required
+        "item_category_id": 2   # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+    """
+    conn = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['item_id', 'item_category_id']
+        for field in required_fields:
+            if field not in data or data[field] is None:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}',
+                    'error_code': f'MISSING_{field.upper()}'
+                }), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if mapping exists
+        cursor.execute(
+            """
+            SELECT m.*, i.name as item_name, c.name as category_name
+            FROM restaurant_item_category_map m
+                     JOIN restaurant_item i ON m.item_id = i.item_id
+                     JOIN restaurant_item_category c ON m.item_category_id = c.item_category_id
+            WHERE m.item_id = %s
+              AND m.item_category_id = %s
+            """,
+            (data['item_id'], data['item_category_id'])
+        )
+
+        mapping = cursor.fetchone()
+
+        if not mapping:
+            return jsonify({
+                'status': 'error',
+                'message': 'Category mapping not found',
+                'error_code': 'MAPPING_NOT_FOUND'
+            }), 404
+
+        # Delete the mapping
+        cursor.execute(
+            """
+            DELETE
+            FROM restaurant_item_category_map
+            WHERE item_id = %s
+              AND item_category_id = %s
+            """,
+            (data['item_id'], data['item_category_id'])
+        )
+
+        conn.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Category mapping deleted successfully',
+            'data': {
+                'item_id': mapping['item_id'],
+                'item_name': mapping['item_name'],
+                'category_id': mapping['item_category_id'],
+                'category_name': mapping['category_name']
+            }
+        })
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        logger.error(f"Database error in delete_item_category_map: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Unexpected error in delete_item_category_map: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
+
     finally:
         if cursor:
             cursor.close()
