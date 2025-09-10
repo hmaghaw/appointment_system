@@ -3690,7 +3690,7 @@ def list_item_options():
         
         # Check if option group exists
         option_group = execute_query(
-            "SELECT * FROM restaurant_item_option_group WHERE option_group_id = %s",
+            "SELECT * FROM restaurant_option_group WHERE option_group_id = %s",
             (option_group_id,),
             fetch=True
         )
@@ -3776,7 +3776,7 @@ def create_item_option():
         
         # Check if option group exists
         option_group = execute_query(
-            "SELECT * FROM restaurant_item_option_group WHERE option_group_id = %s",
+            "SELECT * FROM restaurant_option_group WHERE option_group_id = %s",
             (data['option_group_id'],),
             fetch=True
         )
@@ -3898,22 +3898,21 @@ def update_item_option():
         # Check if option exists
         existing_option = execute_query(
             """
-            SELECT o.*, g.item_id 
+            SELECT o.*
             FROM restaurant_option o
-            JOIN restaurant_item_option_group g ON o.option_group_id = g.option_group_id
             WHERE o.option_id = %s
             """,
             (option_id,),
             fetch=True
         )
-        
+
         if not existing_option:
             return jsonify({
                 'status': 'error',
                 'message': 'Option not found',
                 'error_code': 'OPTION_NOT_FOUND'
             }), 404
-        
+
         current_option = existing_option[0]
         
         # Check for duplicate name if name is being updated
@@ -3988,9 +3987,8 @@ def update_item_option():
         # Get the updated option
         updated_option = execute_query(
             """
-            SELECT o.*, g.item_id 
+            SELECT o.*
             FROM restaurant_option o
-            JOIN restaurant_item_option_group g ON o.option_group_id = g.option_group_id
             WHERE o.option_id = %s
             """,
             (option_id,),
@@ -4050,7 +4048,7 @@ def delete_item_option():
             """
             SELECT o.*, g.item_id 
             FROM restaurant_option o
-            JOIN restaurant_item_option_group g ON o.option_group_id = g.option_group_id
+            JOIN restaurant_option_group g ON o.option_group_id = g.option_group_id
             WHERE o.option_id = %s
             """,
             (option_id,),
