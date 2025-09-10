@@ -677,18 +677,14 @@ def list_items():
         query = """
                 SELECT 
                     i.item_id,
-                    i.name AS item_name,
+                    i.name,
                     i.description,
                     i.base_price,
                     i.is_combo,
                     i.is_active,
-                    i.image_url,
-                    i.item_category_id,
-                    ic.name AS category_name
+                    i.image_url
                 FROM restaurant_item i
-                LEFT JOIN restaurant_item_category ic 
-                    ON i.item_category_id = ic.item_category_id
-                WHERE ic.business_id = %s
+                WHERE i.business_id = %s
                 ORDER BY i.name;
                 """
 
