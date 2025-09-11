@@ -3521,65 +3521,158 @@ def delete_item_category():
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
 
+
 @bp.route('/list_item_option_groups', methods=['POST'])
 def list_item_option_groups():
     """
-    List all option groups for a specific menu item
-    
+    List all option groups for a specific menu item with their options
+
     Request body:
     {
         "item_id": 1  # Required
     }
-    
+
     Returns:
-        JSON response with list of option groups for the specified item
+        JSON response with list of option groups and their options for the specified item
+        {
+            "status": "success",
+            "data": [
+                {
+                    "option_group_id": 1,
+                    "name": "Spice Level",
+                    "description": "Choose your preferred spice level",
+                    "is_required": true,
+                    "min_select": 1,
+                    "max_select": 1,
+                    "options": [
+                        {
+                            "option_id": 1,
+                            "name": "Mild",
+                            "price": 0.00
+                        },
+                        {
+                            "option_id": 2,
+                            "name": "Medium",
+                            "price": 1.00
+                        },
+                        {
+                            "option_id": 3,
+                            "name": "Hot",
+                            "price": 1.50
+                        }
+                    ]
+                }
+            ]
+        }
     """
+    conn = None
+    cursor = None
+
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         if 'item_id' not in data or not data['item_id']:
             return jsonify({
                 'status': 'error',
-                'message': 'Missing required field: item_id',
-                'error_code': 'MISSING_REQUIRED_FIELD'
+                'message': 'Item ID is required',
+                'error_code': 'MISSING_ITEM_ID'
             }), 400
-        
+
         item_id = data['item_id']
-        
-        # Fetch option groups for the item
-        option_groups = execute_query(
-            """
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 1. Get all option groups for the item
+        cursor.execute("""
+                       SELECT iog.option_group_id,
+                              og.name,
+                              og.is_required,
+                              og.min_select,
+                            og.max_select
+                       FROM restaurant_item_option_group iog
+                                JOIN restaurant_option_group og ON iog.option_group_id = og.option_group_id
+                       WHERE iog.item_id = %s
+                       ORDER BY og.display_order, og.name
+                       """, (item_id,))
+
+        option_groups = cursor.fetchall()
+
+        if not option_groups:
+            return jsonify({
+                'status': 'success',
+                'data': [],
+                'message': 'No option groups found for this item'
+            })
+
+        # 2. Get all options for these option groups
+        group_ids = [str(group['option_group_id']) for group in option_groups]
+        placeholders = ','.join(['%s'] * len(group_ids))
+
+        cursor.execute(f"""
             SELECT 
-                option_group_id, 
-                item_id
-            FROM restaurant_item_option_group
-            WHERE item_id = %s
-            """,
-            (item_id,),
-            fetch=True
-        )
-        
+                o.option_id,
+                o.option_group_id,
+                o.name,
+                o.price_delta,
+                o.is_default
+            FROM restaurant_option o
+            WHERE o.option_group_id IN ({placeholders})
+            ORDER BY o.display_order, o.name
+        """, tuple(group_ids))
+
+        options = cursor.fetchall()
+
+        # 3. Group options by their option_group_id
+        options_by_group = {}
+        for option in options:
+            group_id = option['option_group_id']
+            if group_id not in options_by_group:
+                options_by_group[group_id] = []
+            options_by_group[group_id].append({
+                'option_id': option['option_id'],
+                'name': option['name'],
+                'price_delta': float(option['price_delta']) if option['price_delta'] is not None else 0.00,
+                'is_default': bool(option.get('is_default', False))
+            })
+
+        # 4. Add options to their respective groups
+        for group in option_groups:
+            group_id = group['option_group_id']
+            group['options'] = options_by_group.get(group_id, [])
+            # Convert decimal to float for JSON serialization
+            if 'price' in group and group['price'] is not None:
+                group['price'] = float(group['price'])
+
         return jsonify({
             'status': 'success',
-            'data': option_groups if option_groups else [],
-            'count': len(option_groups) if option_groups else 0
+            'data': option_groups,
+            'count': len(option_groups)
         })
-        
+
     except mysql.connector.Error as err:
+        logger.error(f"Database error in list_item_option_groups: {err}")
         return jsonify({
             'status': 'error',
             'message': 'Database error',
-            'error': str(err),
-            'error_code': 'DATABASE_ERROR'
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
         }), 500
+
     except Exception as e:
+        logger.error(f"Unexpected error in list_item_option_groups: {e}")
         return jsonify({
             'status': 'error',
             'message': 'An unexpected error occurred',
-            'error': str(e),
-            'error_code': 'INTERNAL_SERVER_ERROR'
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
         }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
 
 
 @bp.route('/create_item_option_group', methods=['POST'])
