@@ -188,6 +188,7 @@ CREATE TABLE restaurant_menu_section (
 CREATE TABLE restaurant_menu_section_item (
     item_id INT NOT NULL,
     menu_section_id INT NOT NULL,
+    display_order INT,
     PRIMARY KEY (item_id, menu_section_id),
     FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id),
     FOREIGN KEY (menu_section_id) REFERENCES restaurant_menu_section(menu_section_id)

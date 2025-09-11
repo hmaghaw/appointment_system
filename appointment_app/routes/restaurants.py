@@ -2705,7 +2705,7 @@ def delete_item_from_menu_section():
         try:
             # Check if the menu section exists
             cursor.execute(
-                "SELECT menu_section_id FROM menu_section WHERE menu_section_id = %s",
+                "SELECT menu_section_id FROM restaurant_menu_section WHERE menu_section_id = %s",
                 (menu_section_id,)
             )
             if not cursor.fetchone():
@@ -2718,7 +2718,7 @@ def delete_item_from_menu_section():
             cursor.execute(
                 """
                 SELECT item_id, menu_section_id
-                FROM menu_section_item
+                FROM restaurant_menu_section_item
                 WHERE item_id = %s
                   AND menu_section_id = %s
                 """,
@@ -2734,7 +2734,7 @@ def delete_item_from_menu_section():
             cursor.execute(
                 """
                 DELETE
-                FROM menu_section_item
+                FROM restaurant_menu_section
                 WHERE item_id = %s
                   AND menu_section_id = %s
                 """,
@@ -4215,9 +4215,6 @@ def list_items_in_menu_section():
                 i.image_url,
                 i.calories,
                 i.preparation_time,
-                i.vegetarian,
-                i.vegan,
-                i.gluten_free,
                 ms.display_order as section_display_order
             FROM restaurant_menu_section_item msi
             JOIN restaurant_item i ON msi.item_id = i.item_id
@@ -4239,7 +4236,7 @@ def list_items_in_menu_section():
             })
         
         # Get item IDs for batch queries
-        item_ids = [str(item['id']) for item in items]
+        item_ids = [str(item['item_id']) for item in items]
         item_ids_str = ','.join(item_ids)
         
         # Get all option groups for these items
@@ -4248,15 +4245,13 @@ def list_items_in_menu_section():
             SELECT 
                 og.option_group_id,
                 og.name as option_group_name,
-                og.description as option_group_description,
-                og.min_selections,
-                og.max_selections,
+                og.min_select,
+                og.max_select,
                 og.is_required,
                 iog.item_id
             FROM restaurant_item_option_group iog
             JOIN restaurant_option_group og ON iog.option_group_id = og.option_group_id
             WHERE iog.item_id IN ({item_ids_str})
-            ORDER BY iog.display_order
             """,
             fetch=True
         )
@@ -4272,8 +4267,7 @@ def list_items_in_menu_section():
                     o.option_id,
                     o.option_group_id,
                     o.name,
-                    o.description,
-                    o.price_adjustment,
+                    o.price_delta,
                     o.display_order
                 FROM restaurant_option o
                 WHERE o.option_group_id IN ({option_group_ids_str})
@@ -4289,9 +4283,8 @@ def list_items_in_menu_section():
                 option_groups_with_options[og_id] = {
                     'id': og_id,
                     'name': og['option_group_name'],
-                    'description': og['option_group_description'],
-                    'min_selections': og['min_selections'],
-                    'max_selections': og['max_selections'],
+                    'min_selections': og['min_select'],
+                    'max_selections': og['max_select'],
                     'is_required': og['is_required'],
                     'options': [o for o in options if o['option_group_id'] == og_id]
                 }
@@ -4302,15 +4295,13 @@ def list_items_in_menu_section():
             SELECT 
                 mg.modifier_group_id,
                 mg.name as modifier_group_name,
-                mg.description as modifier_group_description,
-                mg.min_selections,
-                mg.max_selections,
+                mg.min_select,
+                mg.max_select,
                 mg.is_required,
                 img.item_id
             FROM restaurant_item_modifier_group img
             JOIN restaurant_modifier_group mg ON img.modifier_group_id = mg.modifier_group_id
             WHERE img.item_id IN ({item_ids_str})
-            ORDER BY img.display_order
             """,
             fetch=True
         )
@@ -4326,8 +4317,7 @@ def list_items_in_menu_section():
                     m.modifier_id,
                     m.modifier_group_id,
                     m.name,
-                    m.description,
-                    m.price_adjustment,
+                    m.price_delta,
                     m.display_order
                 FROM restaurant_modifier m
                 WHERE m.modifier_group_id IN ({modifier_group_ids_str})
@@ -4341,11 +4331,10 @@ def list_items_in_menu_section():
             for mg in modifier_groups:
                 mg_id = mg['modifier_group_id']
                 modifier_groups_with_modifiers[mg_id] = {
-                    'id': mg_id,
+                    'modifier_id': mg_id,
                     'name': mg['modifier_group_name'],
-                    'description': mg['modifier_group_description'],
-                    'min_selections': mg['min_selections'],
-                    'max_selections': mg['max_selections'],
+                    'min_select': mg['min_select'],
+                    'max_select': mg['max_select'],
                     'is_required': mg['is_required'],
                     'modifiers': [m for m in modifiers if m['modifier_group_id'] == mg_id]
                 }
@@ -4357,7 +4346,7 @@ def list_items_in_menu_section():
         }
         
         for item in items:
-            item_id = item['id']
+            item_id = item['item_id']
             
             # Get option groups for this item
             item_option_groups = [
@@ -4375,19 +4364,13 @@ def list_items_in_menu_section():
             
             # Add item with its option groups and modifier groups
             response_data['items'].append({
-                'id': item_id,
+                'item_id': item_id,
                 'name': item['name'],
                 'description': item['description'],
-                'price': float(item['price']) if item['price'] is not None else None,
-                'display_order': item['display_order'],
+                'price': float(item['base_price']) if item['base_price'] is not None else None,
                 'image_url': item['image_url'],
                 'calories': item['calories'],
                 'preparation_time': item['preparation_time'],
-                'dietary_info': {
-                    'vegetarian': bool(item['vegetarian']),
-                    'vegan': bool(item['vegan']),
-                    'gluten_free': bool(item['gluten_free'])
-                },
                 'option_groups': item_option_groups,
                 'modifier_groups': item_modifier_groups
             })
@@ -6215,4 +6198,114 @@ def delete_item_category_map():
         if cursor:
             cursor.close()
         if conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/delete_availability_from_menu', methods=['POST'])
+def delete_availability_from_menu():
+    """
+    Remove an availability from a menu by deleting the record from restaurant_menu_availability
+
+    Request body:
+    {
+        "menu_id": 1,          # Required
+        "availability_id": 3   # Required
+    }
+
+    Returns:
+        JSON response with success/error message
+        {
+            "status": "success",
+            "message": "Availability removed from menu successfully",
+            "data": {
+                "menu_id": 1,
+                "availability_id": 3
+            }
+        }
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'menu_id' not in data or data['menu_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu ID is required',
+                'error_code': 'MISSING_MENU_ID'
+            }), 400
+
+        if 'availability_id' not in data or data['availability_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Availability ID is required',
+                'error_code': 'MISSING_AVAILABILITY_ID'
+            }), 400
+
+        menu_id = data['menu_id']
+        availability_id = data['availability_id']
+
+        # Check if the record exists
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if the record exists
+        cursor.execute("""
+                       SELECT 1
+                       FROM restaurant_menu_availability
+                       WHERE menu_id = %s
+                         AND availability_id = %s
+                       """, (menu_id, availability_id))
+
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': 'The specified availability is not assigned to this menu',
+                'error_code': 'RECORD_NOT_FOUND'
+            }), 404
+
+        # Delete the record
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_menu_availability
+                       WHERE menu_id = %s
+                         AND availability_id = %s
+                       """, (menu_id, availability_id))
+
+        conn.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Availability removed from menu successfully',
+            'data': {
+                'menu_id': menu_id,
+                'availability_id': availability_id
+            }
+        })
+
+    except mysql.connector.Error as err:
+        if conn and conn.is_connected():
+            conn.rollback()
+        logger.error(f"Database error in delete_availability_from_menu: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        if 'conn' in locals() and conn and conn.is_connected():
+            conn.rollback()
+        logger.error(f"Unexpected error in delete_availability_from_menu: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
+        }), 500
+
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'conn' in locals() and conn and conn.is_connected():
             conn.close()
