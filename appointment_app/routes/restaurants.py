@@ -884,7 +884,7 @@ def update_menu():
 @bp.route('/delete_menu', methods=['POST'])
 def delete_menu():
     """
-    Delete a menu
+    Delete a menu and all its related data including sections, items, and availabilities
 
     Request body:
     {
@@ -894,6 +894,9 @@ def delete_menu():
     Returns:
         JSON response with success/error message
     """
+    conn = None
+    cursor = None
+
     try:
         data = request.get_json()
         if not data or 'menu_id' not in data:
@@ -904,44 +907,85 @@ def delete_menu():
             }), 400
 
         menu_id = data['menu_id']
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-        # First check if menu exists
-        query = "SELECT * FROM restaurant_menu WHERE menu_id = %s"
-        menu = execute_query(query, (menu_id,), fetch=True)
+        # Start transaction
+        conn.start_transaction()
+        # 1. Get all section IDs for this menu
+        cursor.execute("""
+                       SELECT menu_section_id
+                       FROM restaurant_menu_section
+                       WHERE menu_id = %s
+                       """, (menu_id,))
+        section_ids = [row['menu_section_id'] for row in cursor.fetchall()]
 
-        if not menu:
-            return jsonify({
-                'status': 'error',
-                'message': 'Menu not found',
-                'error_code': 'MENU_NOT_FOUND'
-            }), 404
+        if section_ids:
+            # 2. Delete all items in these sections
+            cursor.execute("""
+                DELETE FROM restaurant_menu_section_item 
+                WHERE menu_section_id IN ({})
+            """.format(','.join(['%s'] * len(section_ids))), tuple(section_ids))
 
-        # Delete the menu
-        query = "DELETE FROM restaurant_menu WHERE menu_id = %s"
-        execute_query(query, (menu_id,))
+            # 3. Delete all sections
+            cursor.execute("""
+                DELETE FROM restaurant_menu_section 
+                WHERE menu_section_id IN ({})
+            """.format(','.join(['%s'] * len(section_ids))), tuple(section_ids))
+
+        # 4. Delete menu-availability associations
+            cursor.execute("""
+                   DELETE
+                   FROM restaurant_menu_availability
+                   WHERE menu_id = %s
+                   """, (menu_id,))
+
+        # 5. Delete the menu itself
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_menu
+                       WHERE menu_id = %s
+                       """, (menu_id,))
+
+        # Commit the transaction
+        conn.commit()
 
         return jsonify({
             'status': 'success',
+            'message': 'Menu and all related data deleted successfully',
             'data': {
                 'menu_id': menu_id,
-                'message': 'Menu deleted successfully'
+                'sections_deleted': len(section_ids)
             }
         })
 
     except mysql.connector.Error as err:
+        if conn and conn.is_connected():
+            conn.rollback()
         logger.error(f"Database error in delete_menu: {err}")
         return jsonify({
             'status': 'error',
             'message': 'Database error',
-            'error_code': err
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
         }), 500
+
     except Exception as e:
+        if conn and conn.is_connected():
+            conn.rollback()
         logger.error(f"Unexpected error in delete_menu: {e}")
         return jsonify({
             'status': 'error',
             'message': 'An unexpected error occurred',
-            'error_code': e
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
         }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
 
 
 @bp.route('/list_modifier_groups', methods=['POST'])
@@ -2734,7 +2778,7 @@ def delete_item_from_menu_section():
             cursor.execute(
                 """
                 DELETE
-                FROM restaurant_menu_section
+                FROM restaurant_menu_section_item
                 WHERE item_id = %s
                   AND menu_section_id = %s
                 """,
@@ -3051,10 +3095,10 @@ def update_availability_detail():
             update_values = []
 
             if 'day_of_week' in data and data['day_of_week'] is not None:
-                if not isinstance(data['day_of_week'], int) or data['day_of_week'] < 1 or data['day_of_week'] > 7:
+                if not isinstance(data['day_of_week'], int) or data['day_of_week'] < 0 or data['day_of_week'] > 6:
                     return jsonify({
                         'status': 'error',
-                        'message': 'day_of_week must be between 1 and 7',
+                        'message': 'day_of_week must be between 0 and 6',
                         'error_code': 'INVALID_DAY_OF_WEEK'
                     }), 400
                 update_fields.append("day_of_week = %s")
@@ -6308,4 +6352,268 @@ def delete_availability_from_menu():
         if 'cursor' in locals() and cursor:
             cursor.close()
         if 'conn' in locals() and conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/list_menu_availability', methods=['POST'])
+def list_menu_availability():
+    """
+    List all availability records for a specific menu with their details
+
+    Request body:
+    {
+        "menu_id": 1  # Required
+    }
+
+    Returns:
+        JSON response with nested structure of menu availability
+        {
+            "status": "success",
+            "data": [
+                {
+                    "availability_id": 1,
+                    "business_id": 1,
+                    "name": "Lunch Hours",
+                    "details": [
+                        {
+                            "availability_detail_id": 1,
+                            "day_of_week": 1,
+                            "open_time": "09:00:00",
+                            "close_time": "17:00:00",
+                            "is_closed": false
+                        },
+                        ...
+                    ]
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'menu_id' not in data or data['menu_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Menu ID is required',
+                'error_code': 'MISSING_MENU_ID'
+            }), 400
+
+        menu_id = data['menu_id']
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Get all availabilities for the menu
+        cursor.execute("""
+                       SELECT ra.availability_id,
+                              ra.business_id,
+                              ra.name
+                       FROM restaurant_availability ra
+                                INNER JOIN restaurant_menu_availability rma ON ra.availability_id = rma.availability_id
+                       WHERE rma.menu_id = %s
+                       ORDER BY ra.availability_id
+                       """, (menu_id,))
+
+        availabilities = cursor.fetchall()
+
+        if not availabilities:
+            return jsonify({
+                'status': 'success',
+                'data': [],
+                'message': 'No availability records found for this menu'
+            })
+
+        # Get details for each availability
+        result = []
+        for availability in availabilities:
+            cursor.execute("""
+                           SELECT availability_detail_id,
+                                  day_of_week,
+                                  open_time,
+                                  close_time,
+                                  is_closed
+                           FROM restaurant_availability_detail
+                           WHERE availability_id = %s
+                           ORDER BY day_of_week
+                           """, (availability['availability_id'],))
+
+            details = cursor.fetchall()
+
+            # Convert time objects to strings
+            for detail in details:
+                if detail['open_time']:
+                    detail['open_time'] = str(detail['open_time'])
+                if detail['close_time']:
+                    detail['close_time'] = str(detail['close_time'])
+
+            result.append({
+                'availability_id': availability['availability_id'],
+                'business_id': availability['business_id'],
+                'name': availability['name'],
+                'details': details
+            })
+
+        return jsonify({
+            'status': 'success',
+            'data': result
+        })
+
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in list_menu_availability: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        logger.error(f"Unexpected error in list_menu_availability: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
+        }), 500
+
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'conn' in locals() and conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/update_availability', methods=['POST'])
+def update_availability():
+    """
+    Update an existing availability record
+
+    Request body:
+    {
+        "availability_id": 6,           # Required
+        "name": "Standard Hours"        # Optional
+    }
+
+    Returns:
+        JSON response with the updated availability details
+        {
+            "status": "success",
+            "message": "Availability updated successfully",
+            "data": {
+                "availability_id": 6,
+                "business_id": 1,
+                "name": "Standard Hours"
+            }
+        }
+    """
+    conn = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'availability_id' not in data or data['availability_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Availability ID is required',
+                'error_code': 'MISSING_AVAILABILITY_ID'
+            }), 400
+
+        availability_id = data['availability_id']
+
+        # Build the update query based on provided fields
+        update_fields = []
+        update_values = []
+
+        if 'name' in data and data['name'] is not None:
+            if not isinstance(data['name'], str) or not data['name'].strip():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Name must be a non-empty string',
+                    'error_code': 'INVALID_NAME'
+                }), 400
+            update_fields.append("name = %s")
+            update_values.append(data['name'].strip())
+
+        # If no valid fields to update
+        if not update_fields:
+            return jsonify({
+                'status': 'error',
+                'message': 'No valid fields provided for update',
+                'error_code': 'NO_VALID_FIELDS'
+            }), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # First check if the availability exists
+        cursor.execute("""
+                       SELECT availability_id, business_id, name
+                       FROM restaurant_availability
+                       WHERE availability_id = %s
+                       """, (availability_id,))
+
+        existing = cursor.fetchone()
+        if not existing:
+            return jsonify({
+                'status': 'error',
+                'message': 'Availability not found',
+                'error_code': 'AVAILABILITY_NOT_FOUND'
+            }), 404
+
+        # Build and execute the update query
+        update_query = f"""
+            UPDATE restaurant_availability 
+            SET {', '.join(update_fields)}
+            WHERE availability_id = %s
+        """
+        update_values.append(availability_id)
+
+        cursor.execute(update_query, tuple(update_values))
+        conn.commit()
+
+        # Get the updated record
+        cursor.execute("""
+                       SELECT availability_id, business_id, name
+                       FROM restaurant_availability
+                       WHERE availability_id = %s
+                       """, (availability_id,))
+
+        updated_availability = cursor.fetchone()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Availability updated successfully',
+            'data': updated_availability
+        })
+
+    except mysql.connector.Error as err:
+        if conn and conn.is_connected():
+            conn.rollback()
+        logger.error(f"Database error in update_availability: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        if conn and conn.is_connected():
+            conn.rollback()
+        logger.error(f"Unexpected error in update_availability: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
             conn.close()
