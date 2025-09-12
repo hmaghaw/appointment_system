@@ -4980,9 +4980,21 @@ def add_item_tag():
             "INSERT INTO restaurant_item_tag (item_id, tag_id) VALUES (%s, %s)",
             (item_id, tag_id)
         )
-        
+
+        # Get the tag name for the response
+        tag_info = execute_query(
+            "SELECT name FROM restaurant_tag WHERE tag_id = %s",
+            (tag_id,),
+            fetch=True
+        )
+
         return jsonify({
             'status': 'success',
+            'data': {
+                "item_id": item_id,
+                "tag_id": tag_id,
+                "tag_name": tag_info[0]['name'] if tag_info else None
+            },
             'message': 'Tag added to item successfully'
         })
         
@@ -7055,3 +7067,231 @@ def list_items_detailed():
             cursor.close()
         if conn and conn.is_connected():
             conn.close()
+
+
+@bp.route('/get_item_details', methods=['POST'])
+def get_item_details():
+    """
+    Get detailed information for a specific menu item by its ID.
+
+    Request body:
+    {
+        "item_id": 10  # Required
+    }
+
+    Returns:
+        JSON response with detailed item information
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if 'item_id' not in data or data['item_id'] is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Item ID is required',
+                'error_code': 'MISSING_ITEM_ID'
+            }), 400
+
+        item_id = data['item_id']
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        try:
+            # Get basic item information
+            cursor.execute("""
+                           SELECT ri.*,
+                                  GROUP_CONCAT(DISTINCT rt.name)                                      as tags,
+                                  GROUP_CONCAT(DISTINCT CONCAT(ricm.item_category_id, ':', ric.name)) as categories
+                           FROM restaurant_item ri
+                                    LEFT JOIN restaurant_item_tag rit ON ri.item_id = rit.item_id
+                                    LEFT JOIN restaurant_tag rt ON rit.tag_id = rt.tag_id
+                                    LEFT JOIN restaurant_item_category_map ricm ON ri.item_id = ricm.item_id
+                                    LEFT JOIN restaurant_item_category ric
+                                              ON ricm.item_category_id = ric.item_category_id
+                           WHERE ri.item_id = %s
+                           GROUP BY ri.item_id
+                           """, (item_id,))
+
+            item = cursor.fetchone()
+
+            if not item:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Item not found',
+                    'error_code': 'ITEM_NOT_FOUND'
+                }), 404
+
+            # Get option groups and options
+            cursor.execute("""
+                           SELECT rog.option_group_id,
+                                  rog.name as group_name,
+                                  rog.is_required,
+                                  rog.min_select,
+                                  rog.max_select,
+                                  ro.option_id,
+                                  ro.name  as option_name,
+                                  ro.price_delta,
+                                  ro.is_default
+                           FROM restaurant_item_option_group riog
+                                    JOIN
+                                restaurant_option_group rog ON riog.option_group_id = rog.option_group_id
+                                    LEFT JOIN
+                                restaurant_option ro ON rog.option_group_id = ro.option_group_id
+                           WHERE riog.item_id = %s
+                           ORDER BY rog.display_order, ro.display_order
+                           """, (item_id,))
+
+            option_groups = {}
+            for row in cursor.fetchall():
+                group_id = row['option_group_id']
+                if group_id not in option_groups:
+                    option_groups[group_id] = {
+                        'option_group_id': group_id,
+                        'name': row['group_name'],
+                        'is_required': bool(row['is_required']),
+                        'min_select': row['min_select'],
+                        'max_select': row['max_select'],
+                        'options': []
+                    }
+                if row['option_id']:
+                    option_groups[group_id]['options'].append({
+                        'option_id': row['option_id'],
+                        'name': row['option_name'],
+                        'price_delta': float(row['price_delta']) if row['price_delta'] is not None else 0.0,
+                        'is_default': bool(row['is_default'])
+                    })
+
+            # Get modifier groups and modifiers
+            cursor.execute("""
+                           SELECT rmg.modifier_group_id,
+                                  rmg.name as group_name,
+                                  rmg.is_required,
+                                  rmg.min_select,
+                                  rmg.max_select,
+                                  rm.modifier_id,
+                                  rm.name  as modifier_name,
+                                  rm.price_delta
+                           FROM restaurant_item_modifier_group rimg
+                                    JOIN
+                                restaurant_modifier_group rmg ON rimg.modifier_group_id = rmg.modifier_group_id
+                                    LEFT JOIN
+                                restaurant_modifier rm ON rmg.modifier_group_id = rm.modifier_group_id
+                           WHERE rimg.item_id = %s
+                           """, (item_id,))
+
+            modifier_groups = {}
+            for row in cursor.fetchall():
+                group_id = row['modifier_group_id']
+                if group_id not in modifier_groups:
+                    modifier_groups[group_id] = {
+                        'modifier_group_id': group_id,
+                        'name': row['group_name'],
+                        'is_required': bool(row['is_required']),
+                        'min_select': row['min_select'],
+                        'max_select': row['max_select'],
+                        'modifiers': []
+                    }
+                if row['modifier_id']:
+                    modifier_groups[group_id]['modifiers'].append({
+                        'modifier_id': row['modifier_id'],
+                        'name': row['modifier_name'],
+                        'price_delta': float(row['price_delta']) if row['price_delta'] is not None else 0.0
+                    })
+
+            # Get combo groups if this is a combo item
+            combo_groups = {}
+            if item.get('is_combo'):
+                cursor.execute("""
+                               SELECT cg.combo_group_id,
+                                      cg.name,
+                                      cg.min_select,
+                                      cg.max_select,
+                                      cgi.combo_group_item_id,
+                                      cgi.allowed_item_id,
+                                      cgi.price_delta,
+                                      ri.name as item_name
+                               FROM restaurant_combo_group cg
+                                        LEFT JOIN
+                                    restaurant_combo_group_item cgi ON cg.combo_group_id = cgi.combo_group_id
+                                        LEFT JOIN
+                                    restaurant_item ri ON cgi.allowed_item_id = ri.item_id
+                               WHERE cg.item_id = %s
+                               ORDER BY cg.display_order, cgi.combo_group_item_id
+                               """, (item_id,))
+
+                for row in cursor.fetchall():
+                    group_id = row['combo_group_id']
+                    if group_id not in combo_groups:
+                        combo_groups[group_id] = {
+                            'combo_group_id': group_id,
+                            'name': row['name'],
+                            'min_select': row['min_select'],
+                            'max_select': row['max_select'],
+                            'items': []
+                        }
+                    if row['allowed_item_id']:
+                        combo_groups[group_id]['items'].append({
+                            'item_id': row['allowed_item_id'],
+                            'name': row['item_name'],
+                            'price_delta': float(row['price_delta']) if row['price_delta'] is not None else 0.0
+                        })
+
+            # Get menu sections this item belongs to
+            cursor.execute("""
+                           SELECT ms.menu_section_id,
+                                  ms.name        as section_name,
+                                  ms.description as section_description
+                           FROM restaurant_menu_section_item msi
+                                    JOIN
+                                restaurant_menu_section ms ON msi.menu_section_id = ms.menu_section_id
+                           WHERE msi.item_id = %s
+                           """, (item_id,))
+
+            menu_sections = [{
+                'menu_section_id': row['menu_section_id'],
+                'name': row['section_name'],
+                'description': row['section_description']
+            } for row in cursor.fetchall()]
+
+            # Prepare the final response
+            item_data = {
+                'item_id': item['item_id'],
+                'business_id': item['business_id'],
+                'name': item['name'],
+                'description': item['description'],
+                'base_price': float(item['base_price']) if item['base_price'] is not None else 0.0,
+                'is_active': bool(item['is_active']),
+                'is_combo': bool(item.get('is_combo', False)),
+                'calories': item.get('calories'),
+                'preparation_time': item.get('preparation_time'),
+                'image_url': item.get('image_url'),
+                'tags': item['tags'].split(',') if item['tags'] else [],
+                'categories': [{
+                    'category_id': int(cat.split(':', 1)[0]),
+                    'category_name': cat.split(':', 1)[1] if ':' in cat else cat
+                } for cat in item['categories'].split(',')] if item['categories'] else [],
+                'option_groups': list(option_groups.values()),
+                'modifier_groups': list(modifier_groups.values()),
+                'combo_groups': list(combo_groups.values()),
+                'menu_sections': menu_sections
+            }
+
+            return jsonify({
+                'status': 'success',
+                'data': item_data
+            })
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+
+    except Exception as e:
+        logger.error(f"Error in get_item_details: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while fetching item details',
+            'error_code': 'INTERNAL_SERVER_ERROR'
+        }), 500
