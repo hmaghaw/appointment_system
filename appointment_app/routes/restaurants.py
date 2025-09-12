@@ -5977,7 +5977,8 @@ def update_item():
 @bp.route('/delete_item', methods=['POST'])
 def delete_item():
     """
-    Delete a menu item
+    Delete a menu item and all its related data if there are no order records.
+    If order records exist, deactivate the item instead.
 
     Request body:
     {
@@ -5989,6 +5990,7 @@ def delete_item():
     """
     conn = None
     cursor = None
+
 
     try:
         data = request.get_json()
@@ -6002,75 +6004,112 @@ def delete_item():
             }), 400
 
         item_id = data['item_id']
-
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # Check if item exists
-        cursor.execute(
-            "SELECT * FROM restaurant_item WHERE item_id = %s",
-            (item_id,)
-        )
-        item = cursor.fetchone()
+        # Check if there are any order records for this item
+        cursor.execute("""
+                       SELECT COUNT(*) as order_count
+                       FROM restaurant_order_item
+                       WHERE item_id = %s
+                       """, (item_id,))
+        order_count = cursor.fetchone()['order_count']
 
-        if not item:
+        if order_count > 0:
+            # Deactivate the item instead of deleting
+            cursor.execute("""
+                           UPDATE restaurant_item
+                           SET is_active = FALSE
+                           WHERE item_id = %s
+                           """, (item_id,))
+            conn.commit()
+
             return jsonify({
-                'status': 'error',
-                'message': 'Item not found',
-                'error_code': 'ITEM_NOT_FOUND'
-            }), 404
+                'status': 'success',
+                'message': 'Item has been deactivated because it has order history',
+                'action': 'deactivated',
+                'order_count': order_count
+            })
 
-        # Check for existing references in other tables
-        # For example, check if the item is used in any orders or menus
-        # This is a simplified example - you might want to add more checks
+        # Start transaction for the deletion process
+        if not conn.in_transaction:
+            conn.start_transaction()
+            transaction_started = True
 
-        # Check if item is in any menu sections
-        cursor.execute(
-            "SELECT 1 FROM restaurant_menu_section_item WHERE item_id = %s LIMIT 1",
-            (item_id,)
-        )
-        if cursor.fetchone():
-            return jsonify({
-                'status': 'error',
-                'message': 'Cannot delete item as it is currently used in one or more menu sections',
-                'error_code': 'ITEM_IN_USE'
-            }), 400
+        # 1. Delete from restaurant_item_category_map
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_item_category_map
+                       WHERE item_id = %s
+                       """, (item_id,))
 
-        # Check if item has any category mappings
-        cursor.execute(
-            "SELECT 1 FROM restaurant_item_category_map WHERE item_id = %s LIMIT 1",
-            (item_id,)
-        )
-        if cursor.fetchone():
-            # Option 1: Return error
-            return jsonify({
-                'status': 'error',
-                'message': 'Cannot delete item as it has category mappings. Please remove all category mappings first.',
-                'error_code': 'ITEM_HAS_CATEGORIES'
-            }), 400
+        # 2. Delete from restaurant_item_option_group (cascades to options through foreign key)
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_item_option_group
+                       WHERE item_id = %s
+                       """, (item_id,))
 
-            # Option 2: Or automatically delete the mappings (uncomment if preferred)
-            # cursor.execute(
-            #     "DELETE FROM restaurant_item_category_map WHERE item_id = %s",
-            #     (item_id,)
-            # )
+        # 3. Delete from restaurant_item_modifier_group (cascades to modifiers through foreign key)
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_item_modifier_group
+                       WHERE item_id = %s
+                       """, (item_id,))
 
-        # Delete the item
-        cursor.execute(
-            "DELETE FROM restaurant_item WHERE item_id = %s",
-            (item_id,)
-        )
+        # 4. Delete from restaurant_item_tag
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_item_tag
+                       WHERE item_id = %s
+                       """, (item_id,))
 
+        # 5. Delete from restaurant_menu_section_item
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_menu_section_item
+                       WHERE item_id = %s
+                       """, (item_id,))
+
+        # 6. Delete from restaurant_combo_group_item where this item is part of a combo
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_combo_group_item
+                       WHERE allowed_item_id = %s
+                       """, (item_id,))
+
+        # 7. Delete from restaurant_combo_group where this item is a combo
+        cursor.execute("""
+            DELETE cg FROM restaurant_combo_group cg
+            WHERE cg.item_id = %s
+        """, (item_id,))
+
+        # 8. Delete from restaurant_order_combo_selection (through order items)
+        cursor.execute("""
+            DELETE occs FROM restaurant_order_combo_selection occs
+            JOIN restaurant_order_item oi ON occs.order_item_id = oi.order_item_id
+            WHERE oi.item_id = %s
+        """, (item_id,))
+
+        # 9. Finally, delete the item itself
+        cursor.execute("""
+                       DELETE
+                       FROM restaurant_item
+                       WHERE item_id = %s
+                       """, (item_id,))
+
+        # Commit all changes
         conn.commit()
 
         return jsonify({
             'status': 'success',
-            'message': 'Menu item deleted successfully',
-            'deleted_item_id': item_id
+            'message': 'Item and all related data deleted successfully',
+            'action': 'deleted',
+            'order_count': 0
         })
 
     except mysql.connector.Error as err:
-        if conn:
+        if conn and conn.is_connected():
             conn.rollback()
         logger.error(f"Database error in delete_item: {err}")
         return jsonify({
@@ -6081,8 +6120,9 @@ def delete_item():
         }), 500
 
     except Exception as e:
-        if conn:
-            conn.rollback()
+        if conn and conn.is_connected():
+            if transaction_started:
+                conn.rollback()
         logger.error(f"Unexpected error in delete_item: {e}")
         return jsonify({
             'status': 'error',
@@ -6096,7 +6136,6 @@ def delete_item():
             cursor.close()
         if conn and conn.is_connected():
             conn.close()
-
 
 @bp.route('/create_item_category_map', methods=['POST'])
 def create_item_category_map():
@@ -6698,6 +6737,312 @@ def update_availability():
         if conn and conn.is_connected():
             conn.rollback()
         logger.error(f"Unexpected error in update_availability: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+@bp.route('/list_items_detailed', methods=['POST'])
+def list_items_detailed():
+    """
+    List all menu items for a business with detailed information including
+    categories, options, modifiers, and tags.
+
+    Request body:
+    {
+        "business_id": 73  # Required
+    }
+
+    Returns:
+        JSON response with list of menu items and their details
+    """
+    conn = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+        if not data or 'business_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Business ID is required',
+                'error_code': 'MISSING_BUSINESS_ID'
+            }), 400
+
+        business_id = data['business_id']
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 1. Get all items for the business
+        cursor.execute("""
+                       SELECT i.item_id,
+                              i.business_id,
+                              i.name,
+                              i.description,
+                              i.base_price,
+                              i.image_url,
+                              i.is_active,
+                              i.preparation_time
+                       FROM restaurant_item i
+                       WHERE i.business_id = %s
+                       ORDER BY i.name
+                       """, (business_id,))
+
+        items = cursor.fetchall()
+
+        if not items:
+            return jsonify({
+                'status': 'success',
+                'data': [],
+                'message': 'No items found for this business'
+            })
+
+        item_ids = [str(item['item_id']) for item in items]
+        if not item_ids:
+            return jsonify({
+                'status': 'success',
+                'data': []
+            })
+
+        item_ids_placeholders = ','.join(['%s'] * len(item_ids))
+
+        # 2. Get all categories for these items
+        cursor.execute(f"""
+            SELECT 
+                icm.item_id,
+                ic.item_category_id,
+                ic.name as category_name,
+                ic.description as category_description
+            FROM restaurant_item_category_map icm
+            JOIN restaurant_item_category ic ON icm.item_category_id = ic.item_category_id
+            WHERE icm.item_id IN ({item_ids_placeholders})
+        """, tuple(item_ids))
+
+        categories = cursor.fetchall()
+
+        # 3. Get all option groups for these items
+        cursor.execute(f"""
+            SELECT 
+                iog.item_id,
+                og.option_group_id,
+                og.name as option_group_name,
+                og.is_required,
+                og.min_select,
+                og.max_select,
+                og.display_order
+            FROM restaurant_item_option_group iog
+            JOIN restaurant_option_group og ON iog.option_group_id = og.option_group_id
+            WHERE iog.item_id IN ({item_ids_placeholders})
+            ORDER BY og.display_order
+        """, tuple(item_ids))
+
+        option_groups = cursor.fetchall()
+
+        # 4. Get all options for these option groups
+        if option_groups:
+            option_group_ids = [str(og['option_group_id']) for og in option_groups]
+            option_group_placeholders = ','.join(['%s'] * len(option_group_ids))
+
+            cursor.execute(f"""
+                SELECT 
+                    o.option_id,
+                    o.option_group_id,
+                    o.name,
+                    o.price_delta,
+                    o.is_default,
+                    o.display_order
+                FROM restaurant_option o
+                WHERE o.option_group_id IN ({option_group_placeholders})
+                ORDER BY o.display_order, o.name
+            """, tuple(option_group_ids))
+
+            options = cursor.fetchall()
+        else:
+            options = []
+
+        # 5. Get all modifier groups for these items
+        cursor.execute(f"""
+            SELECT 
+                img.item_id,
+                mg.modifier_group_id,
+                mg.name as modifier_group_name,
+                mg.is_required,
+                mg.min_select,
+                mg.max_select
+            FROM restaurant_item_modifier_group img
+            JOIN restaurant_modifier_group mg ON img.modifier_group_id = mg.modifier_group_id
+            WHERE img.item_id IN ({item_ids_placeholders})
+        """, tuple(item_ids))
+
+        modifier_groups = cursor.fetchall()
+
+        # 6. Get all modifiers for these modifier groups
+        if modifier_groups:
+            modifier_group_ids = [str(mg['modifier_group_id']) for mg in modifier_groups]
+            modifier_group_placeholders = ','.join(['%s'] * len(modifier_group_ids))
+
+            cursor.execute(f"""
+                SELECT 
+                    m.modifier_id,
+                    m.modifier_group_id,
+                    m.name,
+                    m.price_delta,
+                    m.is_active,
+                    m.display_order
+                FROM restaurant_modifier m
+                WHERE m.modifier_group_id IN ({modifier_group_placeholders})
+                ORDER BY m.display_order, m.name
+            """, tuple(modifier_group_ids))
+
+            modifiers = cursor.fetchall()
+        else:
+            modifiers = []
+
+        # 7. Get all tags for these items
+        cursor.execute(f"""
+            SELECT 
+                it.item_id,
+                t.tag_id,
+                t.name as tag_name
+            FROM restaurant_item_tag it
+            JOIN restaurant_tag t ON it.tag_id = t.tag_id
+            WHERE it.item_id IN ({item_ids_placeholders})
+        """, tuple(item_ids))
+
+        tags = cursor.fetchall()
+
+        # Organize the data
+        categories_by_item = {}
+        for category in categories:
+            item_id = category['item_id']
+            if item_id not in categories_by_item:
+                categories_by_item[item_id] = []
+            categories_by_item[item_id].append({
+                'category_id': category['item_category_id'],
+                'name': category['category_name'],
+                'description': category['category_description']
+            })
+
+        option_groups_by_item = {}
+        options_by_group = {}
+
+        for option in options:
+            group_id = option['option_group_id']
+            if group_id not in options_by_group:
+                options_by_group[group_id] = []
+            options_by_group[group_id].append({
+                'option_id': option['option_id'],
+                'name': option['name'],
+                'price_delta': float(option['price_delta']) if option['price_delta'] is not None else 0.00,
+                'is_default': bool(option['is_default']),
+                'display_order': option['display_order']
+            })
+
+        for og in option_groups:
+            item_id = og['item_id']
+            group_id = og['option_group_id']
+
+            if item_id not in option_groups_by_item:
+                option_groups_by_item[item_id] = []
+
+            option_group = {
+                'option_group_id': group_id,
+                'name': og['option_group_name'],
+                'is_required': bool(og['is_required']),
+                'min_select': og['min_select'],
+                'max_select': og['max_select'],
+                'options': options_by_group.get(group_id, [])
+            }
+
+            option_groups_by_item[item_id].append(option_group)
+
+        modifier_groups_by_item = {}
+        modifiers_by_group = {}
+
+        for modifier in modifiers:
+            group_id = modifier['modifier_group_id']
+            if group_id not in modifiers_by_group:
+                modifiers_by_group[group_id] = []
+            modifiers_by_group[group_id].append({
+                'modifier_id': modifier['modifier_id'],
+                'name': modifier['name'],
+                'price_delta': float(modifier['price_delta']) if modifier['price_delta'] is not None else 0.00,
+                'is_active': bool(modifier['is_active'])
+            })
+
+        for mg in modifier_groups:
+            item_id = mg['item_id']
+            group_id = mg['modifier_group_id']
+
+            if item_id not in modifier_groups_by_item:
+                modifier_groups_by_item[item_id] = []
+
+            modifier_group = {
+                'modifier_group_id': group_id,
+                'name': mg['modifier_group_name'],
+                'is_required': bool(mg['is_required']),
+                'min_select': mg['min_select'],
+                'max_select': mg['max_select'],
+                'modifiers': modifiers_by_group.get(group_id, [])
+            }
+
+            modifier_groups_by_item[item_id].append(modifier_group)
+
+        tags_by_item = {}
+        for tag in tags:
+            item_id = tag['item_id']
+            if item_id not in tags_by_item:
+                tags_by_item[item_id] = []
+            tags_by_item[item_id].append({
+                'tag_id': tag['tag_id'],
+                'name': tag['tag_name']
+            })
+
+        # Build the final response
+        result = []
+        for item in items:
+            item_id = item['item_id']
+            result_item = {
+                'item_id': item_id,
+                'business_id': item['business_id'],
+                'name': item['name'],
+                'description': item['description'],
+                'base_price': float(item['base_price']) if item['base_price'] is not None else 0.00,
+                'image_url': item['image_url'],
+                'is_active': bool(item['is_active']),
+                'preparation_time': item['preparation_time'],
+                'categories': categories_by_item.get(item_id, []),
+                'option_groups': option_groups_by_item.get(item_id, []),
+                'modifier_groups': modifier_groups_by_item.get(item_id, []),
+                'tags': tags_by_item.get(item_id, [])
+            }
+            result.append(result_item)
+
+        return jsonify({
+            'status': 'success',
+            'data': result,
+            'count': len(result)
+        })
+
+    except mysql.connector.Error as err:
+        logger.error(f"Database error in list_items_detailed: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error_code': 'DATABASE_ERROR',
+            'details': str(err)
+        }), 500
+
+    except Exception as e:
+        logger.error(f"Unexpected error in list_items_detailed: {e}")
         return jsonify({
             'status': 'error',
             'message': 'An unexpected error occurred',
