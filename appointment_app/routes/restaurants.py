@@ -1711,226 +1711,6 @@ def delete_item_modifier_group():
         }), 500
 
 
-@bp.route('/list_combos', methods=['POST'])
-def list_combos():
-    """
-    List all combo menu items for a business
-    
-    Request body:
-    {
-        "business_id": 73  # Required
-    }
-    
-    Returns:
-        JSON response with list of combo items
-        {
-            "status": "success",
-            "data": [
-                {
-                    "item_id": 1,
-                    "name": "Combo Meal",
-                    "description": "Combo description",
-                    "price": 12.99,
-                    "image_url": "http://example.com/image.jpg"
-                },
-                ...
-            ]
-        }
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        if 'business_id' not in data or data['business_id'] is None:
-            return jsonify({
-                'status': 'error',
-                'message': 'business_id is required',
-                'error_code': 'MISSING_BUSINESS_ID'
-            }), 400
-            
-        # Query for combo items
-        query = """
-            SELECT 
-                item_id,
-                name,
-                description,
-                base_price,
-                image_url
-            FROM restaurant_item
-            WHERE business_id = %s 
-            AND is_combo = TRUE
-            AND is_active = TRUE
-            ORDER BY name
-        """
-        
-        combos = execute_query(query, (data['business_id'],), fetch=True)
-        
-        return jsonify({
-            'status': 'success',
-            'data': combos or []
-        })
-        
-    except Exception as e:
-        logger.error(f"Error in list_combos: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': 'An error occurred while fetching combo items',
-            'error_code': str(e)
-        }), 500
-
-
-@bp.route('/list_combo_groups', methods=['POST'])
-def list_combo_groups():
-    """
-    List all combo groups for a specific item
-    
-    Request body:
-    {
-        "item_id": 10  # Required
-    }
-    
-    Returns:
-        JSON response with list of combo groups for the specified item
-        {
-            "status": "success",
-            "data": [
-                {
-                    "combo_group_id": 1,
-                    "name": "Main Item",
-                    "description": "Choose one main item",
-                    "is_required": true,
-                    "min_select": 1,
-                    "max_select": 1
-                },
-                ...
-            ]
-        }
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        if 'item_id' not in data or data['item_id'] is None:
-            return jsonify({
-                'status': 'error',
-                'message': 'item_id is required',
-                'error_code': 'MISSING_ITEM_ID'
-            }), 400
-            
-        # Query for combo groups
-        query = """
-            SELECT 
-                cg.combo_group_id,
-                cg.name,
-                cg.min_select,
-                cg.max_select
-            FROM restaurant_combo_group cg
-            WHERE cg.item_id = %s
-            ORDER BY cg.combo_group_id
-        """
-        
-        combo_groups = execute_query(query, (data['item_id'],), fetch=True)
-        
-        return jsonify({
-            'status': 'success',
-            'data': combo_groups or []
-        })
-        
-    except Exception as e:
-        logger.error(f"Error in list_combo_groups: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': 'An error occurred while fetching combo groups',
-            'error_code': str(e)
-        }), 500
-
-
-@bp.route('/list_combo_group_items', methods=['POST'])
-def list_combo_group_items():
-    """
-    List all items in a specific combo group
-    
-    Request body:
-    {
-        "combo_group_id": 1  # Required
-    }
-    
-    Returns:
-        JSON response with list of items in the specified combo group
-        {
-            "status": "success",
-            "data": [
-                {
-                    "combo_group_item_id": 1,
-                    "combo_group_id": 1,
-                    "allowed_item_id": 5,
-                    "price_delta": 0.0,
-                    "item_id": 5,
-                    "item_name": "Cheeseburger",
-                    "item_description": "Delicious cheeseburger",
-                    "base_price": 8.99,
-                    "is_combo": false,
-                    "is_active": true,
-                    "image_url": "http://example.com/burger.jpg",
-                    "item_category_id": 1,
-                    "category_name": "Burgers"
-                },
-                ...
-            ]
-        }
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        if 'combo_group_id' not in data or data['combo_group_id'] is None:
-            return jsonify({
-                'status': 'error',
-                'message': 'combo_group_id is required',
-                'error_code': 'MISSING_COMBO_GROUP_ID'
-            }), 400
-            
-        # Query for combo group items
-        query = """
-            SELECT 
-                gi.combo_group_item_id,
-                gi.combo_group_id,
-                gi.allowed_item_id,
-                gi.price_delta,
-                i.item_id,
-                i.name AS item_name,
-                i.description AS item_description,
-                i.base_price,
-                i.is_combo,
-                i.is_active,
-                i.image_url,
-                i.item_category_id,
-                ic.name AS category_name
-            FROM restaurant_combo_group_item gi
-            JOIN restaurant_item i 
-                ON gi.allowed_item_id = i.item_id
-            LEFT JOIN restaurant_item_category ic 
-                ON i.item_category_id = ic.item_category_id
-            WHERE gi.combo_group_id = %s
-            ORDER BY i.name
-        """
-        
-        items = execute_query(query, (data['combo_group_id'],), fetch=True)
-        
-        return jsonify({
-            'status': 'success',
-            'data': items or []
-        })
-        
-    except Exception as e:
-        logger.error(f"Error in list_combo_group_items: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': 'An error occurred while fetching combo group items',
-            'error_code': str(e)
-        }), 500
-
-
 @bp.route('/create_availability', methods=['POST'])
 def create_availability():
     """
@@ -7098,14 +6878,11 @@ def get_item_details():
         cursor = conn.cursor(dictionary=True)
 
         try:
-            # Get basic item information
+            # Get basic item information (without tags)
             cursor.execute("""
                            SELECT ri.*,
-                                  GROUP_CONCAT(DISTINCT rt.name)                                      as tags,
                                   GROUP_CONCAT(DISTINCT CONCAT(ricm.item_category_id, ':', ric.name)) as categories
                            FROM restaurant_item ri
-                                    LEFT JOIN restaurant_item_tag rit ON ri.item_id = rit.item_id
-                                    LEFT JOIN restaurant_tag rt ON rit.tag_id = rt.tag_id
                                     LEFT JOIN restaurant_item_category_map ricm ON ri.item_id = ricm.item_id
                                     LEFT JOIN restaurant_item_category ric
                                               ON ricm.item_category_id = ric.item_category_id
@@ -7121,6 +6898,19 @@ def get_item_details():
                     'message': 'Item not found',
                     'error_code': 'ITEM_NOT_FOUND'
                 }), 404
+
+            # Get tags with their IDs
+            cursor.execute("""
+                           SELECT rt.tag_id, rt.name as tag_name
+                           FROM restaurant_tag rt
+                                    JOIN restaurant_item_tag rit ON rt.tag_id = rit.tag_id
+                           WHERE rit.item_id = %s
+                           ORDER BY rt.name
+                           """, (item_id,))
+
+            # Format tags as list of objects
+            tags = [{'tag_id': row['tag_id'], 'tag_name': row['tag_name']}
+                    for row in cursor.fetchall()]
 
             # Get option groups and options
             cursor.execute("""
@@ -7266,7 +7056,7 @@ def get_item_details():
                 'calories': item.get('calories'),
                 'preparation_time': item.get('preparation_time'),
                 'image_url': item.get('image_url'),
-                'tags': item['tags'].split(',') if item['tags'] else [],
+                'tags': tags,  # Now includes both tag_id and tag_name
                 'categories': [{
                     'category_id': int(cat.split(':', 1)[0]),
                     'category_name': cat.split(':', 1)[1] if ':' in cat else cat
