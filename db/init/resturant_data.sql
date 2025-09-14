@@ -267,3 +267,54 @@ INSERT INTO restaurant_item_category_map (item_id, item_category_id) VALUES
 -- Chicken Shawarma: Halal Specials, Main Dish (if you had that category)
 INSERT INTO restaurant_item_category_map (item_id, item_category_id) VALUES
 (5, 5);
+
+-- 1. Create Order
+INSERT INTO restaurant_order (customer_id, business_id, order_status, total_price, notes)
+VALUES (21, 73, 'pending', 80.45, 'Customer prefers large size for item 39, extra cheese on item 45.');
+
+-- Assume order_id = 7001
+
+-- 2. Order Items
+-- Item 45 (base 9.99 + modifier)
+INSERT INTO restaurant_order_item (order_id, item_id, quantity, base_price, total_price)
+VALUES (1, 45, 1, 9.99, 11.49);
+
+-- Item 46 (base 11.50 ×2 + free modifier)
+INSERT INTO restaurant_order_item (order_id, item_id, quantity, base_price, total_price)
+VALUES (1, 46, 2, 11.50, 23.00);
+
+-- Item 73 (base 12.99 + modifier)
+INSERT INTO restaurant_order_item (order_id, item_id, quantity, base_price, total_price)
+VALUES (1, 73, 1, 12.99, 13.99);
+
+-- Item 39 (base 8.99 + option Large Size)
+INSERT INTO restaurant_order_item (order_id, item_id, quantity, base_price, total_price)
+VALUES (1, 39, 1, 8.99, 12.99);
+
+-- Item 44 (base 9.99 ×2 + option Stuffed Crust)
+INSERT INTO restaurant_order_item (order_id, item_id, quantity, base_price, total_price)
+VALUES (1, 44, 2, 9.99, 18.98);
+
+-- Assume order_item_ids: 8001=45, 8002=46, 8003=73, 8004=39, 8005=44
+
+-- 3. Order Item Modifiers
+-- Item 45 → Extra Cheese (+1.50)
+INSERT INTO restaurant_order_item_modifier (order_item_id, modifier_id, price_delta)
+VALUES (1, 101, 1.50);  -- modifier_id=101 = Extra Cheese
+
+-- Item 46 → Chili Flakes (free)
+INSERT INTO restaurant_order_item_modifier (order_item_id, modifier_id, price_delta)
+VALUES (2, 102, 0.00);  -- modifier_id=102 = Chili Flakes
+
+-- Item 73 → Garlic Dip (+1.00)
+INSERT INTO restaurant_order_item_modifier (order_item_id, modifier_id, price_delta)
+VALUES (3, 201, 1.00);  -- modifier_id=201 = Garlic Dip
+
+-- 4. Order Item Options
+-- Item 39 → Large Size (+4.00)
+INSERT INTO restaurant_order_item_option (order_item_id, option_id, price_delta)
+VALUES (4, 301, 4.00);  -- option_id=301 = Large Size
+
+-- Item 44 → Stuffed Crust (+1.00 each)
+INSERT INTO restaurant_order_item_option (order_item_id, option_id, price_delta)
+VALUES (5, 401, 1.00);  -- option_id=401 = Stuffed Crust

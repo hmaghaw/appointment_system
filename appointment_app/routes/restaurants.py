@@ -5867,7 +5867,7 @@ def delete_item():
         cursor.execute("""
                        DELETE
                        FROM restaurant_combo_group_item
-                       WHERE allowed_item_id = %s
+                       WHERE item_id = %s
                        """, (item_id,))
 
         # 7. Delete from restaurant_combo_group where this item is a combo
@@ -6998,14 +6998,14 @@ def get_item_details():
                                       cg.min_select,
                                       cg.max_select,
                                       cgi.combo_group_item_id,
-                                      cgi.allowed_item_id,
+                                      cgi.item_id,
                                       cgi.price_delta,
                                       ri.name as item_name
                                FROM restaurant_combo_group cg
                                         LEFT JOIN
                                     restaurant_combo_group_item cgi ON cg.combo_group_id = cgi.combo_group_id
                                         LEFT JOIN
-                                    restaurant_item ri ON cgi.allowed_item_id = ri.item_id
+                                    restaurant_item ri ON cgi.item_id = ri.item_id
                                WHERE cg.item_id = %s
                                ORDER BY cg.display_order, cgi.combo_group_item_id
                                """, (item_id,))
@@ -7020,9 +7020,9 @@ def get_item_details():
                             'max_select': row['max_select'],
                             'items': []
                         }
-                    if row['allowed_item_id']:
+                    if row['item_id']:
                         combo_groups[group_id]['items'].append({
-                            'item_id': row['allowed_item_id'],
+                            'item_id': row['item_id'],
                             'name': row['item_name'],
                             'price_delta': float(row['price_delta']) if row['price_delta'] is not None else 0.0
                         })

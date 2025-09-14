@@ -443,14 +443,14 @@ def list_combo_group_items():
             SELECT 
                 cgi.combo_group_item_id,
                 cgi.combo_group_id,
-                cgi.allowed_item_id,
+                cgi.item_id,
                 cgi.price_delta,
                 ri.name as item_name,
                 ri.description,
                 ri.base_price,
                 ri.image_url
             FROM restaurant_combo_group_item cgi
-            JOIN restaurant_item ri ON cgi.allowed_item_id = ri.item_id
+            JOIN restaurant_item ri ON cgi.item_id = ri.item_id
             WHERE cgi.combo_group_id = %s
             """,
             (data['combo_group_id'],),
@@ -462,7 +462,7 @@ def list_combo_group_items():
         formatted_items = [{
             'combo_group_item_id': row['combo_group_item_id'],
             'combo_group_id': row['combo_group_id'],
-            'item_id': row['allowed_item_id'],
+            'item_id': row['item_id'],
             'name': row['item_name'],
             'description': row['description'],
             'base_price': float(row['base_price']) if row['base_price'] is not None else 0.0,
@@ -491,7 +491,7 @@ def create_combo_group_item():
     Request body:
     {
         "combo_group_id": 1,    // Required
-        "allowed_item_id": 2,   // Required
+        "item_id": 2,   // Required
         "price_delta": 1.5      // Optional, defaults to 0
     }
     
@@ -502,7 +502,7 @@ def create_combo_group_item():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['combo_group_id', 'allowed_item_id']
+        required_fields = ['combo_group_id', 'item_id']
         for field in required_fields:
             if field not in data:
                 return jsonify({
@@ -518,10 +518,10 @@ def create_combo_group_item():
         item_id = execute_query(
             """
             INSERT INTO restaurant_combo_group_item 
-            (combo_group_id, allowed_item_id, price_delta)
+            (combo_group_id, item_id, price_delta)
             VALUES (%s, %s, %s)
             """,
-            (data['combo_group_id'], data['allowed_item_id'], price_delta)
+            (data['combo_group_id'], data['item_id'], price_delta)
         )
         
         # Get the created item with details
@@ -529,7 +529,7 @@ def create_combo_group_item():
             """
             SELECT cgi.*, ri.name as item_name, ri.description, ri.base_price, ri.image_url
             FROM restaurant_combo_group_item cgi
-            JOIN restaurant_item ri ON cgi.allowed_item_id = ri.item_id
+            JOIN restaurant_item ri ON cgi.item_id = ri.item_id
             WHERE cgi.combo_group_item_id = %s
             """,
             (item_id,),
@@ -542,7 +542,7 @@ def create_combo_group_item():
             'data': {
                 'combo_group_item_id': created_item['combo_group_item_id'],
                 'combo_group_id': created_item['combo_group_id'],
-                'item_id': created_item['allowed_item_id'],
+                'item_id': created_item['item_id'],
                 'name': created_item['item_name'],
                 'description': created_item['description'],
                 'base_price': float(created_item['base_price']) if created_item['base_price'] is not None else 0.0,
@@ -555,7 +555,7 @@ def create_combo_group_item():
         if 'foreign key constraint' in str(e).lower():
             return jsonify({
                 'status': 'error',
-                'message': 'Invalid combo_group_id or allowed_item_id',
+                'message': 'Invalid combo_group_id or item_id',
                 'error_code': 'INVALID_IDS'
             }), 400
         elif 'duplicate entry' in str(e).lower():
@@ -621,7 +621,7 @@ def update_combo_group_item():
             """
             SELECT cgi.*, ri.name as item_name, ri.description, ri.base_price, ri.image_url
             FROM restaurant_combo_group_item cgi
-            JOIN restaurant_item ri ON cgi.allowed_item_id = ri.item_id
+            JOIN restaurant_item ri ON cgi.item_id = ri.item_id
             WHERE cgi.combo_group_item_id = %s
             """,
             (data['combo_group_item_id'],),
@@ -641,7 +641,7 @@ def update_combo_group_item():
             'data': {
                 'combo_group_item_id': updated_item['combo_group_item_id'],
                 'combo_group_id': updated_item['combo_group_id'],
-                'item_id': updated_item['allowed_item_id'],
+                'item_id': updated_item['item_id'],
                 'name': updated_item['item_name'],
                 'description': updated_item['description'],
                 'base_price': float(updated_item['base_price']) if updated_item['base_price'] is not None else 0.0,

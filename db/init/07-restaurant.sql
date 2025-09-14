@@ -82,10 +82,10 @@ CREATE TABLE restaurant_combo_group (
 CREATE TABLE restaurant_combo_group_item (
     combo_group_item_id INT AUTO_INCREMENT PRIMARY KEY,
     combo_group_id INT NOT NULL,
-    allowed_item_id INT NOT NULL,
+    item_id INT NOT NULL,
     price_delta DECIMAL(10,2) DEFAULT 0,
     FOREIGN KEY (combo_group_id) REFERENCES restaurant_combo_group(combo_group_id),
-    FOREIGN KEY (allowed_item_id) REFERENCES restaurant_item(item_id)
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ======================
@@ -126,7 +126,7 @@ CREATE TABLE restaurant_order (
     order_id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT NOT NULL,
     business_id INT NOT NULL,
-    order_status ENUM('pending','confirmed','preparing','ready','out_for_delivery','delivered','cancelled') DEFAULT 'pending',
+    order_status ENUM('pending','confirmed','preparing','ready','out_for_delivery','delivered','cancelled') DEFAULT 'confirmed',
     order_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     scheduled_time DATETIME NULL,
     total_price DECIMAL(10,2) NOT NULL,
@@ -150,6 +150,7 @@ CREATE TABLE restaurant_order_item_option (
     order_item_option_id INT AUTO_INCREMENT PRIMARY KEY,
     order_item_id INT NOT NULL,
     option_id INT NOT NULL,
+    name varchar(100),
     price_delta DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id),
 
@@ -159,6 +160,7 @@ CREATE TABLE restaurant_order_item_modifier (
     order_item_modifier_id INT AUTO_INCREMENT PRIMARY KEY,
     order_item_id INT NOT NULL,
     modifier_id INT NOT NULL,
+    name varchar(100),
     price_delta DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id),
     FOREIGN KEY (modifier_id) REFERENCES restaurant_modifier(modifier_id)

@@ -55,7 +55,8 @@ def create_app(config_dict=None):
     from appointment_app.routes.subscription import bp as subscription_bp
     from appointment_app.routes.premium_numbers import bp as premium_numbers_bp
     from appointment_app.routes.restaurants import bp as restaurants_bp
-    from appointment_app.routes.restaurant_combo import bp as restaurant_combo_bp  # Add this line
+    from appointment_app.routes.restaurant_combo import bp as restaurant_combo_bp
+    from appointment_app.routes.restaurant_order import bp as restaurant_order_bp
     # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -75,6 +76,7 @@ def create_app(config_dict=None):
     app.register_blueprint(restaurants_bp)  # Restaurant endpoints (prefix is defined in the blueprint)
     app.register_blueprint(onboarding_bp)  # Onboarding endpoints
     app.register_blueprint(restaurant_combo_bp)
+    app.register_blueprint(restaurant_order_bp)
 
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
