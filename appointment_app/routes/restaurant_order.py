@@ -336,13 +336,13 @@ def get_order_details(order_id):
         )
 
         # Convert Decimal to float for JSON serialization
-        item['price_per_item'] = float(item['price_per_item']) if item['price_per_item'] is not None else 0.0
+        item['base_price'] = float(item['base_price']) if item['base_price'] is not None else 0.0
 
         # Calculate total price for the item (including modifiers)
-        item_total = item['price_per_item'] * item['quantity']
+        item_total = item['base_price'] * item['quantity']
         for mod in item['modifiers']:
-            mod['price_per_item'] = float(mod['price_per_item']) if mod['price_per_item'] is not None else 0.0
-            item_total += mod['price_per_item'] * mod['quantity']
+            item['base_price'] = float(item['base_price']) if item['base_price'] is not None else 0.0
+            item_total += item['base_price'] * item['quantity']
 
         item['total_price'] = item_total
 
@@ -354,9 +354,8 @@ def get_order_details(order_id):
         'order_id': order['order_id'],
         'customer_id': order['customer_id'],
         'business_id': order['business_id'],
-        'status': order['status'],
-        'delivery_address': order['delivery_address'],
-        'special_instructions': order['special_instructions'],
+        'order_status': order['order_status'],
+        'notes': order['notes'],
         'order_time': order['order_time'].isoformat() if order['order_time'] else None,
         'total_amount': order_total,
         'items': order_items
@@ -364,18 +363,16 @@ def get_order_details(order_id):
 
     return order_data
 
-@bp.route('/update_order/<int:order_id>', methods=['PUT'])
-def update_order(order_id):
+@bp.route('/update_order', methods=['POST'])
+def update_order():
     """
     Update an existing order
 
-    URL Parameters:
-        order_id: ID of the order to update
-
-    Request body (all fields optional except status):
+    Request body (all fields are optional except order_id):
     {
-        "status": "preparing",  // New status
-        "special_instructions": "Updated instructions"
+        "order_id": 1,  // Required
+        "order_status": "preparing",  // Optional
+        "notes": "Updated instructions"  // Optional
     }
 
     Returns:
@@ -384,12 +381,14 @@ def update_order(order_id):
     try:
         data = request.get_json()
 
-        if not data:
+        if not data or 'order_id' not in data:
             return jsonify({
                 'status': 'error',
-                'message': 'No data provided for update',
-                'error_code': 'NO_UPDATE_DATA'
+                'message': 'Order ID is required',
+                'error_code': 'MISSING_ORDER_ID'
             }), 400
+
+        order_id = data['order_id']
 
         # Check if order exists
         existing_order = execute_query(
@@ -409,12 +408,16 @@ def update_order(order_id):
         update_fields = []
         update_values = []
 
-        allowed_fields = ['status', 'special_instructions']
+        # Map request fields to database fields
+        field_mapping = {
+            'order_status': 'order_status',  # Map order_status in request to status in DB
+            'notes': 'notes'
+        }
 
-        for field in allowed_fields:
-            if field in data:
-                update_fields.append(f"{field} = %s")
-                update_values.append(data[field])
+        for request_field, db_field in field_mapping.items():
+            if request_field in data and data[request_field] is not None:
+                update_fields.append(f"{db_field} = %s")
+                update_values.append(data[request_field])
 
         if not update_fields:
             return jsonify({
@@ -530,11 +533,12 @@ def delete_order(order_id):
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
 
+
 @bp.route('/list_orders', methods=['POST'])
 def list_orders():
     """
     List orders with optional filtering and pagination
-    
+
     Request Body (JSON):
     {
         "business_id": 1,               // Required
@@ -545,13 +549,10 @@ def list_orders():
         "page": 1,                      // Optional, default: 1
         "per_page": 10                  // Optional, default: 10, max: 100
     }
-    
-    Returns:
-        JSON response with paginated list of orders
     """
     try:
         data = request.get_json()
-        
+
         # Validate required business_id
         if not data or 'business_id' not in data:
             return jsonify({
@@ -559,7 +560,7 @@ def list_orders():
                 'message': 'business_id is required in the request body',
                 'error_code': 'MISSING_BUSINESS_ID'
             }), 400
-            
+
         # Get parameters from request body
         business_id = data.get('business_id')
         customer_id = data.get('customer_id')
@@ -568,24 +569,24 @@ def list_orders():
         to_date = data.get('to_date')
         page = max(1, data.get('page', 1))
         per_page = min(100, data.get('per_page', 10))
-        
+
         # Build base query
         base_query = """
         FROM restaurant_order o
         WHERE o.business_id = %s
         """
-        
+
         query_params = [business_id]
-        
+
         # Add optional filters
         if customer_id is not None:
             base_query += " AND o.customer_id = %s"
             query_params.append(customer_id)
-            
+
         if status:
             base_query += " AND o.order_status = %s"
             query_params.append(status)
-            
+
         if from_date:
             try:
                 from_date = datetime.strptime(from_date, '%Y-%m-%d')
@@ -597,7 +598,7 @@ def list_orders():
                     'message': 'Invalid from_date format. Use YYYY-MM-DD',
                     'error_code': 'INVALID_DATE_FORMAT'
                 }), 400
-                
+
         if to_date:
             try:
                 to_date = datetime.strptime(to_date, '%Y-%m-%d')
@@ -609,63 +610,154 @@ def list_orders():
                     'message': 'Invalid to_date format. Use YYYY-MM-DD',
                     'error_code': 'INVALID_DATE_FORMAT'
                 }), 400
-        
+
         # Get total count for pagination
         count_result = execute_query(
             f"SELECT COUNT(*) as total {base_query}",
             tuple(query_params),
             fetch=True
         )
-        
+
         total_orders = count_result['total']
         total_pages = max(1, math.ceil(total_orders / per_page))
-        
+
         # Apply pagination
         offset = (page - 1) * per_page
         base_query += " ORDER BY o.order_time DESC LIMIT %s OFFSET %s"
         query_params.extend([per_page, offset])
-        
+
         # Get paginated orders
         orders = execute_query(
             f"""
-            SELECT 
-                o.order_id,
-                o.customer_id,
-                o.business_id,
-                o.order_status,
-                o.order_time
+            SELECT o.order_id
             {base_query}
             """,
             tuple(query_params),
             fetch=True,
             fetch_all=True
         )
-        
-        # Convert Decimal to float for JSON serialization
+
+        # Get detailed information for each order
+        result_orders = []
         for order in orders:
-            order['total_amount'] = float(order['total_amount']) if order['total_amount'] is not None else 0.0
-            if order['order_time']:
-                order['order_time'] = order['order_time'].isoformat()
-        
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'orders': orders,
-                'pagination': {
-                    'total': total_orders,
-                    'page': page,
-                    'per_page': per_page,
-                    'total_pages': total_pages,
-                    'has_next': page < total_pages,
-                    'has_prev': page > 1
+            order_id = order['order_id']
+
+            # Get order details
+            order_details = execute_query(
+                """
+                SELECT o.order_id,
+                       o.customer_id,
+                       o.business_id,
+                       o.order_status as status,
+                       o.order_time,
+                       o.total_price  as total
+                FROM restaurant_order o
+                WHERE o.order_id = %s
+                """,
+                (order_id,),
+                fetch=True
+            )
+
+            if not order_details:
+                continue
+
+            # Get order items with options and modifiers
+            order_items = execute_query(
+                """
+                SELECT oi.order_item_id,
+                       oi.item_id,
+                       oi.quantity,
+                       oi.base_price,
+                       oi.total_price as price,
+                       ri.name
+                FROM restaurant_order_item oi
+                         JOIN restaurant_item ri ON oi.item_id = ri.item_id
+                WHERE oi.order_id = %s
+                """,
+                (order_id,),
+                fetch=True,
+                fetch_all=True
+            )
+
+            # Process each item to include options and modifiers
+            items_with_details = []
+            for item in order_items:
+                # Get options for this item
+                options = execute_query(
+                    """
+                    SELECT oo.option_id,
+                           oo.name,
+                           oo.price_delta
+                    FROM restaurant_order_item_option oo
+                    WHERE oo.order_item_id = %s
+                    """,
+                    (item['order_item_id'],),
+                    fetch=True,
+                    fetch_all=True
+                )
+
+                # Get modifiers for this item
+                modifiers = execute_query(
+                    """
+                    SELECT om.modifier_id,
+                           om.name,
+                           om.price_delta
+                    FROM restaurant_order_item_modifier om
+                    WHERE om.order_item_id = %s
+                    """,
+                    (item['order_item_id'],),
+                    fetch=True,
+                    fetch_all=True
+                )
+
+                # Format the item
+                item_data = {
+                    'item_id': item['item_id'],
+                    'name': item['name'],
+                    'quantity': item['quantity'],
+                    'base_price': float(item['base_price']),
+                    'price': float(item['price']),
+                    'options': [{
+                        'option_id': opt['option_id'],
+                        'name': opt['name'],
+                        'price_delta': float(opt['price_delta'])
+                    } for opt in options],
+                    'modifiers': [{
+                        'modifier_id': mod['modifier_id'],
+                        'name': mod['name'],
+                        'price_delta': float(mod['price_delta'])
+                    } for mod in modifiers]
+                }
+                items_with_details.append(item_data)
+
+            # Format the order
+            order_data = {
+                'order': {
+                    'order_id': order_details['order_id'],
+                    'items': items_with_details,
+                    'total': float(order_details['total'])
                 }
             }
+            result_orders.append(order_data)
+
+        return jsonify({
+            'status': 'success',
+            'orders': result_orders,
+            'pagination': {
+                'total': total_orders,
+                'page': page,
+                'per_page': per_page,
+                'total_pages': total_pages,
+                'has_next': page < total_pages,
+                'has_prev': page > 1
+            }
         })
-        
+
     except Exception as e:
         logger.error(f"Error in list_orders: {str(e)}", exc_info=True)
         return jsonify({
             'status': 'error',
             'message': 'An error occurred while fetching orders',
-            'error_code': 'INTERNAL_SERVER_ERROR'
+            'error_code': 'INTERNAL_SERVER_ERROR',
+            'details': str(e)
         }), 500
