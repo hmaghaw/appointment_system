@@ -297,6 +297,7 @@ def get_business_by_phone():
             cursor.execute("""
                 SELECT
                     b.business_id,
+                    b.business_type,
                     b.name,
                     b.timezone,
                     b.status,
