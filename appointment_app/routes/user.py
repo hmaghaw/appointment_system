@@ -343,7 +343,7 @@ def signup():
             # Insert the business
             cursor.execute(
                 "INSERT INTO business (name, timezone, status) VALUES (%s, %s, %s)",
-                (business_name, 'UTC', 'active')
+                (business_name, 'US/Eastern', 'active')
             )
             
             # Get the last inserted ID
