@@ -4,16 +4,21 @@ Restaurant Order API
 Handles order related operations including creating, updating, deleting, and listing orders
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import mysql.connector
 import os
 import logging
 from datetime import timedelta, datetime
 import math
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize SocketIO
+socketio = SocketIO(cors_allowed_origins="*")
 
 # Database configuration
 DB_CONFIG = {
@@ -23,6 +28,12 @@ DB_CONFIG = {
     'database': os.getenv('DB_NAME')
 }
 
+# Whitelist of safe order fields
+ORDER_FIELDS = {
+    "amount": "o.total_price",
+    "date": "o.order_time",
+    "status": "o.order_status"
+}
 def get_db_connection():
     """Get database connection"""
     try:
@@ -59,9 +70,54 @@ def execute_query(query, params=None, fetch=False, fetch_all=False):
         if conn and conn.is_connected():
             conn.close()
 
+def notify_new_order(business_id, order_data):
+    """Emit a new order notification to the business room"""
+    try:
+        # socketio.emit('new_order', {
+        #     'business_id': business_id,
+        #     'order': order_data,
+        #     'message': 'New order received!',
+        #     'timestamp': datetime.utcnow().isoformat()
+        # }, room=f'business_{business_id}')
+        socketio.emit('new_order', {
+            'business_id': 73,
+            'order': {
+                'order_id': 999,
+                'total': 15.50,
+                'items': [],
+                'order_status': 'pending'
+            },
+            'message': 'Test order',
+            'timestamp': '2025-09-17T10:30:00Z'
+        }, room='business_73')
+        logger.info(f"Notified business {business_id} about new order")
+    except Exception as e:
+        logger.error(f"Error sending new order notification: {str(e)}")
+
 # Create Blueprint
 bp = Blueprint('restaurant_orders', __name__, url_prefix='/api/restaurants')
 
+@socketio.on('connect')
+def handle_connect():
+    logger.info('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    logger.info('Client disconnected')
+
+@socketio.on('join_business')
+def on_join(data):
+    business_id = data.get('business_id')
+    if business_id:
+        join_room(f'business_{business_id}')
+        logger.info(f'Client joined business room: business_{business_id}')
+
+@socketio.on('leave_business')
+def on_leave(data):
+    business_id = data.get('business_id')
+    if business_id:
+        leave_room(f'business_{business_id}')
+        logger.info(f'Client left business room: business_{business_id}')
 
 @bp.route('/create_order', methods=['POST'])
 def create_order():
@@ -255,6 +311,9 @@ def create_order():
                 item['modifiers'] = cursor.fetchall()
 
             order['items'] = order_items
+
+            # Notify the business about the new order
+            notify_new_order(order_data['business_id'], order)
 
             return jsonify({
                 'status': 'success',
@@ -533,231 +592,273 @@ def delete_order(order_id):
             'error_code': 'INTERNAL_SERVER_ERROR'
         }), 500
 
+def build_order_clause(order_mode):
+    """Convert safe order_mode array into SQL ORDER BY clause."""
+    if not order_mode:
+        return "ORDER BY o.order_time DESC"
+
+    if isinstance(order_mode, str):  # allow single value
+        order_mode = [order_mode]
+
+    clauses = []
+    for spec in order_mode:
+        try:
+            field, direction = spec.split(":")
+            field = field.strip().lower()
+            direction = direction.strip().lower()
+        except ValueError:
+            continue
+
+        if field not in ORDER_FIELDS:
+            continue
+        if direction not in ("asc", "desc"):
+            direction = "asc"
+
+        clauses.append(f"{ORDER_FIELDS[field]} {direction.upper()}")
+
+    if not clauses:
+        return "ORDER BY o.order_time DESC"
+
+    return "ORDER BY " + ", ".join(clauses)
 
 @bp.route('/list_orders', methods=['POST'])
 def list_orders():
     """
-    List orders with optional filtering and pagination
+    List orders with filtering, ordering, and pagination.
 
-    Request Body (JSON):
+    Request Body:
     {
-        "business_id": 1,               // Required
-        "customer_id": 1,               // Optional
-        "status": "completed",          // Optional
-        "from_date": "2025-09-01",      // Optional (YYYY-MM-DD)
-        "to_date": "2025-09-14",        // Optional (YYYY-MM-DD)
-        "page": 1,                      // Optional, default: 1
-        "per_page": 10                  // Optional, default: 10, max: 100
+        "business_id": 73,               # required
+        "status": ["confirmed","completed"],  # optional (string or array)
+        "from_date": "2025-09-01",       # optional (YYYY-MM-DD)
+        "to_date": "2025-09-14",         # optional (YYYY-MM-DD)
+        "order_mode": ["amount:desc"],   # optional, array of field:direction
+        "page": 1,                       # optional, default 1
+        "per_page": 10                   # optional, default 10, max 100
     }
     """
     try:
         data = request.get_json()
-
-        # Validate required business_id
-        if not data or 'business_id' not in data:
+        if not data or "business_id" not in data:
             return jsonify({
-                'status': 'error',
-                'message': 'business_id is required in the request body',
-                'error_code': 'MISSING_BUSINESS_ID'
+                "status": "error",
+                "message": "business_id is required"
             }), 400
 
-        # Get parameters from request body
-        business_id = data.get('business_id')
-        customer_id = data.get('customer_id')
-        status = data.get('status')
-        from_date = data.get('from_date')
-        to_date = data.get('to_date')
-        page = max(1, data.get('page', 1))
-        per_page = min(100, data.get('per_page', 10))
+        business_id = data["business_id"]
+        status = data.get("status")
+        from_date = data.get("from_date")
+        to_date = data.get("to_date")
+        order_mode = data.get("order_mode")
+        page = max(1, data.get("page", 1))
+        per_page = min(100, data.get("per_page", 10))
+        offset = (page - 1) * per_page
 
-        # Build base query
-        base_query = """
-        FROM restaurant_order o
-        WHERE o.business_id = %s
-        """
-
-        query_params = [business_id]
-
-        # Add optional filters
-        if customer_id is not None:
-            base_query += " AND o.customer_id = %s"
-            query_params.append(customer_id)
+        # Build WHERE filters
+        filters = ["o.business_id = %s"]
+        params = [business_id]
 
         if status:
-            base_query += " AND o.order_status = %s"
-            query_params.append(status)
+            if isinstance(status, list):
+                placeholders = ", ".join(["%s"] * len(status))
+                filters.append(f"o.order_status IN ({placeholders})")
+                params.extend(status)
+            else:
+                filters.append("o.order_status = %s")
+                params.append(status)
 
         if from_date:
             try:
-                from_date = datetime.strptime(from_date, '%Y-%m-%d')
-                base_query += " AND DATE(o.order_time) >= %s"
-                query_params.append(from_date.strftime('%Y-%m-%d'))
-            except (ValueError, TypeError):
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Invalid from_date format. Use YYYY-MM-DD',
-                    'error_code': 'INVALID_DATE_FORMAT'
-                }), 400
+                datetime.strptime(from_date, "%Y-%m-%d")
+                filters.append("DATE(o.order_time) >= %s")
+                params.append(from_date)
+            except ValueError:
+                return jsonify({"status": "error", "message": "Invalid from_date"}), 400
 
         if to_date:
             try:
-                to_date = datetime.strptime(to_date, '%Y-%m-%d')
-                base_query += " AND DATE(o.order_time) <= %s"
-                query_params.append(to_date.strftime('%Y-%m-%d'))
-            except (ValueError, TypeError):
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Invalid to_date format. Use YYYY-MM-DD',
-                    'error_code': 'INVALID_DATE_FORMAT'
-                }), 400
+                datetime.strptime(to_date, "%Y-%m-%d")
+                filters.append("DATE(o.order_time) <= %s")
+                params.append(to_date)
+            except ValueError:
+                return jsonify({"status": "error", "message": "Invalid to_date"}), 400
 
-        # Get total count for pagination
-        count_result = execute_query(
-            f"SELECT COUNT(*) as total {base_query}",
-            tuple(query_params),
-            fetch=True
-        )
+        where_clause = " AND ".join(filters)
+        order_clause = build_order_clause(order_mode)
 
-        total_orders = count_result['total']
+        # Count total for pagination
+        count_sql = f"SELECT COUNT(*) AS total FROM restaurant_order o WHERE {where_clause}"
+        count_result = execute_query(count_sql, tuple(params), fetch=True)
+        total_orders = count_result["total"]
         total_pages = max(1, math.ceil(total_orders / per_page))
 
-        # Apply pagination
-        offset = (page - 1) * per_page
-        base_query += " ORDER BY o.order_time DESC LIMIT %s OFFSET %s"
-        query_params.extend([per_page, offset])
+        # Main query with joins
+        sql = f"""
+        SELECT
+            o.order_id,
+            o.customer_id,
+            c.first_name,
+            c.last_name,
+            o.business_id,
+            o.order_status,
+            o.order_time,
+            o.total_price,
+            o.notes,
 
-        # Get paginated orders
-        orders = execute_query(
-            f"""
-            SELECT o.order_id
-            {base_query}
-            """,
-            tuple(query_params),
-            fetch=True,
-            fetch_all=True
-        )
+            oi.order_item_id,
+            oi.item_id,
+            oi.quantity,
+            oi.base_price,
+            oi.total_price AS item_price,
+            ri.name AS item_name,
 
-        # Get detailed information for each order
-        result_orders = []
-        for order in orders:
-            order_id = order['order_id']
+            oo.option_id,
+            oo.name AS option_name,
+            oo.price_delta AS option_price,
 
-            # Get order details
-            order_details = execute_query(
-                """
-                SELECT o.order_id,
-                       o.customer_id,
-                       o.business_id,
-                       o.order_status as status,
-                       o.order_time,
-                       o.total_price  as total
-                FROM restaurant_order o
-                WHERE o.order_id = %s
-                """,
-                (order_id,),
-                fetch=True
-            )
+            om.modifier_id,
+            om.name AS modifier_name,
+            om.price_delta AS modifier_price
+        FROM restaurant_order o
+        LEFT JOIN customer c ON o.customer_id = c.customer_id
+        LEFT JOIN restaurant_order_item oi ON o.order_id = oi.order_id
+        LEFT JOIN restaurant_item ri ON oi.item_id = ri.item_id
+        LEFT JOIN restaurant_order_item_option oo ON oi.order_item_id = oo.order_item_id
+        LEFT JOIN restaurant_order_item_modifier om ON oi.order_item_id = om.order_item_id
+        WHERE {where_clause}
+        {order_clause}
+        LIMIT %s OFFSET %s
+        """
+        rows = execute_query(sql, tuple(params + [per_page, offset]), fetch=True, fetch_all=True)
 
-            if not order_details:
-                continue
-
-            # Get order items with options and modifiers
-            order_items = execute_query(
-                """
-                SELECT oi.order_item_id,
-                       oi.item_id,
-                       oi.quantity,
-                       oi.base_price,
-                       oi.total_price as price,
-                       ri.name
-                FROM restaurant_order_item oi
-                         JOIN restaurant_item ri ON oi.item_id = ri.item_id
-                WHERE oi.order_id = %s
-                """,
-                (order_id,),
-                fetch=True,
-                fetch_all=True
-            )
-
-            # Process each item to include options and modifiers
-            items_with_details = []
-            for item in order_items:
-                # Get options for this item
-                options = execute_query(
-                    """
-                    SELECT oo.option_id,
-                           oo.name,
-                           oo.price_delta
-                    FROM restaurant_order_item_option oo
-                    WHERE oo.order_item_id = %s
-                    """,
-                    (item['order_item_id'],),
-                    fetch=True,
-                    fetch_all=True
-                )
-
-                # Get modifiers for this item
-                modifiers = execute_query(
-                    """
-                    SELECT om.modifier_id,
-                           om.name,
-                           om.price_delta
-                    FROM restaurant_order_item_modifier om
-                    WHERE om.order_item_id = %s
-                    """,
-                    (item['order_item_id'],),
-                    fetch=True,
-                    fetch_all=True
-                )
-
-                # Format the item
-                item_data = {
-                    'item_id': item['item_id'],
-                    'name': item['name'],
-                    'quantity': item['quantity'],
-                    'base_price': float(item['base_price']),
-                    'price': float(item['price']),
-                    'options': [{
-                        'option_id': opt['option_id'],
-                        'name': opt['name'],
-                        'price_delta': float(opt['price_delta'])
-                    } for opt in options],
-                    'modifiers': [{
-                        'modifier_id': mod['modifier_id'],
-                        'name': mod['name'],
-                        'price_delta': float(mod['price_delta'])
-                    } for mod in modifiers]
+        # Aggregate results
+        orders = {}
+        for row in rows:
+            oid = row["order_id"]
+            if oid not in orders:
+                orders[oid] = {
+                    "order": {
+                        "order_id": oid,
+                        "customer_id": row["customer_id"],
+                        "customer_name": f"{row['first_name']} {row['last_name']}".strip(),
+                        "status": row["order_status"],
+                        "order_time": row["order_time"].isoformat() if row["order_time"] else None,
+                        "total": float(row["total_price"] or 0),
+                        "notes": row["notes"],
+                        "items": []
+                    },
+                    "_items": {}
                 }
-                items_with_details.append(item_data)
 
-            # Format the order
-            order_data = {
-                'order': {
-                    'order_id': order_details['order_id'],
-                    'items': items_with_details,
-                    'total': float(order_details['total'])
+            # Handle items
+            if row["order_item_id"] and row["order_item_id"] not in orders[oid]["_items"]:
+                orders[oid]["_items"][row["order_item_id"]] = {
+                    "item_id": row["item_id"],
+                    "name": row["item_name"],
+                    "quantity": row["quantity"],
+                    "base_price": float(row["base_price"] or 0),
+                    "price": float(row["item_price"] or 0),
+                    "options": [],
+                    "modifiers": []
                 }
-            }
-            result_orders.append(order_data)
+                orders[oid]["order"]["items"].append(orders[oid]["_items"][row["order_item_id"]])
+
+            item = orders[oid]["_items"].get(row["order_item_id"])
+            if item:
+                if row["option_id"]:
+                    item["options"].append({
+                        "option_id": row["option_id"],
+                        "name": row["option_name"],
+                        "price_delta": float(row["option_price"] or 0)
+                    })
+                if row["modifier_id"]:
+                    item["modifiers"].append({
+                        "modifier_id": row["modifier_id"],
+                        "name": row["modifier_name"],
+                        "price_delta": float(row["modifier_price"] or 0)
+                    })
+
+        result_orders = [v["order"] for v in orders.values()]
 
         return jsonify({
-            'status': 'success',
-            'orders': result_orders,
-            'pagination': {
-                'total': total_orders,
-                'page': page,
-                'per_page': per_page,
-                'total_pages': total_pages,
-                'has_next': page < total_pages,
-                'has_prev': page > 1
+            "status": "success",
+            "orders": result_orders,
+            "pagination": {
+                "total": total_orders,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1
             }
         })
 
     except Exception as e:
         logger.error(f"Error in list_orders: {str(e)}", exc_info=True)
         return jsonify({
+            "status": "error",
+            "message": "Internal Server Error",
+            "details": str(e)
+        }), 500
+
+@bp.route('/push_notification', methods=['POST'])
+def push_notification():
+    """
+    Send a push notification for a new order
+    
+    Request Body (JSON):
+    {
+        "business_id": 1,
+        "order": {
+            "id": 123,
+            "customer_id": 21,
+            "total": 25.99,
+            "status": "received",
+            "items": [
+                {
+                    "item_id": 51,
+                    "name": "Ful Sandwich",
+                    "quantity": 1,
+                    "price": 12.00,
+                    "options": [
+                        {
+                            "option_group_id": 14,
+                            "option_id": 24,
+                            "name": "Full Balady bread",
+                            "price_delta": 4.5
+                        }
+                    ]
+                }
+            ],
+            "created_at": "2025-09-17T18:30:00Z"
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'business_id' not in data or 'order' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required fields: business_id and order are required'
+            }), 400
+            
+        business_id = data['business_id']
+        order = data['order']
+        
+        # Send the notification via WebSocket
+        notify_new_order(business_id, order)
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Notification sent successfully',
+            'business_id': business_id,
+            'order_id': order.get('id')
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error sending push notification: {str(e)}")
+        return jsonify({
             'status': 'error',
-            'message': 'An error occurred while fetching orders',
-            'error_code': 'INTERNAL_SERVER_ERROR',
-            'details': str(e)
+            'message': 'Failed to send notification',
+            'error': str(e)
         }), 500

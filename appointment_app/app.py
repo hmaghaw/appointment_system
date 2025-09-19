@@ -1,7 +1,11 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_socketio import SocketIO
 from appointment_app.config import Config
 import os
+
+# Initialize SocketIO
+socketio = SocketIO()
 
 def create_app(config_dict=None):
     """Create and configure the Flask application.
@@ -19,22 +23,15 @@ def create_app(config_dict=None):
     
     # Configure CORS
     CORS(app)
-    # CORS(app,
-    #      resources={
-    #          r"/*": {
-    #              "origins": [
-    #                  "https://your-spa-frontend.com",
-    #                  "https://coffeehome.ca",
-    #                  "https://*.replit.app",
-    #                  "https://*.replit.dev",
-    #                  "http://localhost:*",
-    #                  "http://127.0.0.1:*"
-    #              ],
-    #              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    #              "allow_headers": ["Content-Type", "Authorization", "X-Domain", "Accept", "Origin"],
-    #              "supports_credentials": True
-    #          }
-    #      })
+    
+    # Initialize SocketIO with the app
+    socketio.init_app(
+        app,
+        cors_allowed_origins="*",
+        async_mode='threading',
+        engineio_logger=True,
+        logger=True
+    )
     
     # Import and register blueprints
     from appointment_app.routes.appointments import bp as appointments_bp
@@ -89,5 +86,11 @@ def create_app(config_dict=None):
 app = create_app()
 
 if __name__ == '__main__':
-    #app.run(host='0.0.0.0', port=5000, debug=True)
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=5000,
+        debug=True,
+        use_reloader=True,
+        allow_unsafe_werkzeug=True  # Allow running with Werkzeug in development
+    )
