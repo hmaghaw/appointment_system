@@ -37,3 +37,6 @@ pylint==3.0.3
 protobuf==4.21.12
 
 openai>=1.0.0,<2.0.0
+
+Flask-SocketIO==5.3.5
+python-socketio==5.10.0
