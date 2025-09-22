@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS business (
     recharge_amount INT NOT NULL DEFAULT 20 COMMENT 'Recharge amount in cents when triggered',
     stripe_customer_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_general_ci;
@@ -429,3 +429,20 @@ CREATE TABLE provisioning (
     CONSTRAINT fk_provisioning_business
         FOREIGN KEY (business_id) REFERENCES business(business_id)
 );
+
+CREATE TABLE IF NOT EXISTS business_integration (
+    integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
+    provider ENUM('clover','square','toast','none') NOT NULL DEFAULT 'none',
+    merchant_id VARCHAR(255) COMMENT 'Merchant ID from provider',
+    access_token TEXT COMMENT 'Access token or credentials',
+    refresh_token TEXT COMMENT 'If OAuth provider issues refresh tokens',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_business_integration
+        FOREIGN KEY (business_id) REFERENCES business(business_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_general_ci;
