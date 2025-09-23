@@ -82,6 +82,8 @@ def sync_clover_data():
             "message": f"Error during sync: {str(e)}",
             "data": stats if 'stats' in locals() else None
         }), 500
+
+
 def sync_item(business_id: int, item_data: Dict[str, Any]) -> bool:
     """Sync a single item from Clover to the database"""
     try:
@@ -150,7 +152,7 @@ def sync_item_integration(cursor, item_id: int, provider: str, external_id: str,
 
 
 def sync_modifier_group(business_id: int, group_data: Dict[str, Any]) -> bool:
-    """Sync a modifier group and its modifiers"""
+    """Sync a modifier group and its modifiers from Clover to the database"""
     try:
         with get_db_cursor(commit=True) as cursor:
             # Check if modifier group exists
@@ -166,27 +168,33 @@ def sync_modifier_group(business_id: int, group_data: Dict[str, Any]) -> bool:
 
             if existing:
                 group_id = existing['modifier_group_id']
-                # Update existing group
+                # Update existing group without description
                 cursor.execute("""
                     UPDATE restaurant_modifier_group
-                    SET name        = %s,
+                    SET name = %s,
                         is_required = %s,
-                        min_select  = %s,
-                        max_select  = %s
+                        min_select = %s,
+                        max_select = %s,
+                        business_id = %s
                     WHERE modifier_group_id = %s
                 """, (
                     group_data.get('group_name', ''),
                     group_data.get('is_required', False),
                     group_data.get('min_required', 0),
                     group_data.get('max_allowed', 1),
+                    business_id,
                     group_id
                 ))
             else:
-                # Insert new modifier group
+                # Insert new modifier group without description
                 cursor.execute("""
-                    INSERT INTO restaurant_modifier_group
-                        (business_id, name, is_required, min_select, max_select)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO restaurant_modifier_group (
+                        business_id, 
+                        name, 
+                        is_required, 
+                        min_select, 
+                        max_select
+                    ) VALUES (%s, %s, %s, %s, %s)
                 """, (
                     business_id,
                     group_data.get('group_name', ''),
@@ -206,42 +214,60 @@ def sync_modifier_group(business_id: int, group_data: Dict[str, Any]) -> bool:
                     business_id = VALUES(business_id)
             """, (group_id, group_data['group_id'], business_id))
 
+            # Get existing modifiers to track what needs to be deactivated
+            cursor.execute("""
+                SELECT rmi.external_modifier_id, rm.modifier_id, rm.is_active
+                FROM restaurant_modifier rm
+                JOIN restaurant_modifier_integration rmi ON rm.modifier_id = rmi.modifier_id
+                WHERE rmi.provider = 'clover' 
+                AND rm.modifier_group_id = %s
+            """, (group_id,))
+            existing_modifiers = {row['external_modifier_id']: row for row in cursor.fetchall()}
+            processed_modifier_ids = set()
+
             # Sync modifiers
             for mod in group_data.get('modifiers', []):
+                external_id = mod['id']
                 cursor.execute("""
                     SELECT rm.modifier_id
                     FROM restaurant_modifier rm
-                    JOIN restaurant_modifier_integration rmi
-                      ON rm.modifier_id = rmi.modifier_id
+                    JOIN restaurant_modifier_integration rmi ON rm.modifier_id = rmi.modifier_id
                     WHERE rmi.provider = 'clover'
-                      AND rmi.external_modifier_id = %s
-                """, (mod['id'],))
+                    AND rmi.external_modifier_id = %s
+                """, (external_id,))
                 existing_mod = cursor.fetchone()
+
+                modifier_data = (
+                    mod.get('name', ''),
+                    float(mod.get('price', 0)) / 100,  # Convert to dollars
+                    mod.get('available', True),
+                    group_id
+                )
 
                 if existing_mod:
                     modifier_id = existing_mod['modifier_id']
+                    # Update existing modifier with all fields
                     cursor.execute("""
                         UPDATE restaurant_modifier
-                        SET name        = %s,
+                        SET name = %s,
                             price_delta = %s,
-                            is_active   = TRUE
+                            is_active = %s,
+                            modifier_group_id = %s
                         WHERE modifier_id = %s
-                    """, (
-                        mod.get('name', ''),
-                        int(float(mod.get('price', 0))),  # Clover usually returns cents
-                        modifier_id
-                    ))
+                    """, modifier_data + (modifier_id,))
                 else:
                     cursor.execute("""
-                        INSERT INTO restaurant_modifier
-                            (modifier_group_id, name, price_delta, is_active)
-                        VALUES (%s, %s, %s, TRUE)
-                    """, (
-                        group_id,
-                        mod.get('name', ''),
-                        int(float(mod.get('price', 0)))
-                    ))
+                        INSERT INTO restaurant_modifier (
+                            name,
+                            price_delta,
+                            is_active,
+                            modifier_group_id
+                        ) VALUES (%s, %s, %s, %s, %s)
+                    """, modifier_data)
                     modifier_id = cursor.lastrowid
+
+                # Track processed modifiers
+                processed_modifier_ids.add(external_id)
 
                 # Sync modifier integration mapping
                 cursor.execute("""
@@ -251,7 +277,19 @@ def sync_modifier_group(business_id: int, group_data: Dict[str, Any]) -> bool:
                     ON DUPLICATE KEY UPDATE
                         modifier_id = VALUES(modifier_id),
                         business_id = VALUES(business_id)
-                """, (modifier_id, mod['id'], business_id))
+                """, (modifier_id, external_id, business_id))
+
+            # Deactivate any modifiers that exist in our DB but weren't in the API response
+            if processed_modifier_ids:
+                placeholders = ','.join(['%s'] * len(processed_modifier_ids))
+                cursor.execute(f"""
+                    UPDATE restaurant_modifier rm
+                    JOIN restaurant_modifier_integration rmi ON rm.modifier_id = rmi.modifier_id
+                    SET rm.is_active = FALSE
+                    WHERE rmi.provider = 'clover'
+                    AND rm.modifier_group_id = %s
+                    AND rmi.external_modifier_id NOT IN ({placeholders})
+                """, [group_id] + list(processed_modifier_ids))
 
             return True
 
@@ -404,6 +442,7 @@ def sync_combo(business_id: int, combo_data: Dict[str, Any]) -> bool:
     except Exception as e:
         print(f"Error syncing combo {combo_data.get('id')}: {e}")
         return False
+
 
 def sync_option_group(business_id: int, group_data: Dict[str, Any]) -> bool:
     """Sync an option group and its options from Clover to the database"""
