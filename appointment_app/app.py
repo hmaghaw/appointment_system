@@ -1,11 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from flask_socketio import SocketIO
 from appointment_app.config import Config
 import os
 
-# Initialize SocketIO
-socketio = SocketIO()
+
 
 def create_app(config_dict=None):
     """Create and configure the Flask application.
@@ -25,13 +23,7 @@ def create_app(config_dict=None):
     CORS(app)
     
     # Initialize SocketIO with the app
-    socketio.init_app(
-        app,
-        cors_allowed_origins="*",
-        async_mode='threading',
-        engineio_logger=True,
-        logger=True
-    )
+
     
     # Import and register blueprints
     from appointment_app.routes.appointments import bp as appointments_bp
@@ -54,6 +46,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.restaurants import bp as restaurants_bp
     from appointment_app.routes.restaurant_combo import bp as restaurant_combo_bp
     from appointment_app.routes.restaurant_order import bp as restaurant_order_bp
+    from appointment_app.routes.clover import bp as clover_bp
     # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -74,6 +67,7 @@ def create_app(config_dict=None):
     app.register_blueprint(onboarding_bp)  # Onboarding endpoints
     app.register_blueprint(restaurant_combo_bp)
     app.register_blueprint(restaurant_order_bp)
+    app.register_blueprint(clover_bp)  # Clover integration endpoints
 
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
@@ -86,11 +80,4 @@ def create_app(config_dict=None):
 app = create_app()
 
 if __name__ == '__main__':
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=5000,
-        debug=True,
-        use_reloader=True,
-        allow_unsafe_werkzeug=True  # Allow running with Werkzeug in development
-    )
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

@@ -256,6 +256,7 @@ CREATE TABLE restaurant_item_integration (
     provider ENUM('clover','square','toast') NOT NULL,
     external_item_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255), -- for Square location or Clover merchant
+    business_id INT NOT NULL,
     UNIQUE (provider, external_item_id),
     FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id) ON DELETE CASCADE
 );
@@ -265,6 +266,7 @@ CREATE TABLE restaurant_modifier_group_integration (
     provider ENUM('clover','square','toast') NOT NULL,
     external_group_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255),
+    business_id INT NOT NULL,
     UNIQUE (provider, external_group_id),
     FOREIGN KEY (modifier_group_id) REFERENCES restaurant_modifier_group(modifier_group_id) ON DELETE CASCADE
 );
@@ -275,6 +277,7 @@ CREATE TABLE restaurant_modifier_integration (
     provider ENUM('clover','square','toast') NOT NULL,
     external_modifier_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255),
+    business_id INT NOT NULL,
     UNIQUE (provider, external_modifier_id),
     FOREIGN KEY (modifier_id) REFERENCES restaurant_modifier(modifier_id) ON DELETE CASCADE
 );
@@ -285,6 +288,7 @@ CREATE TABLE restaurant_option_group_integration (
     provider ENUM('clover','square') NOT NULL,
     external_group_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255),
+    business_id INT NOT NULL,
     UNIQUE (provider, external_group_id),
     FOREIGN KEY (restaurant_option_group_id) REFERENCES restaurant_option_group(option_group_id) ON DELETE CASCADE
 );
@@ -295,6 +299,7 @@ CREATE TABLE restaurant_option_integration (
     provider ENUM('clover','square') NOT NULL,
     external_option_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255),
+    business_id INT NOT NULL,
     UNIQUE (provider, external_option_id),
     FOREIGN KEY (restaurant_option_id) REFERENCES restaurant_option(option_id) ON DELETE CASCADE
 );
@@ -305,6 +310,7 @@ CREATE TABLE restaurant_combo_group_integration (
     provider ENUM('clover','square') NOT NULL,
     external_group_id VARCHAR(255) NOT NULL,        -- Clover OptionGroup ID or Square ModifierGroup ID
     external_location_id VARCHAR(255),              -- For Square location scoping
+    business_id INT NOT NULL,
     UNIQUE (provider, external_group_id),
     FOREIGN KEY (combo_group_id) REFERENCES restaurant_combo_group(combo_group_id)
         ON DELETE CASCADE
@@ -316,7 +322,36 @@ CREATE TABLE restaurant_combo_group_item_integration (
     provider ENUM('clover','square') NOT NULL,
     external_item_id VARCHAR(255) NOT NULL,         -- Clover Option ID or Square Modifier ID
     external_location_id VARCHAR(255),              -- For Square location scoping
+    business_id INT NOT NULL,
     UNIQUE (provider, external_item_id),
     FOREIGN KEY (combo_group_item_id) REFERENCES restaurant_combo_group_item(combo_group_item_id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+# ALTER TABLE restaurant_item_integration
+#   ADD COLUMN business_id INT NOT NULL AFTER external_item_id,
+#   ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_item_id);
+#
+# ALTER TABLE restaurant_option_group_integration
+#   ADD COLUMN business_id INT NOT NULL AFTER external_group_id,
+#   ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_group_id);
+#
+# ALTER TABLE restaurant_option_integration
+#   ADD COLUMN business_id INT NOT NULL AFTER external_option_id,
+#   ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_option_id);
+#
+# ALTER TABLE restaurant_modifier_group_integration
+#   ADD COLUMN business_id INT NOT NULL AFTER external_group_id,
+#   ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_group_id);
+#
+# ALTER TABLE restaurant_combo_group_integration
+#   ADD COLUMN business_id INT NOT NULL AFTER external_group_id,
+#   ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_group_id);
+#
+# ALTER TABLE restaurant_combo_group_item_integration
+#   ADD COLUMN business_id INT NOT NULL AFTER external_item_id,
+#   ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_item_id);
+
+ALTER TABLE restaurant_modifier_integration
+  ADD COLUMN business_id INT NOT NULL AFTER external_modifier_id,
+  ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_modifier_id);
