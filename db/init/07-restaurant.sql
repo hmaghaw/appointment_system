@@ -249,3 +249,74 @@ CREATE TABLE restaurant_item_category_map (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 ALTER TABLE restaurant_item DROP COLUMN item_category_id;
+
+CREATE TABLE restaurant_item_integration (
+    item_integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    item_id INT NOT NULL,
+    provider ENUM('clover','square','toast') NOT NULL,
+    external_item_id VARCHAR(255) NOT NULL,
+    external_location_id VARCHAR(255), -- for Square location or Clover merchant
+    UNIQUE (provider, external_item_id),
+    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id) ON DELETE CASCADE
+);
+CREATE TABLE restaurant_modifier_group_integration (
+    modifier_group_integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    modifier_group_id INT NOT NULL,
+    provider ENUM('clover','square','toast') NOT NULL,
+    external_group_id VARCHAR(255) NOT NULL,
+    external_location_id VARCHAR(255),
+    UNIQUE (provider, external_group_id),
+    FOREIGN KEY (modifier_group_id) REFERENCES restaurant_modifier_group(modifier_group_id) ON DELETE CASCADE
+);
+
+CREATE TABLE restaurant_modifier_integration (
+    modifier_integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    modifier_id INT NOT NULL,
+    provider ENUM('clover','square','toast') NOT NULL,
+    external_modifier_id VARCHAR(255) NOT NULL,
+    external_location_id VARCHAR(255),
+    UNIQUE (provider, external_modifier_id),
+    FOREIGN KEY (modifier_id) REFERENCES restaurant_modifier(modifier_id) ON DELETE CASCADE
+);
+
+CREATE TABLE restaurant_option_group_integration (
+    option_group_integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    restaurant_option_group_id INT NOT NULL,
+    provider ENUM('clover','square') NOT NULL,
+    external_group_id VARCHAR(255) NOT NULL,
+    external_location_id VARCHAR(255),
+    UNIQUE (provider, external_group_id),
+    FOREIGN KEY (restaurant_option_group_id) REFERENCES restaurant_option_group(option_group_id) ON DELETE CASCADE
+);
+
+CREATE TABLE restaurant_option_integration (
+    option_integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    restaurant_option_id INT NOT NULL,
+    provider ENUM('clover','square') NOT NULL,
+    external_option_id VARCHAR(255) NOT NULL,
+    external_location_id VARCHAR(255),
+    UNIQUE (provider, external_option_id),
+    FOREIGN KEY (restaurant_option_id) REFERENCES restaurant_option(option_id) ON DELETE CASCADE
+);
+
+CREATE TABLE restaurant_combo_group_integration (
+    combo_group_integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    combo_group_id INT NOT NULL,
+    provider ENUM('clover','square') NOT NULL,
+    external_group_id VARCHAR(255) NOT NULL,        -- Clover OptionGroup ID or Square ModifierGroup ID
+    external_location_id VARCHAR(255),              -- For Square location scoping
+    UNIQUE (provider, external_group_id),
+    FOREIGN KEY (combo_group_id) REFERENCES restaurant_combo_group(combo_group_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE restaurant_combo_group_item_integration (
+    combo_group_item_integration_id INT AUTO_INCREMENT PRIMARY KEY,
+    combo_group_item_id INT NOT NULL,
+    provider ENUM('clover','square') NOT NULL,
+    external_item_id VARCHAR(255) NOT NULL,         -- Clover Option ID or Square Modifier ID
+    external_location_id VARCHAR(255),              -- For Square location scoping
+    UNIQUE (provider, external_item_id),
+    FOREIGN KEY (combo_group_item_id) REFERENCES restaurant_combo_group_item(combo_group_item_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
