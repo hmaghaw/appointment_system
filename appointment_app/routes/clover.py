@@ -109,7 +109,7 @@ def sync_item(business_id: int, item_data: Dict[str, Any]) -> bool:
                                """, (
                                    item_data.get('name', ''),
                                    item_data.get('description', ''),
-                                   int(float(item_data.get('price', 0)) * 100),  # Convert to cents
+                                   float(item_data.get('price', 0)) / 100,  # Convert to dollars
                                    item_data.get('hidden', False) is False,  # Map hidden to is_active
                                    item_id
                                ))
@@ -123,7 +123,7 @@ def sync_item(business_id: int, item_data: Dict[str, Any]) -> bool:
                                    business_id,
                                    item_data.get('name', ''),
                                    item_data.get('description', ''),
-                                   int(float(item_data.get('price', 0)) * 100),  # Convert to cents
+                                   float(item_data.get('price', 0)) / 100,  # Convert to cents
                                    item_data.get('hidden', False) is False  # Map hidden to is_active
                                ))
                 item_id = cursor.lastrowid
@@ -288,7 +288,7 @@ def sync_combo(business_id: int, combo_data: Dict[str, Any]) -> bool:
                                WHERE item_id = %s
                                """, (
                                    combo_data.get('combo_name', ''),
-                                   int(float(combo_data.get('price', 0)) * 100),  # Convert to cents
+                                   float(combo_data.get('price', 0)) / 100,  # Convert to dollars
                                    item_id
                                ))
             else:
@@ -301,7 +301,7 @@ def sync_combo(business_id: int, combo_data: Dict[str, Any]) -> bool:
                     business_id,
                                    combo_data.get('combo_name', ''),
                                    combo_data.get('description', ''),
-                                   int(float(combo_data.get('price', 0)) * 100)  # Convert to cents
+                                   float(combo_data.get('price', 0)) / 100  # Convert to dollars
                                ))
                 item_id = cursor.lastrowid
 
@@ -385,7 +385,7 @@ def sync_combo(business_id: int, combo_data: Dict[str, Any]) -> bool:
                                    """, (
                                        combo_group_id,
                                        option_id,
-                                       int(float(option.get('price', 0)) * 100)  # Convert to cents
+                                       float(option.get('price', 0)) / 100 # Convert to dollars
                                    ))
                     combo_item_id = cursor.lastrowid
 
@@ -497,7 +497,7 @@ def sync_option_group(business_id: int, group_data: Dict[str, Any]) -> bool:
                                    """, (
                                        option.get('name', ''),
                                        option.get('description', ''),
-                                       int(float(option.get('price', 0)) * 100),  # Convert to cents
+                                       float(option.get('price', 0)) / 100,  # Convert to dollars
                                        option.get('available', True),
                                        option_id
                                    ))
@@ -514,7 +514,7 @@ def sync_option_group(business_id: int, group_data: Dict[str, Any]) -> bool:
                                        group_id,
                                        option.get('name', ''),
                                        option.get('description', ''),
-                                       int(float(option.get('price', 0)) * 100),  # Convert to cents
+                                       float(option.get('price', 0)) / 100,  # Convert to dollars
                                        option.get('available', True)
                                    ))
                     option_id = cursor.lastrowid
