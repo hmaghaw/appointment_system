@@ -12,7 +12,7 @@ import logging
 from datetime import timedelta, datetime
 import math
 import json
-
+from appointment_app.services.clover_integration import CloverIntegration
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -286,10 +286,14 @@ def create_order():
             cursor.execute(
                 """
                 SELECT oi.*,
-                       i.name        as item_name,
-                       i.description as item_description
+                       i.name        AS item_name,
+                       i.description AS item_description,
+                       rii.external_item_id
                 FROM restaurant_order_item oi
-                         LEFT JOIN restaurant_item i ON oi.item_id = i.item_id
+                         LEFT JOIN restaurant_item i
+                                ON oi.item_id = i.item_id
+                         LEFT JOIN restaurant_item_integration rii
+                                ON i.item_id = rii.item_id
                 WHERE oi.order_id = %s
                 """,
                 (order_id,)
@@ -314,7 +318,8 @@ def create_order():
 
             # Notify the business about the new order
             notify_new_order(order_data['business_id'], order)
-
+            clover = CloverIntegration(order_data['business_id'])
+            clover.create_order_with_items(order_items)
             return jsonify({
                 'status': 'success',
                 'message': 'Order created successfully',

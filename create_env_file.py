@@ -37,6 +37,10 @@ FRONTEND_URL=
 
 OPENAI_API_KEY=
 API_BASE_URL=
+
+
+CLOVER_APP_ID=
+CLOVER_APP_SECRET=
 """
 
 DEV_TEMPLATE = """ENVIRONMENT=development
@@ -75,6 +79,9 @@ FRONTEND_URL=
 
 OPENAI_API_KEY=
 API_BASE_URL=
+
+CLOVER_APP_ID=
+CLOVER_APP_SECRET=
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """

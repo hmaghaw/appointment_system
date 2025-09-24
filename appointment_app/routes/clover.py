@@ -1,10 +1,127 @@
-from flask import Blueprint, request, jsonify
-from typing import Dict, Any, Optional
-from datetime import datetime
+from flask import Blueprint, request, jsonify, current_app, redirect, url_for
+from typing import Dict, Any, Optional, Tuple
+from datetime import datetime, timedelta
+import requests
+import json
 from ..services.clover_integration import CloverIntegration
 from ..database import get_db_cursor
 
 bp = Blueprint('clover', __name__, url_prefix='/api/clover')
+
+# Clover OAuth endpoints
+CLOVER_AUTH_URL = "https://sandbox.dev.clover.com/oauth/authorize"
+CLOVER_TOKEN_URL = "https://sandbox.dev.clover.com/oauth/token"
+
+
+def get_clover_credentials(business_id: int) -> Optional[Dict]:
+    """Retrieve Clover credentials from the business_integration table"""
+    with get_db_cursor() as cursor:
+        cursor.execute("""
+            SELECT access_token, refresh_token, merchant_id, provider_data
+            FROM business_integration
+            WHERE business_id = %s AND provider = 'clover' AND status = 'active'
+        """, (business_id,))
+        return cursor.fetchone()
+
+
+def update_clover_credentials(business_id: int, merchant_id: str, access_token: str, 
+                            refresh_token: str = None, provider_data: dict = None) -> None:
+    """Update or insert Clover credentials in the business_integration table"""
+    with get_db_cursor(commit=True) as cursor:
+        provider_data_json = json.dumps(provider_data) if provider_data else None
+        
+        cursor.execute("""
+            INSERT INTO business_integration 
+                (business_id, provider, merchant_id, access_token, refresh_token, provider_data, status)
+            VALUES (%s, 'clover', %s, %s, %s, %s, 'active')
+            ON DUPLICATE KEY UPDATE
+                access_token = VALUES(access_token),
+                refresh_token = COALESCE(VALUES(refresh_token), refresh_token),
+                merchant_id = VALUES(merchant_id),
+                provider_data = COALESCE(VALUES(provider_data), provider_data),
+                updated_at = CURRENT_TIMESTAMP,
+                status = 'active'
+        """, (
+            business_id,
+            merchant_id,
+            access_token,
+            refresh_token,
+            provider_data_json
+        ))
+
+
+@bp.route('/oauth/callback')
+def clover_oauth_callback():
+    """
+    Handle Clover OAuth callback
+    Expected query params: client_id, merchant_id, code, business_id
+    """
+    try:
+        # Get query parameters
+        client_id = request.args.get('client_id')
+        merchant_id = request.args.get('merchant_id')
+        auth_code = request.args.get('code')
+        business_id = request.args.get('business_id')
+        
+        if not all([client_id, merchant_id, auth_code, business_id]):
+            return jsonify({
+                'success': False,
+                'message': 'Missing required parameters: client_id, merchant_id, code, and business_id are required'
+            }), 400
+        
+        # Get app credentials from config
+        clover_client_id = current_app.config.get('CLOVER_APP_ID')
+        clover_client_secret = current_app.config.get('CLOVER_APP_SECRET')
+        
+        if not all([clover_client_id, clover_client_secret]):
+            return jsonify({
+                'success': False,
+                'message': 'Server configuration error: Missing Clover credentials'
+            }), 500
+        
+        # Exchange auth code for access token
+        token_data = {
+            'client_id': clover_client_id,
+            'client_secret': clover_client_secret,
+            'code': auth_code
+        }
+        
+        response = requests.post(CLOVER_TOKEN_URL, data=token_data)
+        response.raise_for_status()
+        token_info = response.json()
+        
+        # Store the credentials
+        update_clover_credentials(
+            business_id=business_id,
+            merchant_id=merchant_id,
+            access_token=token_info['access_token'],
+            refresh_token=token_info.get('refresh_token'),
+            provider_data={
+                'token_type': token_info.get('token_type'),
+                'expires_in': token_info.get('expires_in'),
+                'first_name': token_info.get('first_name'),
+                'last_name': token_info.get('last_name')
+            }
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Successfully connected to Clover',
+            'merchant_id': merchant_id
+        })
+        
+    except requests.RequestException as e:
+        current_app.logger.error(f"Clover OAuth error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error authenticating with Clover: {str(e)}'
+        }), 500
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error in Clover OAuth: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'An unexpected error occurred'
+        }), 500
 
 
 @bp.route('/sync', methods=['POST'])
@@ -36,7 +153,21 @@ def sync_clover_data():
             }), 400
 
         business_id = data['business_id']
-        clover = CloverIntegration(business_id)
+        
+        # Check if business has Clover connected
+        credentials = get_clover_credentials(business_id)
+        if not credentials:
+            return jsonify({
+                "success": False,
+                "message": "Clover is not connected for this business"
+            }), 400
+            
+        # Initialize Clover client with the stored credentials
+        clover = CloverIntegration(
+            business_id=business_id,
+            access_token=credentials['access_token'],
+            merchant_id=credentials['merchant_id']
+        )
 
         # Initialize counters
         stats = {
@@ -208,8 +339,8 @@ def sync_modifier_group(business_id: int, group_data: Dict[str, Any]) -> bool:
             cursor.execute("""
                 INSERT INTO restaurant_modifier_group_integration
                     (modifier_group_id, provider, external_group_id, business_id)
-                VALUES (%s, 'clover', %s, %s)
-                ON DUPLICATE KEY UPDATE
+                VALUES (%s, 'clover', %s, %s) ON DUPLICATE KEY
+                UPDATE
                     modifier_group_id = VALUES(modifier_group_id),
                     business_id = VALUES(business_id)
             """, (group_id, group_data['group_id'], business_id))
@@ -273,8 +404,8 @@ def sync_modifier_group(business_id: int, group_data: Dict[str, Any]) -> bool:
                 cursor.execute("""
                     INSERT INTO restaurant_modifier_integration
                         (modifier_id, provider, external_modifier_id, business_id)
-                    VALUES (%s, 'clover', %s, %s)
-                    ON DUPLICATE KEY UPDATE
+                    VALUES (%s, 'clover', %s, %s) ON DUPLICATE KEY
+                    UPDATE
                         modifier_id = VALUES(modifier_id),
                         business_id = VALUES(business_id)
                 """, (modifier_id, external_id, business_id))
