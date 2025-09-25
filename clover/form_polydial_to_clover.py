@@ -1,38 +1,48 @@
 import pandas as pd
 from appointment_app.database import get_db_cursor
+
 class Restaurant:
-    def __init__(self, business_id=69):
+    def __init__(self, business_id=69, xlsx_file = 'inventory-masrawy.xlsx'):
         self.business_id = business_id
+        self.xlsx_file = xlsx_file
 
     def get_item(self):
         """
         Fetch restaurant items from the database for a specific business.
 
-        Args:
-            business_id (int): The ID of the business to filter items by
-
         Returns:
-            list: List of dictionaries containing item information in Clover format
+            list: List of dictionaries containing item information in Clover format with Modifier Groups
         """
         query = """
-                SELECT ri.item_id    as "Clover ID", \
-                       ri.name       as "Name", \
-                       ''            as "Alternate Name", \
-                       ri.base_price as "Price", \
-                       'Fixed'       as "Price Type", \
-                       ''            as "Price Unit", \
-                       'DEFAULT'     as "Tax Rates", \
-                       ''            as "Cost", \
-                       ''            as "Product Code", \
-                       ''            as "SKU", \
-                       ''            as "Modifier Groups", \
-                       0             as "Quantity", \
-                       ''            as "Printer Labels", \
-                       'No'          as "Hidden", \
-                       'No'          as "Non-revenue item"
-                FROM restaurant_item ri
-                WHERE ri.business_id = %s \
-                """
+            SELECT
+                '' as "Clover ID",
+                ri.name as "Name",
+                '' as "Alternate Name",
+                ri.base_price as "Price",
+                'Fixed' as "Price Type",
+                '' as "Price Unit",
+                'DEFAULT' as "Tax Rates",
+                '' as "Cost",
+                '' as "Product Code",
+                '' as "SKU",
+                COALESCE(
+                    (SELECT GROUP_CONCAT(DISTINCT mg.name SEPARATOR '|')
+                     FROM restaurant_item_modifier_group rim
+                     JOIN restaurant_modifier_group mg ON rim.modifier_group_id = mg.modifier_group_id
+                     WHERE rim.item_id = ri.item_id),
+                    ''
+                ) as "Modifier Groups",
+                0 as "Quantity",
+                '' as "Printer Labels",
+                'No' as "Hidden",
+                'No' as "Non-revenue item"
+            FROM
+                restaurant_item ri
+            WHERE
+                ri.business_id = %s
+            GROUP BY
+                ri.item_id, ri.name, ri.base_price
+                        """
 
         try:
             with get_db_cursor() as cursor:
@@ -74,7 +84,24 @@ class Restaurant:
         try:
             with get_db_cursor() as cursor:
                 cursor.execute(query, (self.business_id,))
-                return cursor.fetchall()
+                resp = cursor.fetchall()
+                result = []
+                count = 0
+                for item in resp:
+                    if count>0:
+                        if modifier_group_name == item['Modifier Group Name']:
+                            item['Modifier Group Name'] = ""
+                            result.append(item)
+                        else:
+                            count = 0
+                    if count == 0:
+                        modifier_group_name = item['Modifier Group Name']
+                        result.append(item)
+                    count += 1
+
+
+
+                return result
         except Exception as e:
             print(f"Error fetching modifier groups: {e}")
             return []
@@ -104,7 +131,8 @@ class Restaurant:
         try:
             with get_db_cursor() as cursor:
                 cursor.execute(query, (self.business_id,))
-                return cursor.fetchall()
+                resp = cursor.fetchall()
+                return resp
         except Exception as e:
             print(f"Error fetching categories: {e}")
             return []
@@ -128,24 +156,23 @@ class Restaurant:
 
 
 # ----------- MAIN SCRIPT -------------
+    def export_items(self):
+        # Build DataFrames from methods
+        df_items = pd.DataFrame(self.get_item())
+        df_modifiers = pd.DataFrame(self.get_modifier_groups())
+        df_categories = pd.DataFrame(self.get_categories())
+        df_tax_rates = pd.DataFrame(self.get_tax_rates())
+        df_instructions = pd.DataFrame(self.get_instructions())
 
-restaurant = Restaurant(business_id=73)
-estaurant = Restaurant()
-items = restaurant.get_item()
+        # Write Excel
+        with pd.ExcelWriter(self.xlsx_file , engine="openpyxl") as writer:
+            df_items.to_excel(writer, sheet_name="Items", index=False)
+            df_modifiers.to_excel(writer, sheet_name="Modifier Groups", index=False)
+            df_categories.to_excel(writer, sheet_name="Categories", index=False)
+            df_tax_rates.to_excel(writer, sheet_name="Tax Rates", index=False)
+            df_instructions.to_excel(writer, sheet_name="Instructions", index=False)
 
-# Build DataFrames from methods
-df_items = pd.DataFrame(restaurant.get_item())
-df_modifiers = pd.DataFrame(restaurant.get_modifier_groups())
-df_categories = pd.DataFrame(restaurant.get_categories())
-df_tax_rates = pd.DataFrame(restaurant.get_tax_rates())
-df_instructions = pd.DataFrame(restaurant.get_instructions())
+        print("✅ inventory-template.xlsx created successfully")
 
-# Write Excel
-with pd.ExcelWriter("inventory-masrawy.xlsx", engine="openpyxl") as writer:
-    df_items.to_excel(writer, sheet_name="Items", index=False)
-    df_modifiers.to_excel(writer, sheet_name="Modifier Groups", index=False)
-    df_categories.to_excel(writer, sheet_name="Categories", index=False)
-    df_tax_rates.to_excel(writer, sheet_name="Tax Rates", index=False)
-    df_instructions.to_excel(writer, sheet_name="Instructions", index=False)
-
-print("✅ inventory-template.xlsx created successfully")
+restaurant = Restaurant(business_id=73,xlsx_file = 'inventory-masrawy1.xlsx')
+items = restaurant.export_items()
