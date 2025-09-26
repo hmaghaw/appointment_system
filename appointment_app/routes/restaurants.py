@@ -3258,21 +3258,6 @@ def delete_item_category():
                 'error_code': 'CATEGORY_NOT_FOUND'
             }), 404
 
-        # Check if there are items using this category
-        item_count = execute_query(
-            "SELECT COUNT(*) as item_count FROM restaurant_item WHERE item_category_id = %s",
-            (item_category_id,),
-            fetch=True
-        )
-
-        if item_count and item_count[0]['item_count'] > 0:
-            return jsonify({
-                'status': 'error',
-                'message': f'Cannot delete category: {item_count[0]["item_count"]} item(s) are using this category',
-                'error_code': 'CATEGORY_IN_USE',
-                'item_count': item_count[0]['item_count']
-            }), 400
-
         # Delete the category
         execute_query(
             "DELETE FROM restaurant_item_category WHERE item_category_id = %s",
