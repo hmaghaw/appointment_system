@@ -97,7 +97,7 @@ CREATE TABLE restaurant_modifier_group (
     name VARCHAR(100) NOT NULL,           -- e.g., Extras
     is_required BOOLEAN DEFAULT FALSE,
     min_select INT DEFAULT 0,
-    max_select INT DEFAULT 3,
+    max_select INT DEFAULT 99,
     FOREIGN KEY (business_id) REFERENCES business(business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -253,6 +253,7 @@ ALTER TABLE restaurant_item DROP COLUMN item_category_id;
 CREATE TABLE restaurant_item_integration (
     item_integration_id INT AUTO_INCREMENT PRIMARY KEY,
     item_id INT NOT NULL,
+    name VARCHAR(100),
     provider ENUM('clover','square','toast') NOT NULL,
     external_item_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255), -- for Square location or Clover merchant
@@ -263,6 +264,7 @@ CREATE TABLE restaurant_item_integration (
 CREATE TABLE restaurant_modifier_group_integration (
     modifier_group_integration_id INT AUTO_INCREMENT PRIMARY KEY,
     modifier_group_id INT NOT NULL,
+    name VARCHAR(100),
     provider ENUM('clover','square','toast') NOT NULL,
     external_group_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255),
@@ -276,6 +278,7 @@ CREATE TABLE restaurant_modifier_integration (
     modifier_id INT NOT NULL,
     provider ENUM('clover','square','toast') NOT NULL,
     external_modifier_id VARCHAR(255) NOT NULL,
+    external_modifier_group_id VARCHAR(255) NOT NULL,
     external_location_id VARCHAR(255),
     business_id INT NOT NULL,
     UNIQUE (provider, external_modifier_id),
