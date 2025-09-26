@@ -91,6 +91,7 @@ class Restaurant:
                     if count>0:
                         if modifier_group_name == item['Modifier Group Name']:
                             item['Modifier Group Name'] = ""
+                            item['Pop-up Automatically'] = ""
                             result.append(item)
                         else:
                             count = 0
@@ -106,36 +107,58 @@ class Restaurant:
             print(f"Error fetching modifier groups: {e}")
             return []
 
+    import pandas as pd
+
     def get_categories(self):
         """
-        Fetch categories from the database for the current business.
+        Fetch categories from the database for the current business and return as a DataFrame
+        with category groups as columns and item names listed under each.
 
         Returns:
-            list: List of dictionaries containing category information in Clover format
+            pandas.DataFrame: category groups as columns, rows filled with item names.
         """
         query = """
-                WITH item_categories AS (SELECT ric.name as category_name, \
-                                                ri.name  as item_name \
-                                         FROM restaurant_item ri \
-                                                  JOIN restaurant_item_category_map ricm ON ri.item_id = ricm.item_id \
-                                                  JOIN restaurant_item_category ric \
-                                                       ON ricm.item_category_id = ric.item_category_id \
-                                         WHERE ri.business_id = %s \
-                                         ORDER BY ric.name, ri.name)
-                SELECT category_name                                   as "Category Name", \
-                       GROUP_CONCAT(DISTINCT item_name SEPARATOR ', ') as "Items in Category"
-                FROM item_categories
-                GROUP BY category_name \
+                SELECT ri.name  AS item_name,
+                       rig.name AS item_category_group
+                FROM restaurant_item ri
+                         JOIN restaurant_item_category_map rm ON ri.item_id = rm.item_id
+                         JOIN restaurant_item_category rig ON rm.item_category_id = rig.item_category_id
+                WHERE ri.business_id = %s
+                ORDER BY rig.name, ri.name;
                 """
 
         try:
             with get_db_cursor() as cursor:
                 cursor.execute(query, (self.business_id,))
                 resp = cursor.fetchall()
-                return resp
+
+                if not resp:
+                    return pd.DataFrame()
+
+                # Convert to DataFrame
+                df = pd.DataFrame(resp)
+
+                # Group items by category
+                grouped = df.groupby("item_category_group")["item_name"].apply(list).to_dict()
+
+                # Find max number of items in any category
+                max_len = max(len(items) for items in grouped.values())
+
+                # Pad each list to the same length with empty strings
+                padded = {cat: items + [""] * (max_len - len(items)) for cat, items in grouped.items()}
+
+                # Create DataFrame with categories as columns
+                df_out = pd.DataFrame(padded)
+                column_0=["Items in Category"]
+                for i in range(1, max_len):
+                    column_0.append("")
+
+                df_out.insert(0, "Category Name", column_0)
+                return df_out
+
         except Exception as e:
             print(f"Error fetching categories: {e}")
-            return []
+            return pd.DataFrame()
 
     def get_tax_rates(self):
         return [
