@@ -38,4 +38,13 @@ def generate_jwt_token(user, validity=86400): # -8640000
     return token
 
 
-
+def generate_clover_jwt_token(business_id, validity=86400): # -8640000
+    """Generate JWT token for user"""
+    payload = {
+        'provider': 'clover',
+        'business_id': business_id,
+        'exp': int(time.time()) + validity,  # expires in 24 hours
+        'iat': int(time.time())
+    }
+    token =  jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token

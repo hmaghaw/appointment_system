@@ -5,13 +5,17 @@ import requests
 import json
 from ..services.clover_integration import CloverIntegration
 from ..database import get_db_cursor
+from appointment_app.services.auth_token_validator import generate_jwt_token, verify_bearer_token, generate_clover_jwt_token
 import os
+from ..services.one_time_token_manager import OneTimeTokenManager
+
 bp = Blueprint('clover', __name__, url_prefix='/api/clover')
 
 # Clover OAuth endpoints
 CLOVER_AUTH_URL = "https://sandbox.dev.clover.com/oauth/authorize"
 CLOVER_TOKEN_URL = "https://sandbox.dev.clover.com/oauth/token"
-
+CLOVER_CLIENT_ID = os.getenv('CLOVER_APP_ID')
+CLOVER_CLIENT_SECRET = os.getenv('CLOVER_APP_SECRET')
 
 def get_clover_credentials(business_id: int) -> Optional[Dict]:
     """Retrieve Clover credentials from the business_integration table"""
@@ -46,30 +50,36 @@ def update_clover_credentials(business_id: int, merchant_id: str, access_token: 
 
 # Add these imports at the top of the file
 
-
+def get_business_id(merchant_id):
+    with get_db_cursor(commit=True) as cursor:
+        cursor.execute("""
+                       SELECT business_id
+                       FROM business_integration
+                       WHERE merchant_id = %s
+                         AND provider = 'clover'
+                       """, (merchant_id,))
+        result = cursor.fetchone()
+        if result:
+            return result['business_id']
+        else:
+            return None
 
 def get_or_create_business_for_merchant(merchant_id: str, merchant_name: str, cursor) -> int:
     """Get existing business ID for merchant or create a new one."""
-    cursor.execute("""
-                   SELECT business_id
-                   FROM business_integration
-                   WHERE merchant_id = %s
-                     AND provider = 'clover'
-                   """, (merchant_id,))
-    result = cursor.fetchone()
-    if result:
-        return result['business_id']
-
+    business_id = get_business_id(merchant_id)
+    if business_id:
+        return business_id
     # Create new business
-    cursor.execute(
-        """
-        INSERT INTO business (name, business_type, status)
-        VALUES (%s, 'restaurant', 'active')
-        """,
-        (merchant_name,),
-    )
-    business_id = cursor.lastrowid
-    return business_id
+    with get_db_cursor(commit=True) as cursor:
+        cursor.execute(
+            """
+            INSERT INTO business (name, business_type, status)
+            VALUES (%s, 'restaurant', 'active')
+            """,
+            (merchant_name,),
+        )
+        business_id = cursor.lastrowid
+        return business_id
 
 
 def create_clover_admin_user(business_id: int, merchant_id: str, cursor) -> int:
@@ -92,18 +102,44 @@ def create_clover_admin_user(business_id: int, merchant_id: str, cursor) -> int:
     return cursor.fetchone()['id']
 
 
-def exchange_auth_code(code: str, client_id: str, client_secret: str) -> Dict:
+def exchange_auth_code(code: str) -> Dict:
     """Exchange authorization code for access token."""
     response = requests.post(
         CLOVER_TOKEN_URL,
         data={
-            'client_id': client_id,
-            'client_secret': client_secret,
+            'client_id': CLOVER_CLIENT_ID,
+            'client_secret': CLOVER_CLIENT_SECRET,
             'code': code
         }
     )
     response.raise_for_status()
     return response.json()
+
+@bp.route('/login', methods=['POST'])
+def clover_login():
+    data = request.get_json()
+    token = data['token']
+    temp_token = OneTimeTokenManager()
+    business_id = temp_token.consume_token(token,"clover")
+    if business_id:
+        polydial_token = generate_clover_jwt_token(business_id)
+        # Get business info
+        business = get_business_info(business_id)
+
+        return jsonify({
+            'success': True,
+            'access_token': polydial_token,
+            'token_type': 'Bearer',
+            'expires_in': 86400,
+            'admin': {},
+            'business': business
+        }), 200
+    else:
+        return {
+          'success': False,
+          'error': 'invalid_or_expired_token',
+          'message': 'The one-time token is invalid, expired, or has already been used.'
+        }
 
 def get_business_name(merchant_id, access_token):
     url = f"https://sandbox.dev.clover.com/v3/merchants/{merchant_id}"
@@ -111,6 +147,24 @@ def get_business_name(merchant_id, access_token):
     resp = requests.get(url, headers=headers).json()
     result = resp.get("name")
     return result
+
+def get_business_info(business_id):
+    """Get business information"""
+    with get_db_cursor() as cursor:
+        query = "SELECT * FROM business WHERE business_id = %s"
+        cursor.execute(query, (business_id,))
+        business = cursor.fetchone()   # fetch one row
+
+    if business:
+        return {
+            'id': business['business_id'],
+            'name': business['name'],
+            'business_type': business['business_type'],
+            'slogan': "Business Slogan",  # static for now
+            'timezone': business['timezone'],
+            'status': business['status']
+        }
+    return None
 
 @bp.route('/oauth/callback')
 def clover_oauth_callback():
@@ -131,36 +185,36 @@ def clover_oauth_callback():
             }), 400
 
         # Get app credentials
-        clover_client_id = os.getenv('CLOVER_APP_ID')
-        clover_client_secret = os.getenv('CLOVER_APP_SECRET')
+        token_info = exchange_auth_code(auth_code)
 
-        if not all([clover_client_id, clover_client_secret]):
-            return jsonify({
-                'success': False,
-                'message': 'Server configuration error: Missing Clover credentials'
-            }), 500
-        token_info = exchange_auth_code(auth_code, clover_client_id, clover_client_secret)
+        business_id = get_business_id(merchant_id)
+        if business_id:
+            temp_token = OneTimeTokenManager()
+            one_time_token = temp_token.add_token(business_id, 'clover')
 
-        merchant_name = get_business_name(merchant_id, token_info['access_token'])
-        # Handle business and user setup
-        with get_db_cursor(commit=True) as cursor:
-            business_id = get_or_create_business_for_merchant(merchant_id, merchant_name, cursor)
+            return redirect("https://polydial.com/login-clover?token=" + one_time_token)
+        else:
+            merchant_name = get_business_name(merchant_id, token_info['access_token'])
 
-            # If we just created the business, also create an admin user
-            if not business_exists(business_id, cursor):
-                create_clover_admin_user(business_id, merchant_id, cursor)
+            # Handle business and user setup
+            with get_db_cursor(commit=True) as cursor:
+                business_id = get_or_create_business_for_merchant(merchant_id, merchant_name, cursor)
 
-        # Exchange code for token
+                # If we just created the business, also create an admin user
+                # if not business_exists(business_id, cursor):
+                #     create_clover_admin_user(business_id, merchant_id, cursor)
+
+            # Exchange code for token
 
 
-        # Store the credentials
-        update_clover_credentials(
-            business_id=business_id,
-            merchant_id=merchant_id,
-            access_token=token_info['access_token']
-        )
+            # Store the credentials
+            update_clover_credentials(
+                business_id=business_id,
+                merchant_id=merchant_id,
+                access_token=token_info['access_token']
+            )
 
-        return redirect("https://polydial.com/dashboard")
+            return redirect("https://polydial.com/onboarding-clover")
 
     except requests.RequestException as e:
         current_app.logger.error(f"Clover OAuth error: {str(e)}")
@@ -179,7 +233,8 @@ def clover_oauth_callback():
 def business_exists(business_id: int, cursor) -> bool:
     """Check if a business exists in the database."""
     cursor.execute("SELECT 1 FROM business WHERE business_id = %s", (business_id,))
-    return bool(cursor.fetchone())
+    result = cursor.fetchone()
+    return bool(result)
 
 @bp.route('/sync', methods=['POST'])
 def sync_clover_data():
