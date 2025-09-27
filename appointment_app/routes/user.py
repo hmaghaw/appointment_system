@@ -514,82 +514,6 @@ def signup():
             'error': 'internal_error',
             'message': f'Failed to create account: {str(e)}'
         }), 500
-
-@bp.route('/resend_verify_email', methods=['POST', 'OPTIONS'])
-def resend_verify_email():
-
-    if request.method == 'OPTIONS':
-        return '', 200
-    data = request.get_json()
-    email = data.get('email')
-
-    query = """
-            SELECT * \
-            FROM users
-            WHERE email = %s \
-            """
-    user = execute_query(query, (email,), fetch='one')
-
-    # Generate and send verification email (this also sends a welcome email)
-    verification_token = generate_jwt_token(user)
-
-    send_verification_email(email, verification_token, user["first_name"], user["last_name"])
-
-    return jsonify({
-        'success': True,
-        'message': 'Verification email resent! Please check your email to verify your account.',
-        'user': user
-    }), 200
-
-@bp.route('/verify-email', methods=['GET'])
-def verify_email():
-    """Verify user's email using the verification token"""
-    payload, error = verify_bearer_token(request)
-    if error:
-        return jsonify({"error": error}), 401
-
-    user_id = payload['user_id']
-    
-    try:
-        # Activate the user and mark email as verified
-        execute_query(
-            "UPDATE users SET active = TRUE, email_verified = TRUE WHERE id = %s",
-            (user_id,)
-        )
-        
-        # Get user data to generate JWT
-        user = execute_query(
-            "SELECT * FROM users WHERE id = %s",
-            (user_id,),
-            fetch='one'
-        )
-        
-        if not user:
-            raise Exception("User not found after verification")
-            
-        # Generate JWT token
-        token = generate_jwt_token(user)
-        business = get_business_info(user['business_id'])
-
-        return jsonify({
-            'success': True,
-            'access_token': token,
-            'token_type': 'Bearer',
-            'expires_in': 86400,
-            'admin': format_user_response(user),
-            'business': business,
-            'message': 'Email verified successfully',
-        })
-        
-    except Exception as e:
-        logger.error(f"Error verifying email: {str(e)}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'error': 'verification_failed',
-            'message': 'Failed to verify email. Please try again.'
-        }), 500
-
-
 @bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
     if request.method == 'OPTIONS':
@@ -676,6 +600,81 @@ def login():
             'error': 'internal_error',
             'message': 'Internal server error'
         }), 500
+@bp.route('/resend_verify_email', methods=['POST', 'OPTIONS'])
+def resend_verify_email():
+
+    if request.method == 'OPTIONS':
+        return '', 200
+    data = request.get_json()
+    email = data.get('email')
+
+    query = """
+            SELECT * \
+            FROM users
+            WHERE email = %s \
+            """
+    user = execute_query(query, (email,), fetch='one')
+
+    # Generate and send verification email (this also sends a welcome email)
+    verification_token = generate_jwt_token(user)
+
+    send_verification_email(email, verification_token, user["first_name"], user["last_name"])
+
+    return jsonify({
+        'success': True,
+        'message': 'Verification email resent! Please check your email to verify your account.',
+        'user': user
+    }), 200
+
+@bp.route('/verify-email', methods=['GET'])
+def verify_email():
+    """Verify user's email using the verification token"""
+    payload, error = verify_bearer_token(request)
+    if error:
+        return jsonify({"error": error}), 401
+
+    user_id = payload['user_id']
+    
+    try:
+        # Activate the user and mark email as verified
+        execute_query(
+            "UPDATE users SET active = TRUE, email_verified = TRUE WHERE id = %s",
+            (user_id,)
+        )
+        
+        # Get user data to generate JWT
+        user = execute_query(
+            "SELECT * FROM users WHERE id = %s",
+            (user_id,),
+            fetch='one'
+        )
+        
+        if not user:
+            raise Exception("User not found after verification")
+            
+        # Generate JWT token
+        token = generate_jwt_token(user)
+        business = get_business_info(user['business_id'])
+
+        return jsonify({
+            'success': True,
+            'access_token': token,
+            'token_type': 'Bearer',
+            'expires_in': 86400,
+            'admin': format_user_response(user),
+            'business': business,
+            'message': 'Email verified successfully',
+        })
+        
+    except Exception as e:
+        logger.error(f"Error verifying email: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'verification_failed',
+            'message': 'Failed to verify email. Please try again.'
+        }), 500
+
+
 
 @bp.route('/request-password-reset', methods=['POST'])
 def request_password_reset():
