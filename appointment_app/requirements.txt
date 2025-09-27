@@ -40,3 +40,5 @@ openai>=1.0.0,<2.0.0
 
 Flask-SocketIO==5.3.5
 python-socketio==5.10.0
+
+pandas
