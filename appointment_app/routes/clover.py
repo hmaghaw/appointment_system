@@ -79,6 +79,13 @@ def get_or_create_business_for_merchant(merchant_id: str, merchant_name: str, cu
             (merchant_name,),
         )
         business_id = cursor.lastrowid
+        cursor.execute(
+            """
+            INSERT INTO business_languages (business_id, language_code, is_default, language_voice_id)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (business_id, 'en', True, 14)  ## Polly.Salli
+        )
         return business_id
 
 
@@ -188,10 +195,9 @@ def clover_oauth_callback():
         token_info = exchange_auth_code(auth_code)
 
         business_id = get_business_id(merchant_id)
+        temp_token = OneTimeTokenManager()
+        one_time_token = temp_token.add_token(business_id, 'clover')
         if business_id:
-            temp_token = OneTimeTokenManager()
-            one_time_token = temp_token.add_token(business_id, 'clover')
-
             return redirect("https://polydial.com/login-clover?token=" + one_time_token)
         else:
             merchant_name = get_business_name(merchant_id, token_info['access_token'])
@@ -199,22 +205,13 @@ def clover_oauth_callback():
             # Handle business and user setup
             with get_db_cursor(commit=True) as cursor:
                 business_id = get_or_create_business_for_merchant(merchant_id, merchant_name, cursor)
-
-                # If we just created the business, also create an admin user
-                # if not business_exists(business_id, cursor):
-                #     create_clover_admin_user(business_id, merchant_id, cursor)
-
-            # Exchange code for token
-
-
             # Store the credentials
             update_clover_credentials(
                 business_id=business_id,
                 merchant_id=merchant_id,
                 access_token=token_info['access_token']
             )
-
-            return redirect("https://polydial.com/onboarding-clover")
+            return redirect("https://polydial.com/onboarding-clover?token=" + one_time_token)
 
     except requests.RequestException as e:
         current_app.logger.error(f"Clover OAuth error: {str(e)}")
