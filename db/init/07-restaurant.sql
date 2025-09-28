@@ -358,3 +358,39 @@ CREATE TABLE restaurant_combo_group_item_integration (
 ALTER TABLE restaurant_modifier_integration
   ADD COLUMN business_id INT NOT NULL AFTER external_modifier_id,
   ADD UNIQUE KEY uniq_provider_business_external (provider, business_id, external_modifier_id);
+
+CREATE TABLE restaurant_integration (
+    integration_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    -- What type of entity is being mapped
+    entity_type ENUM(
+        'item',
+        'modifier',
+        'modifier_group',
+        'option',
+        'option_group',
+        'category',
+        'combo'
+    ) NOT NULL,
+
+    -- Local entity reference (points to the corresponding table in your schema)
+    entity_id INT NOT NULL,
+
+    -- External system (POS provider)
+    provider ENUM('clover','square','toast') NOT NULL,
+
+    -- External IDs
+    external_id VARCHAR(255) NOT NULL,
+    external_parent_id VARCHAR(255) DEFAULT NULL, -- e.g. modifier_group_id for modifiers
+    external_location_id VARCHAR(255) DEFAULT NULL,
+
+    -- Business context (multi-tenant safety)
+    business_id INT NOT NULL,
+
+    -- Uniqueness guarantee: one mapping per provider + business + external_id
+    UNIQUE KEY uniq_entity_provider (entity_type, provider, business_id, external_id),
+
+    -- Indexes for lookup
+    INDEX idx_entity_lookup (entity_type, entity_id, provider, business_id),
+    INDEX idx_external_parent (external_parent_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

@@ -239,13 +239,13 @@ class CloverIntegration:
 
     def list_items(self) -> List[Dict[str, Any]]:
         """List all items from Clover"""
-        url = f"/items?expand=modifierGroups,optionGroups"
+        url = f"/items?expand=categories,modifierGroups,optionGroups"
         response = self._make_request('GET', url)
         return response.get("elements", [])
 
     def list_item_modifiers(self, item_id: str) -> List[Dict[str, Any]]:
         """List modifier groups for a specific item"""
-        url = f"{self.clover_base_url}/items/{item_id}?expand=modifierGroups"
+        url = f"{self.clover_base_url}/modifier_groups"
         response = self._make_request('GET', url)
         data = response
 
