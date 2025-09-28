@@ -196,8 +196,9 @@ def clover_oauth_callback():
 
         business_id = get_business_id(merchant_id)
         temp_token = OneTimeTokenManager()
-        one_time_token = temp_token.add_token(business_id, 'clover')
+
         if business_id:
+            one_time_token = temp_token.add_token(business_id, 'clover')
             return redirect("https://polydial.com/login-clover?token=" + one_time_token)
         else:
             merchant_name = get_business_name(merchant_id, token_info['access_token'])
@@ -211,6 +212,7 @@ def clover_oauth_callback():
                 merchant_id=merchant_id,
                 access_token=token_info['access_token']
             )
+            one_time_token = temp_token.add_token(business_id, 'clover')
             return redirect("https://polydial.com/onboarding-clover?token=" + one_time_token)
 
     except requests.RequestException as e:

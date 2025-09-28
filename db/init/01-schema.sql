@@ -438,6 +438,7 @@ CREATE TABLE IF NOT EXISTS business_integration (
     access_token TEXT COMMENT 'Access token or credentials',
     refresh_token TEXT COMMENT 'If OAuth provider issues refresh tokens',
     status VARCHAR(20) NOT NULL DEFAULT 'active',
+    provider_data JSON DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_business_integration
@@ -447,3 +448,18 @@ CREATE TABLE IF NOT EXISTS business_integration (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_general_ci;
 
+ALTER TABLE business_integration
+ADD COLUMN provider_data JSON DEFAULT NULL
+COMMENT 'Provider-specific configuration and metadata';
+
+CREATE TABLE one_time_token (
+    token VARCHAR(255) PRIMARY KEY,         -- secure random string (UUID, etc.)
+    business_id VARCHAR(100) NOT NULL,          -- reference to your user/merchant
+    provider ENUM('clover', 'square', 'toast') NOT NULL,
+    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,          -- short lifetime, e.g., 5-10 minutes
+    used BOOLEAN DEFAULT FALSE,             -- flag if already consumed
+    used_at TIMESTAMP NULL                  -- when it was actually consumed
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_general_ci;

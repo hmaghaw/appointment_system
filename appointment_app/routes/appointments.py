@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from appointment_app.database import get_db_cursor
 import mysql.connector
 from datetime import datetime, timedelta
+from typing import Dict, Any, Tuple, Optional
 from appointment_app.services.appointment_service import validate_appointment
 from appointment_app.services.auth_token_validator import verify_bearer_token
 
@@ -155,19 +156,15 @@ def create_appointment():
         # Parse and validate times
         start_time = parse_datetime(data['start_time'])
         
-        # Get service duration
-        with get_db_cursor() as cursor:
-            cursor.execute("""
-                SELECT duration_minutes FROM service 
-                WHERE service_id = %s AND business_id = %s
-            """, (data['service_id'], data['business_id']))
-            service = cursor.fetchone()
-            
-            if not service:
-                return jsonify({"error": "Service not found"}), 404
-                
-            # Calculate end time based on service duration
-            end_time = start_time + timedelta(minutes=service['duration_minutes'])
+        # Get and validate service end time
+        end_time, error = get_service_end_date(
+            service_id=data['service_id'],
+            business_id=data['business_id'],
+            start_date=start_time
+        )
+        
+        if error:
+            return jsonify({"error": error}), 404
             
         # Validate the appointment
         is_valid, error = validate_appointment(
@@ -377,6 +374,7 @@ def list_business_appointments():
             a.business_id, 
             a.customer_id, 
             a.service_id, 
+            a.booking_type,
             a.start_time, 
             a.end_time, 
             a.status, 
@@ -481,7 +479,7 @@ def create_appointment_from_ui():
         if full_day == 1:
             handle_holidays(business_id, start_time, end_time)
         else:
-            handle_close_time(business_id, start_time, end_time)
+            return handle_breaks(business_id, start_time, end_time)
     else:
         if data.get('customer_option')=='skip_customer':
             book_appointment_for_ananomus_customer(business_id, service_id, start_time)
@@ -492,14 +490,225 @@ def create_appointment_from_ui():
             pass
     pass
 
-def handle_holidays(business_id, start_time, end_time):
-    pass
+def get_service_end_date(service_id: int, business_id: int, start_date: datetime) -> tuple[datetime, str]:
+    """
+    Calculate the end time of a service based on its duration
+    
+    Args:
+        service_id: ID of the service
+        business_id: ID of the business
+        start_date: Start time of the service
+        
+    Returns:
+        tuple: (end_time, error_message) - If successful, error_message is None
+    """
+    with get_db_cursor() as cursor:
+        cursor.execute("""
+            SELECT duration_minutes FROM service 
+            WHERE service_id = %s AND business_id = %s
+        """, (service_id, business_id))
+        service = cursor.fetchone()
+        
+        if not service:
+            return None, "Service not found"
+            
+        # Calculate end time based on service duration
+        end_time = start_date + timedelta(minutes=service['duration_minutes'])
+        return end_time, None
 
-def handle_close_time(business_id, start_time, end_time):
-    pass
+
+def handle_holidays(business_id, start_date, end_date):
+    """
+    Handle creating holiday blocks for a date range
+    
+    Args:
+        business_id: ID of the business
+        start_date: Start date of the holiday period (YYYY-MM-DD)
+        end_date: End date of the holiday period (YYYY-MM-DD)
+        
+    Returns:
+        JSON response with the created holiday blocks or error message
+    """
+    try:
+        created_appointments = []
+
+        # Ensure we are working with date objects
+        if isinstance(start_date, str):
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        if isinstance(end_date, str):
+            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+        current_date = start_date
+        while current_date <= end_date:
+            # Full day: 00:00:00 -> 23:59:59
+            start_time = datetime.combine(current_date, datetime.min.time())
+            end_time = datetime.combine(current_date, datetime.max.time())
+
+            # Create holiday appointment
+            appointment_data = {
+                'business_id': business_id,
+                'start_time': start_time,
+                'end_time': end_time,
+                'booking_type': 'holiday'
+            }
+            
+            appointment, error, status_code = create_appointment_record(appointment_data)
+            
+            if error:
+                return jsonify({"error": f"Failed to create holiday block for {current_date}: {error}"}), status_code
+                
+            created_appointments.append(appointment)
+            current_date += timedelta(days=1)
+
+        return jsonify(created_appointments), 201
+
+    except ValueError as e:
+        return jsonify({"error": f"Invalid date format (expected YYYY-MM-DD): {str(e)}"}), 400
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 400
+
+def handle_breaks(business_id, start_time, end_time):
+    """
+    Handle creating a block time for business closure
+    
+    Args:
+        business_id: ID of the business
+        start_time: Start time of the closure
+        end_time: End time of the closure
+        
+    Returns:
+        JSON response with the created block time or error message
+    """
+    # Prepare the appointment data for the block time
+    appointment_data = {
+        'business_id': business_id,
+        'start_time': start_time,
+        'end_time': end_time,
+        'booking_type': 'break'
+    }
+    
+    # Use the generic function to create the appointment record
+    appointment, error, status_code = create_appointment_record(appointment_data)
+    
+    if error:
+        return jsonify({"error": error}), status_code
+    
+    return jsonify(appointment), status_code
 
 def book_appointment_for_ananomus_customer(business_id, service_id, start_time):
+    nd_time, error = get_service_end_date(
+        service_id=service_id,
+        business_id=business_id,
+        start_date=start_time
+    )
+
+    if error:
+        return jsonify({"error": error}), 404
     pass
 
 def book_appointment_for_a_known_customer(business_id, customer_id, service_id, start_time):
-    pass
+    """
+    Book an appointment for a known customer
+    
+    Args:
+        business_id: ID of the business
+        customer_id: ID of the customer
+        service_id: ID of the service
+        start_time: Start time of the appointment
+    """
+    # Get service end time
+    end_time, error = get_service_end_date(
+        service_id=service_id,
+        business_id=business_id,
+        start_date=start_time
+    )
+    
+    if error:
+        return None, error, 404
+    
+    # Create appointment data
+    appointment_data = {
+        'business_id': business_id,
+        'customer_id': customer_id,
+        'service_id': service_id,
+        'start_time': start_time,
+        'end_time': end_time,
+        'status': 'scheduled',
+        'booking_type': 'appointment'
+    }
+    
+    # Create the appointment
+    return create_appointment_record(appointment_data)
+
+
+def create_appointment_record(appointment_data: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
+    """
+    Create a new appointment record with the provided data
+
+    Args:
+        appointment_data: Dictionary containing appointment fields and values
+            Example: {
+                'business_id': 1,
+                'customer_id': 1,
+                'service_id': 1,
+                'start_time': datetime(...),
+                'end_time': datetime(...),
+                'status': 'scheduled',
+                'booking_type': 'appointment',
+                'notes': 'Some notes'
+            }
+
+    Returns:
+        Tuple containing:
+        - appointment: Dictionary of the created appointment if successful, None otherwise
+        - error: Error message if something went wrong, None otherwise
+        - status_code: HTTP status code
+    """
+    required_fields = ['business_id', 'start_time', 'end_time']
+
+    # Check required fields
+    for field in required_fields:
+        if field not in appointment_data:
+            return None, f"Missing required field: {field}", 400
+
+    try:
+        with get_db_cursor(commit=True, dictionary=True) as cursor:
+            # Build the SQL query dynamically based on provided fields
+            columns = []
+            placeholders = []
+            values = {}
+
+            for key, value in appointment_data.items():
+                if value is not None:  # Only include non-None values
+                    columns.append(key)
+                    placeholders.append(f"%({key})s")
+                    values[key] = value
+
+            if not columns:
+                return None, "No valid fields provided", 400
+
+            query = f"""
+                INSERT INTO appointment
+                    ({', '.join(columns)})
+                VALUES
+                    ({', '.join(placeholders)})
+            """
+
+            cursor.execute(query, values)
+            appointment_id = cursor.lastrowid
+
+            # Fetch the created appointment
+            cursor.execute("""
+                           SELECT *
+                           FROM appointment
+                           WHERE appointment_id = %s
+                           """, (appointment_id,))
+
+            appointment = cursor.fetchone()
+            return appointment, None, 201
+
+    except mysql.connector.Error as err:
+        return None, f"Database error: {str(err)}", 500
+    except Exception as e:
+        return None, f"Unexpected error: {str(e)}", 500
+

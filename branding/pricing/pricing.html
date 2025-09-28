@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - Polydial.com</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #f3f4f6;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --border-color: #d1d5db;
+            --white: #ffffff;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--white);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 0;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.125rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .founder-banner {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 40px;
+            font-weight: 600;
+        }
+
+        .founder-banner span {
+            background-color: var(--success-text);
+            color: var(--white);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            margin-left: 10px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .pricing-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .pricing-card {
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .pricing-card.recommended {
+            border-color: var(--primary-color);
+            border-width: 2px;
+            position: relative;
+            transform: scale(1.05);
+        }
+        
+        .recommend-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 5px 15px;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 0;
+        }
+
+        .pricing-card .price {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .pricing-card .price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-light);
+        }
+
+        .pricing-card .description {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            flex-grow: 1;
+        }
+
+        .pricing-card .features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px 0;
+        }
+
+        .features li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .features li svg {
+            width: 20px;
+            height: 20px;
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+
+        .cta-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .button-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: 1px solid var(--primary-color);
+        }
+
+        .button-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .button-secondary {
+            background-color: var(--white);
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .button-secondary:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .faq-section {
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .faq-section h2 {
+            font-size: 2.25rem;
+            margin-bottom: 40px;
+        }
+        
+        .faq-item {
+            max-width: 700px;
+            margin: 0 auto 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        
+        .faq-item h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        
+        .faq-item p {
+            color: var(--text-light);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <h1>Find the perfect plan for your business</h1>
+            <p>Start for free, then get more power and features as you grow. All plans come with a 14-day free trial.</p>
+        </header>
+
+        <div class="founder-banner">
+            <strong>Founder's Rate Available!</strong> Be one of our first 100 customers and lock in this price forever.
+            <span>Only 87 spots left!</span>
+        </div>
+
+        <main class="pricing-grid">
+            <!-- Solo Pro Plan -->
+            <div class="pricing-card">
+                <h3>Solo Pro</h3>
+                <p class="price">$39 <span>/ month</span></p>
+                <p class="description">Perfect for individual professionals and freelancers who want to capture every opportunity.</p>
+                <ul class="features">
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> 1 Local Phone Number</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> 150 AI-Handled Calls / mo</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Support for 60+ Languages</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Appointment Booking</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Call Transcriptions & History</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Email & Chat Support</li>
+                </ul>
+                <a href="#" class="cta-button button-secondary">Start Your Free Trial</a>
+            </div>
+
+            <!-- Business Starter Plan -->
+            <div class="pricing-card recommended">
+                <div class="recommend-badge">Most Popular</div>
+                <h3>Business Starter</h3>
+                <p class="price">$89 <span>/ month</span></p>
+                <p class="description">The complete solution for small businesses ready to grow and manage higher call volumes.</p>
+                <ul class="features">
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Up to 3 Phone Numbers</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> 600 AI-Handled Calls / mo</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Support for 60+ Languages</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Appointment Booking</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Call Transcriptions & History</li>
+                    <li><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Email & Chat Support</li>
+                </ul>
+                <a href="#" class="cta-button button-primary">Start Your Free Trial</a>
+            </div>
+        </main>
+        
+        <section class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+            <div class="faq-item">
+                <h3>What happens if I go over my monthly call limit?</h3>
+                <p>We understand that business can be unpredictable. If you exceed your monthly call allowance, we offer a simple pay-as-you-go rate of $0.25 per additional call. We'll notify you when you're getting close to your limit.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Can I change my plan later?</h3>
+                <p>Absolutely. You can upgrade or downgrade your plan at any time from your account dashboard. The changes will take effect at the start of your next billing cycle.</p>
+            </div>
+            <div class="faq-item">
+                <h3>What does "Founder's Rate" mean?</h3>
+                <p>It's our promise to our first 100 customers. If you sign up during this promotion, the price you see today is the price you'll pay for life, even when we add more features and increase prices for new customers in the future.</p>
+            </div>
+             <div class="faq-item">
+                <h3>Is there a contract? Can I cancel anytime?</h3>
+                <p>There are no long-term contracts or commitments. Polydial.com is a pay-as-you-go service. You can cancel your subscription at any time without any penalties.</p>
+            </div>
+        </section>
+
+    </div>
+
+</body>
+</html>
