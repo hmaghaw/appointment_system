@@ -169,7 +169,8 @@ def get_business_info(business_id):
             'business_type': business['business_type'],
             'slogan': "Business Slogan",  # static for now
             'timezone': business['timezone'],
-            'status': business['status']
+            'status': business['status'],
+            'provider': 'clover'
         }
     return None
 
