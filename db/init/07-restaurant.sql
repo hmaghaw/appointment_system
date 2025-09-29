@@ -250,17 +250,6 @@ CREATE TABLE restaurant_item_category_map (
 
 ALTER TABLE restaurant_item DROP COLUMN item_category_id;
 
-CREATE TABLE restaurant_item_integration (
-    item_integration_id INT AUTO_INCREMENT PRIMARY KEY,
-    item_id INT NOT NULL,
-    name VARCHAR(100),
-    provider ENUM('clover','square','toast') NOT NULL,
-    external_item_id VARCHAR(255) NOT NULL,
-    external_location_id VARCHAR(255), -- for Square location or Clover merchant
-    business_id INT NOT NULL,
-    UNIQUE (provider, external_item_id),
-    FOREIGN KEY (item_id) REFERENCES restaurant_item(item_id) ON DELETE CASCADE
-);
 CREATE TABLE restaurant_modifier_group_integration (
     modifier_group_integration_id INT AUTO_INCREMENT PRIMARY KEY,
     modifier_group_id INT NOT NULL,
@@ -283,28 +272,6 @@ CREATE TABLE restaurant_modifier_integration (
     business_id INT NOT NULL,
     UNIQUE (provider, external_modifier_id),
     FOREIGN KEY (modifier_id) REFERENCES restaurant_modifier(modifier_id) ON DELETE CASCADE
-);
-
-CREATE TABLE restaurant_option_group_integration (
-    option_group_integration_id INT AUTO_INCREMENT PRIMARY KEY,
-    restaurant_option_group_id INT NOT NULL,
-    provider ENUM('clover','square') NOT NULL,
-    external_group_id VARCHAR(255) NOT NULL,
-    external_location_id VARCHAR(255),
-    business_id INT NOT NULL,
-    UNIQUE (provider, external_group_id),
-    FOREIGN KEY (restaurant_option_group_id) REFERENCES restaurant_option_group(option_group_id) ON DELETE CASCADE
-);
-
-CREATE TABLE restaurant_option_integration (
-    option_integration_id INT AUTO_INCREMENT PRIMARY KEY,
-    restaurant_option_id INT NOT NULL,
-    provider ENUM('clover','square') NOT NULL,
-    external_option_id VARCHAR(255) NOT NULL,
-    external_location_id VARCHAR(255),
-    business_id INT NOT NULL,
-    UNIQUE (provider, external_option_id),
-    FOREIGN KEY (restaurant_option_id) REFERENCES restaurant_option(option_id) ON DELETE CASCADE
 );
 
 CREATE TABLE restaurant_combo_group_integration (
