@@ -375,7 +375,7 @@ CREATE TABLE restaurant_integration (
 
     -- Local entity reference (points to the corresponding table in your schema)
     entity_id INT NOT NULL,
-
+    name VARCHAR(255) ,
     -- External system (POS provider)
     provider ENUM('clover','square','toast') NOT NULL,
 

@@ -295,6 +295,33 @@ class CloverIntegration:
             })
         return result
 
+    def list_categories(self, expand_items: bool = False) -> List[Dict[str, Any]]:
+        """List all categories (optionally with items) across the merchant"""
+        url = "/categories"
+        if expand_items:
+            url += "?expand=items"
+
+        response = self._make_request("GET", url)
+        groups = response.get("elements", [])
+
+        result = []
+        for group in groups:
+            group_id = group["id"]
+            group_name = group.get("name", "")
+            items = group.get("items", {}).get("elements", []) if expand_items else []
+            result.append({
+                "category_id": group_id,
+                "category_name": group_name,
+                "items": [
+                    {
+                        "id": i["id"],
+                        "name": i.get("name", "")
+                    }
+                    for i in items
+                ]
+            })
+        return result
+
     def list_options(self) -> List[Dict[str, Any]]:
         """List all option groups and options across the merchant by scanning items"""
         items = self.list_items()  # already expands optionGroups

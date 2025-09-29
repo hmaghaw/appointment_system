@@ -8,6 +8,8 @@ from ..database import get_db_cursor
 from appointment_app.services.auth_token_validator import generate_jwt_token, verify_bearer_token, generate_clover_jwt_token
 import os
 from ..services.one_time_token_manager import OneTimeTokenManager
+from ..services.entity_integration import EntityIntegrationManager
+from appointment_app.services.restaurant import restaurant_service
 
 bp = Blueprint('clover', __name__, url_prefix='/api/clover')
 
@@ -17,6 +19,8 @@ CLOVER_TOKEN_URL = "https://sandbox.dev.clover.com/oauth/token"
 CLOVER_CLIENT_ID = os.getenv('CLOVER_APP_ID')
 CLOVER_CLIENT_SECRET = os.getenv('CLOVER_APP_SECRET')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
+
+integration = EntityIntegrationManager(provider='clover')
 
 def get_clover_credentials(business_id: int) -> Optional[Dict]:
     """Retrieve Clover credentials from the business_integration table"""
@@ -289,15 +293,17 @@ def sync_clover_data():
             'options_synced': 0,
             'combos_synced': 0
         }
+        categories = clover.list_categories()
+        sync_categories(categories, business_id)
         # Sync modifiers
         modifiers = clover.list_modifiers()
         sync_modifier_group(modifiers, business_id)
-
         # Sync regular items
         items = clover.list_items()
-        for item in items:
-            if sync_item(business_id, item):
-                stats['items_synced'] += 1
+        sync_items(items, business_id)
+
+        item_categories = clover.list_categories(expand_items=True)
+        sync_item_categories(item_categories, business_id)
 
 
         # for group in modifiers:
@@ -329,194 +335,83 @@ def sync_clover_data():
             "data": stats if 'stats' in locals() else None
         }), 500
 
+def sync_items(items, business_id):
+    for item in items:
+        item_id = integration.entity_exists('item',item['id'], business_id)
+        if not item_id:
+            item_id = restaurant_service.create_item(business_id, item)
+            integration.create_entity('item', item_id, item['id'], business_id, item['name'])
+        else:
+            restaurant_service.update_item(item_id, item)
+            restaurant_service.delete_item_category_maps(item_id)
 
-def sync_item(business_id: int, item_data: Dict[str, Any]) -> bool:
-    """Sync a single item from Clover to the database"""
-    try:
-        with get_db_cursor(commit=True) as cursor:
-            # Check if item already exists
-            cursor.execute("""
-                           SELECT ri.item_id
-                           FROM restaurant_item ri
-                                    JOIN restaurant_item_integration rii ON ri.item_id = rii.item_id
-                           WHERE rii.provider = 'clover'
-                             AND rii.external_item_id = %s
-                             AND ri.business_id = %s
-                           """, (item_data.get('id'),business_id,))
-            existing = cursor.fetchone()
-
-            if existing:
-                # Update existing item
-                item_id = existing['item_id']
-                cursor.execute("""
-                               UPDATE restaurant_item
-                               SET name        = %s,
-                                   description = %s,
-                                   base_price  = %s,
-                                   is_active   = %s
-                               WHERE item_id = %s and business_id = %s
-                               """, (
-                                   item_data.get('name', ''),
-                                   item_data.get('description', ''),
-                                   float(item_data.get('price', 0)) / 100,  # Convert to dollars
-                                   item_data.get('hidden', False) is False,  # Map hidden to is_active
-                                   item_id,
-                                   business_id
-                               ))
+        for modifier_group in item['modifierGroups']['elements']:
+            modifier_group_id = integration.entity_exists('modifier_group',modifier_group['id'], business_id)
+            if modifier_group['deleted']:
+                restaurant_service.delete_item_modifier_group(item_id, modifier_group_id)
             else:
-                # Insert new item
-                cursor.execute("""
-                               INSERT INTO restaurant_item
-                               (business_id, name, description, base_price, is_active)
-                               VALUES (%s, %s, %s, %s, %s)
-                               """, (
-                                   business_id,
-                                   item_data.get('name', ''),
-                                   item_data.get('description', ''),
-                                   float(item_data.get('price', 0)) / 100,  # Convert to cents
-                                   item_data.get('hidden', False) is False  # Map hidden to is_active
-                               ))
-                item_id = cursor.lastrowid
+                restaurant_service.create_item_modifier_group(item_id, modifier_group_id)
 
-            # Sync item integration mapping
-            sync_item_integration(cursor, item_id, 'clover', item_data['id'], business_id)
+def sync_item_categories(item_categories, business_id):
+    for category in item_categories:
+        category_id = category['category_id']
+        category_id = integration.entity_exists('category', category_id, business_id)
+        items = category.get('items', [])
+        for item in items:
+            item_id = integration.entity_exists('item',item['id'], business_id)
 
-            return True
-
-    except Exception as e:
-        print(f"Error syncing item {item_data.get('id')}: {e}")
-        return False
-
-
-def sync_item_integration(cursor, item_id: int, provider: str, external_id: str, business_id: int) -> None:
-    """Create or update item integration mapping (external_id is unique per provider)"""
-    cursor.execute("""
-        INSERT INTO restaurant_item_integration (item_id, provider, external_item_id, business_id)
-        VALUES (%s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            item_id = VALUES(item_id),
-            business_id = VALUES(business_id)
-    """, (item_id, provider, external_id, business_id))
-
-
-def external_group_modifier_exists(external_group_id, business_id):
-    """Check if a modifier group with the given external ID already exists"""
-    with get_db_cursor() as cursor:
-        cursor.execute("""
-                       SELECT 1
-                       FROM restaurant_modifier_group_integration
-                       WHERE provider = 'clover'
-                         AND external_group_id = %s
-                         AND business_id = %s  
-                       """, (external_group_id, business_id))
-        return cursor.fetchone() is not None
-
-
-def create_modifier_group(group_name, business_id):
-    """Create a new modifier group and return its ID"""
-    with get_db_cursor(commit=True) as cursor:
-        cursor.execute("""
-            INSERT INTO restaurant_modifier_group
-                (business_id, name, is_required)
-            VALUES (%s, %s, FALSE)
-        """, (business_id, group_name))
-        return cursor.lastrowid
-
-
-def create_restaurant_modifier_group_integration(modifier_group_id, external_group_id, business_id, name):
-    """Create or update the integration record for a modifier group"""
-    with get_db_cursor(commit=True) as cursor:
-        cursor.execute("""
-                       INSERT INTO restaurant_modifier_group_integration
-                           (modifier_group_id, provider, external_group_id, business_id, name)
-                       VALUES (%s, 'clover', %s, %s, %s) ON DUPLICATE KEY
-                       UPDATE
-                           modifier_group_id =
-                       VALUES (modifier_group_id), business_id =
-                       VALUES (business_id)
-                       """, (modifier_group_id, external_group_id, business_id, name))
-
-
-def create_modifier(modifier_group_id, modifier_name, modifier_price):
-    """Create a new modifier and return its ID"""
-    with get_db_cursor(commit=True) as cursor:
-        cursor.execute("""
-            INSERT INTO restaurant_modifier
-                (modifier_group_id, name, price_delta, is_active, display_order)
-            VALUES (%s, %s, %s, TRUE, 0)
-            ON DUPLICATE KEY UPDATE
-                name = VALUES(name),
-                price_delta = VALUES(price_delta)
-        """, (modifier_group_id, modifier_name, modifier_price / 100))
-        return cursor.lastrowid
-
-
-def create_restaurant_modifier_integration(modifier_id, external_modifier_id, external_group_id, business_id, name):
-    """Create or update the integration record for a modifier"""
-    with get_db_cursor(commit=True) as cursor:
-        cursor.execute("""
-            INSERT INTO restaurant_modifier_integration
-                (modifier_id, provider, external_modifier_id, external_modifier_group_id, business_id, name)
-            VALUES (%s, 'clover', %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                modifier_id = VALUES(modifier_id),
-                business_id = VALUES(business_id),
-                name = VALUES(name)
-        """, (modifier_id, external_modifier_id, external_group_id, business_id, name))
-
+            restaurant_service.create_item_category_map(item_id, category_id)
+        pass
 
 def sync_modifier_group(modifiers, business_id):
     """Sync modifier groups and their modifiers with the database"""
     for group in modifiers:
         group_name = group['group_name']
         external_group_id = group['group_id']
-
-        if not external_group_modifier_exists(external_group_id, business_id):
+        modifier_group_id = integration.entity_exists('modifier_group',external_group_id, business_id)
+        if not external_group_id:
             # Create new modifier group
-            modifier_group_id = create_modifier_group(group_name, business_id)
-            create_restaurant_modifier_group_integration(
-                modifier_group_id,
-                external_group_id,
+            modifier_group_id = restaurant_service.create_modifier_group(group_name, business_id)
+            integration.create_entity('modifier_group', modifier_group_id, external_group_id, business_id, group_name)
+            # Process each modifier in the group
+            for modifier in group.get('modifiers', []):
+                external_modifier_id = modifier['id']
+                modifier_name = modifier['name']
+                modifier_price = modifier['price']
+                modifier_id = integration.entity_exists('modifier', external_modifier_id, business_id)
+                # Create the modifier
+                if not modifier_id:
+                    modifier_id = restaurant_service.create_modifier(
+                        modifier_group_id=modifier_group_id,
+                        modifier_name=modifier_name,
+                        modifier_price=modifier_price
+                    )
+                    integration.create_entity('modifier', modifier_id, external_modifier_id, business_id, modifier_name)
+                else:
+                    restaurant_service.update_modifier(modifier_group_id, modifier_id, modifier_name, modifier_price)
+        else:
+            restaurant_service.update_modifier_group(modifier_group_id, group_name, False)
+
+def sync_categories(categories, business_id):
+    """Sync categories and their items with the database"""
+    for category in categories:
+        category_name = category['category_name']
+        external_category_id = category['category_id']
+
+        category_id = integration.entity_exists('category', external_category_id, business_id)
+        # Check if this category already exists
+        if not category_id:
+            # Create new category
+            category_id = restaurant_service.create_category(category_name, business_id)
+            integration.create_entity(
+                'category',
+                category_id,
+                external_category_id,
                 business_id,
-                group_name
+                category_name
             )
-
-        # Get the modifier group ID (whether it's new or existing)
-        with get_db_cursor() as cursor:
-            cursor.execute("""
-                           SELECT modifier_group_id
-                           FROM restaurant_modifier_group_integration
-                           WHERE external_group_id = %s
-                             AND provider = 'clover'
-                             AND business_id = %s  
-                           """, (external_group_id, business_id))
-            result = cursor.fetchone()
-            if not result:
-                continue  # Skip if we couldn't find the group
-            modifier_group_id = result['modifier_group_id']
-
-        # Process each modifier in the group
-        for modifier in group.get('modifiers', []):
-            external_modifier_id = modifier['id']
-            modifier_name = modifier['name']
-            modifier_price = modifier['price']
-
-            # Create or update the modifier
-            modifier_id = create_modifier(
-                modifier_group_id,
-                modifier_name,
-                modifier_price
-            )
-
-            # Create or update the modifier integration
-            create_restaurant_modifier_integration(
-                modifier_id,
-                external_modifier_id,
-                external_group_id,
-                business_id,
-                modifier_name
-            )
-
+        else:
+            restaurant_service.update_category(category_id, category_name)
 
 def sync_combo(business_id: int, combo_data: Dict[str, Any]) -> bool:
     """Sync a combo item and its groups"""
