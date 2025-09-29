@@ -301,26 +301,11 @@ def sync_clover_data():
         # Sync regular items
         items = clover.list_items()
         sync_items(items, business_id)
-
+        # Link Categories to items
         item_categories = clover.list_categories(expand_items=True)
         sync_item_categories(item_categories, business_id)
 
-
-        # for group in modifiers:
-        #     if sync_modifier_group(business_id, group):
-        #         stats['modifiers_synced'] += len(group.get('modifiers', []))
-
-        # Sync options (for combos)
-        options = clover.list_options()
-        for group in options:
-            if sync_option_group(business_id, group):
-                stats['options_synced'] += len(group.get('options', []))
-
-        # Sync combos
-        combos = clover.list_combos()
-        for combo in combos:
-            if sync_combo(business_id, combo):
-                stats['combos_synced'] += 1
+        # Options and Combos are not handled
 
         return jsonify({
             "success": True,
