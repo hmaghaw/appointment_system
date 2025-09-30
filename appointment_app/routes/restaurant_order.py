@@ -3,7 +3,6 @@
 Restaurant Order API
 Handles order related operations including creating, updating, deleting, and listing orders
 """
-from Tools.scripts.objgraph import externals
 from flask import Blueprint, request, jsonify, current_app
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import mysql.connector
