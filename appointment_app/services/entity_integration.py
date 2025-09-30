@@ -31,6 +31,22 @@ class EntityIntegrationManager:
             else:
                 return result['entity_id']
 
+    def get_external_id(self, entity_type: str, entity_id: str) -> bool:
+        """Check if an entity with the given external ID already exists"""
+        with get_db_cursor() as cursor:
+            cursor.execute("""
+                           SELECT external_id
+                           FROM restaurant_integration
+                           WHERE provider = %s
+                             AND entity_type = %s
+                             AND entity_id = %s
+                           """, (self.provider, entity_type, entity_id))
+            result = cursor.fetchone()
+            if result is None:
+                return False
+            else:
+                return result['external_id']
+
     def create_or_update_entity(
             self,
             entity_type: str,

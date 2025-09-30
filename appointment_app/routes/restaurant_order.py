@@ -3,7 +3,7 @@
 Restaurant Order API
 Handles order related operations including creating, updating, deleting, and listing orders
 """
-
+from Tools.scripts.objgraph import externals
 from flask import Blueprint, request, jsonify, current_app
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import mysql.connector
@@ -13,6 +13,9 @@ from datetime import timedelta, datetime
 import math
 import json
 from appointment_app.services.clover_integration import CloverIntegration
+from appointment_app.services.restaurant import restaurant_service
+from ..services.entity_integration import EntityIntegrationManager
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -159,6 +162,12 @@ def create_order():
             }), 400
 
         order_data = data['order']
+        business_id = order_data['business_id']
+        business_integration = restaurant_service.get_business_integration(business_id)
+        provider = business_integration['provider']
+        if provider != 'polydial':
+            integration = EntityIntegrationManager(provider=provider)
+
 
         required_fields = ['customer_id', 'business_id', 'items']
         for field in required_fields:
@@ -181,149 +190,38 @@ def create_order():
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-
             # Start transaction
             cursor.execute("START TRANSACTION")
-
-            # Create order
-            cursor.execute(
-                """
-                INSERT INTO restaurant_order
-                    (customer_id, business_id, order_status, order_time)
-                VALUES (%s, %s, 'confirmed', NOW())
-                """,
-                (
-                    order_data['customer_id'],
-                    order_data['business_id']
-                )
-            )
-            order_id = cursor.lastrowid
-
-            # Add order items
-            for item in order_data['items']:
-                # Validate required fields
-                if 'item_id' not in item or 'quantity' not in item or 'price' not in item:
-                    conn.rollback()
-                    return jsonify({
-                        'status': 'error',
-                        'message': 'Each item must have item_id, quantity, and price',
-                        'error_code': 'INVALID_ITEM_DATA'
-                    }), 400
-
-                # Add order item
-                cursor.execute(
-                    """
-                    INSERT INTO restaurant_order_item
-                        (order_id, item_id, quantity, base_price, total_price)
-                    VALUES (%s, %s, %s, %s, %s)
-                    """,
-                    (
-                        order_id,
-                        item['item_id'],
-                        item['quantity'],
-                        item.get('base_price', item['price']),
-                        item['price'] * item['quantity']
-                    )
-                )
-                order_item_id = cursor.lastrowid
-
-                # Add options if any
-                if 'options' in item and isinstance(item['options'], list):
-                    for option in item['options']:
-                        cursor.execute(
-                            """
-                            INSERT INTO restaurant_order_item_option
-                                (order_item_id, option_id, name, price_delta)
-                            VALUES (%s, %s, %s, %s)
-                            """,
-                            (
-                                order_item_id,
-                                option.get('option_id'),
-                                option.get('name', ''),
-                                option.get('price_delta', 0.0)
-                            )
-                        )
-
-                # Add modifiers if any
-                if 'modifiers' in item and isinstance(item['modifiers'], list):
-                    for modifier in item['modifiers']:
-                        cursor.execute(
-                            """
-                            INSERT INTO restaurant_order_item_modifier
-                                (order_item_id, modifier_id, name, price_delta)
-                            VALUES (%s, %s, %s, %s)
-                            """,
-                            (
-                                order_item_id,
-                                modifier.get('modifier_id'),
-                                modifier.get('name', ''),
-                                modifier.get('price_delta', 0.0)
-                            )
-                        )
+            if provider == 'ploydial':
+                order_id = restaurant_service.create_order(order_data)
+                for item in order_data['items']:
+                    item_id = item['item_id']
+                    order_item_id = restaurant_service.create_polydial_line_item(order_id, item)
+                    total_price = sum(item['price'] * item['quantity'] for item in order_data['items'])
+                    restaurant_service.update_order(order_id, total_price=total_price)
+            elif provider == 'clover':
+                clover = CloverIntegration(order_data['business_id'])
+                order_id = restaurant_service.create_order(order_data)
+                externals_order = clover.create_order()
+                externals_order_id=externals_order['id']
+                integration.create_entity("order", order_id, externals_order_id,business_id)
+                for item in order_data['items']:
+                    item_id = item['item_id']
+                    order_line_item_id = restaurant_service.create_polydial_line_item(order_id, item)
+                    externals_order_line_item = clover.add_line_item(externals_order_id=externals_order_id, item=item)
+                    externals_order_line_item_id = externals_order_line_item['id']
+                    integration.create_entity("order_line_item", order_line_item_id, externals_order_line_item_id, business_id)
+            elif provider == 'square':
+               pass
 
             # Calculate and update the total price for the order
-            total_price = sum(item['price'] * item['quantity'] for item in order_data['items'])
-            cursor.execute(
-                "UPDATE restaurant_order SET total_price = %s WHERE order_id = %s",
-                (total_price, order_id)
-            )
 
             # Commit the transaction
             conn.commit()
 
-            # Get the created order details
-            cursor.execute(
-                """
-                SELECT *
-                FROM restaurant_order
-                WHERE order_id = %s
-                """,
-                (order_id,)
-            )
-            order = cursor.fetchone()
-
-            # Get order items with options and modifiers
-            cursor.execute(
-                """
-                SELECT oi.*,
-                       i.name        AS item_name,
-                       i.description AS item_description,
-                       rii.external_item_id
-                FROM restaurant_order_item oi
-                         LEFT JOIN restaurant_item i
-                                ON oi.item_id = i.item_id
-                         LEFT JOIN restaurant_item_integration rii
-                                ON i.item_id = rii.item_id
-                WHERE oi.order_id = %s
-                """,
-                (order_id,)
-            )
-            order_items = cursor.fetchall()
-
-            # Get options and modifiers for each item
-            for item in order_items:
-                cursor.execute(
-                    "SELECT * FROM restaurant_order_item_option WHERE order_item_id = %s",
-                    (item['order_item_id'],)
-                )
-                item['options'] = cursor.fetchall()
-
-                cursor.execute(
-                    "SELECT * FROM restaurant_order_item_modifier WHERE order_item_id = %s",
-                    (item['order_item_id'],)
-                )
-                item['modifiers'] = cursor.fetchall()
-
-            order['items'] = order_items
-
-            # Notify the business about the new order
-            notify_new_order(order_data['business_id'], order)
-            clover = CloverIntegration(order_data['business_id'])
-            clover.create_order_with_items(order_items)
             return jsonify({
                 'status': 'success',
-                'message': 'Order created successfully',
-                'order': order
+                'message': 'Order created successfully'
             }), 201
 
         except Exception as e:

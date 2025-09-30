@@ -4,6 +4,8 @@ from typing import List, Dict, Any, Optional, Union
 from datetime import datetime, timedelta
 from appointment_app.database import get_db_cursor
 import os
+from ..services.entity_integration import EntityIntegrationManager
+integration = EntityIntegrationManager(provider='clover')
 
 class CloverIntegration:
     def __init__(self, business_id: int, access_token: str = None, merchant_id: str = None):
@@ -166,24 +168,20 @@ class CloverIntegration:
         Returns:
             dict: The created order details
         """
-        url = f"{self.clover_base_url}/orders"
+        url = f"/orders"
         payload = {"state": "open", "title": title}
         response = self._make_request('POST', url, json=payload)
         return response
 
     def add_line_item(
             self,
-            order_id: str,
-            item_id: str,
-            quantity: int = 1,
-            modifiers: Optional[List[str]] = None,
-            options: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+            externals_order_id: str,
+            item) -> Dict[str, Any]:
         """
         Add a line item (with optional modifiers/options) to an existing order.
 
         Args:
-            order_id: ID of the order
+            externals_order_id: ID of the order
             item_id: ID of the item to add
             quantity: quantity
             modifiers: list of modifier IDs
@@ -192,25 +190,13 @@ class CloverIntegration:
         Returns:
             dict: line item details
         """
-        url = f"{self.clover_base_url}/orders/{order_id}/line_items"
+        url = f"/orders/{externals_order_id}/line_items"
 
-        payload = {
-            "item": {"id": item_id},
-            "quantity": quantity
-        }
-
-        if modifiers:
-            payload["modifications"] = [
-                {"modifier": {"id": mid}} for mid in modifiers
-            ]
-
-        if options:
-            payload["options"] = [
-                {"option": {"id": oid}} for oid in options
-            ]
+        payload = self.prapare_line_item(item)
 
         response = self._make_request('POST', url, json=payload)
         return response
+
 
     def create_order_with_items(
             self,
@@ -390,3 +376,23 @@ class CloverIntegration:
                         })
                 combos.append(combo)
         return combos
+
+    def prapare_line_item(self, item):
+        external_item_id = integration.get_external_id("item", item['item_id'])
+        payload = {
+            "item": {"id": external_item_id},
+            "unitQty": item['quantity'],
+            "note": "Extra Spicy",
+            "modifications":[],
+            "options":[]
+        }
+        if len(item['modifiers'])>0:
+            for modifier in item['modifiers']:
+                external_item_id = integration.get_external_id("modifier", modifier['modifier_id'])
+                payload["modifications"].append({"modifier": {"id": external_item_id}})
+
+        return payload
+
+
+
+

@@ -488,5 +488,188 @@ class RestaurantService:
                            WHERE item_id = %s
                            """, (item_id, ))
             return cursor.rowcount > 0
+
+    def create_order(self, order_data: dict) -> int:
+        """
+        Create a new order and return its ID.
+
+        Args:
+            order_data: Dict with keys customer_id, business_id
+
+        Returns:
+            int: The ID of the created order
+        """
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute("""
+                           INSERT INTO restaurant_order
+                               (customer_id, business_id, order_status, order_time)
+                           VALUES (%s, %s, 'confirmed', NOW())
+                           """, (
+                               order_data['customer_id'],
+                               order_data['business_id']
+                           ))
+            return cursor.lastrowid
+
+    def update_order(self, order_id: int, **kwargs) -> bool:
+        """
+        Update an order. All params are optional.
+
+        Args:
+            order_id: The order ID to update
+            kwargs: Any of [customer_id, business_id, order_status, total_price, order_time]
+
+        Returns:
+            bool: True if a row was updated, False otherwise
+        """
+        if not kwargs:
+            return False  # nothing to update
+
+        fields = []
+        values = []
+
+        allowed_fields = ["customer_id", "business_id", "order_status", "total_price", "order_time"]
+
+        for key, value in kwargs.items():
+            if key in allowed_fields:
+                fields.append(f"{key} = %s")
+                values.append(value)
+
+        if not fields:
+            return False  # no valid fields
+
+        query = f"""
+            UPDATE restaurant_order
+            SET {", ".join(fields)}, updated_at = CURRENT_TIMESTAMP
+            WHERE order_id = %s
+        """
+        values.append(order_id)
+
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute(query, tuple(values))
+            return cursor.rowcount > 0
+
+
+    def create_order_item(self, order_id: int, item: dict) -> int:
+        """
+        Create a new order item and return its ID.
+
+        Args:
+            order_id: The order this item belongs to
+            item: Dict with keys item_id, quantity, price (and optionally base_price)
+
+        Returns:
+            int: The ID of the created order item
+        """
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute("""
+                           INSERT INTO restaurant_order_item
+                               (order_id, item_id, quantity, base_price, total_price)
+                           VALUES (%s, %s, %s, %s, %s)
+                           """, (
+                               order_id,
+                               item['item_id'],
+                               item['quantity'],
+                               item.get('base_price', item['price']),
+                               item['price'] * item['quantity']
+                           ))
+            return cursor.lastrowid
+
+    def create_order_item_option(self, order_item_id: int, option: dict) -> int:
+        """
+        Create a new order item option and return its ID.
+
+        Args:
+            order_item_id: The parent order item ID
+            option: Dict with keys option_id, name, price_delta
+
+        Returns:
+            int: The ID of the created order item option
+        """
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute("""
+                           INSERT INTO restaurant_order_item_option
+                               (order_item_id, option_id, name, price_delta)
+                           VALUES (%s, %s, %s, %s)
+                           """, (
+                               order_item_id,
+                               option.get('option_id'),
+                               option.get('name', ''),
+                               option.get('price_delta', 0.0)
+                           ))
+            return cursor.lastrowid
+
+    def create_order_item_modifier(self, order_item_id: int, modifier: dict) -> int:
+        """
+        Create a new order item modifier and return its ID.
+
+        Args:
+            order_item_id: The parent order item ID
+            modifier: Dict with keys modifier_id, name, price_delta
+
+        Returns:
+            int: The ID of the created order item modifier
+        """
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute("""
+                           INSERT INTO restaurant_order_item_modifier
+                               (order_item_id, modifier_id, name, price_delta)
+                           VALUES (%s, %s, %s, %s)
+                           """, (
+                               order_item_id,
+                               modifier.get('modifier_id'),
+                               modifier.get('name', ''),
+                               modifier.get('price_delta', 0.0)
+                           ))
+            return cursor.lastrowid
+
+    def create_polydial_line_item(self, order_id, item):
+        # Add order item
+        order_item_id = restaurant_service.create_order_item(order_id, item)
+        # Add options if any
+        if 'options' in item and isinstance(item['options'], list):
+            for option in item['options']:
+                restaurant_service.create_order_item_option(order_item_id, option)
+
+        # Add modifiers if any
+        if 'modifiers' in item and isinstance(item['modifiers'], list):
+            for modifier in item['modifiers']:
+                restaurant_service.create_order_item_modifier(order_item_id, modifier)
+
+        return order_item_id
+
+    def get_business_integration(self, business_id: int) -> dict | None:
+        """
+        Get integration details for a business.
+
+        Args:
+            business_id: The business ID
+
+        Returns:
+            dict: Integration record, or None if not found
+        """
+        with get_db_cursor() as cursor:
+            cursor.execute("""
+                           SELECT integration_id,
+                                  business_id,
+                                  provider,
+                                  merchant_id,
+                                  access_token,
+                                  refresh_token,
+                                  status,
+                                  created_at,
+                                  updated_at,
+                                  provider_data
+                           FROM business_integration
+                           WHERE business_id = %s
+                           """, (business_id,))
+
+            result =cursor.fetchone()
+            if result:
+                return result
+            else:
+                return {"provider":"polydial"}
+
+
+
 # Create a singleton instance for easy importing
 restaurant_service = RestaurantService()
