@@ -191,7 +191,7 @@ def create_order():
             cursor = conn.cursor(dictionary=True)
             # Start transaction
             cursor.execute("START TRANSACTION")
-            if provider == 'ploydial':
+            if provider == 'polydial':
                 order_id = restaurant_service.create_order(order_data)
                 for item in order_data['items']:
                     item_id = item['item_id']

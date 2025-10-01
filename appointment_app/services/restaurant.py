@@ -539,7 +539,7 @@ class RestaurantService:
 
         query = f"""
             UPDATE restaurant_order
-            SET {", ".join(fields)}, updated_at = CURRENT_TIMESTAMP
+            SET {", ".join(fields)}
             WHERE order_id = %s
         """
         values.append(order_id)

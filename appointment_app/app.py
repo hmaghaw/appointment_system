@@ -48,6 +48,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.restaurant_order import bp as restaurant_order_bp
     from appointment_app.routes.clover import bp as clover_bp
     from appointment_app.routes.export import bp as export_bp
+    from appointment_app.routes.prompt import prompt_bp
     # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -70,6 +71,7 @@ def create_app(config_dict=None):
     app.register_blueprint(restaurant_order_bp)
     app.register_blueprint(clover_bp)  # Clover integration endpoints
     app.register_blueprint(export_bp)
+    app.register_blueprint(prompt_bp)
 
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
