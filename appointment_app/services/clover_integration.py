@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from appointment_app.database import get_db_cursor
 import os
 from ..services.entity_integration import EntityIntegrationManager
+CLOVER_URL = os.getenv('CLOVER_URL')
 integration = EntityIntegrationManager(provider='clover')
 
 class CloverIntegration:
@@ -78,7 +79,7 @@ class CloverIntegration:
             raise ValueError("Missing Clover app credentials in configuration")
             
         response = requests.post(
-            'https://sandbox.dev.clover.com/oauth/token',
+            f'{CLOVER_URL}/oauth/token',
             data={
                 'client_id': clover_client_id,
                 'client_secret': clover_client_secret,
@@ -125,7 +126,7 @@ class CloverIntegration:
     def _setup_client(self) -> None:
         """Set up the HTTP client with the current credentials"""
         #self.clover_base_url = f"https://sandbox.dev.clover.com/v3"
-        self.clover_base_url = f"https://sandbox.dev.clover.com/v3/merchants/{self.merchant_id}"
+        self.clover_base_url = f"{CLOVER_URL}/v3/merchants/{self.merchant_id}"
         self.headers = {
             'Authorization': f'Bearer {self.access_token}',
             'Content-Type': 'application/json',

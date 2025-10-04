@@ -14,8 +14,9 @@ from appointment_app.services.restaurant import restaurant_service
 bp = Blueprint('clover', __name__, url_prefix='/api/clover')
 
 # Clover OAuth endpoints
-CLOVER_AUTH_URL = "https://sandbox.dev.clover.com/oauth/authorize"
-CLOVER_TOKEN_URL = "https://sandbox.dev.clover.com/oauth/token"
+CLOVER_URL = os.getenv('CLOVER_URL')
+CLOVER_AUTH_URL = f"{CLOVER_URL}/oauth/authorize"
+CLOVER_TOKEN_URL = f"{CLOVER_URL}/oauth/token"
 CLOVER_CLIENT_ID = os.getenv('CLOVER_APP_ID')
 CLOVER_CLIENT_SECRET = os.getenv('CLOVER_APP_SECRET')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
@@ -154,7 +155,7 @@ def clover_login():
         }
 
 def get_business_name(merchant_id, access_token):
-    url = f"https://sandbox.dev.clover.com/v3/merchants/{merchant_id}"
+    url = f"{CLOVER_URL}/v3/merchants/{merchant_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
     resp = requests.get(url, headers=headers).json()
     result = resp.get("name")

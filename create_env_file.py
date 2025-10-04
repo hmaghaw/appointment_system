@@ -38,7 +38,7 @@ FRONTEND_URL=
 OPENAI_API_KEY=
 API_BASE_URL=
 
-
+CLOVER_URL=
 CLOVER_APP_ID=
 CLOVER_APP_SECRET=
 """
@@ -80,6 +80,7 @@ FRONTEND_URL=
 OPENAI_API_KEY=
 API_BASE_URL=
 
+CLOVER_URL=
 CLOVER_APP_ID=
 CLOVER_APP_SECRET=
 """
@@ -174,7 +175,7 @@ if __name__ == "__main__":
     import sys
 
     # Default values
-    environment = "production"
+    environment = "development"
     output_file = ".env"
 
     # # Check for command line arguments
