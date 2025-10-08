@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from appointment_app.database import get_db_cursor
 import os
 from ..services.entity_integration import EntityIntegrationManager
-CLOVER_URL = os.getenv('CLOVER_URL')
+#CLOVER_URL = os.getenv('CLOVER_URL')
 integration = EntityIntegrationManager(provider='clover')
 
 class CloverIntegration:
@@ -34,8 +34,29 @@ class CloverIntegration:
             
         if not all([self.access_token, self.merchant_id]):
             raise ValueError("Missing required Clover credentials. Please connect your Clover account first.")
-            
+        self.clover_client_id, self.clover_client_secret, self.clover_url = self.get_clover_app(business_id)
+
         self._setup_client()
+
+    def get_clover_app(self, business_id):
+        with get_db_cursor() as cursor:
+            cursor.execute("""
+                           SELECT app_id, app_secret, clover_url
+                           FROM restaurant_clover_app
+                           WHERE business_id = %s LIMIT 1
+                           """, (business_id,))
+
+            result = cursor.fetchone()
+            if result:
+                clover_client_id = result['app_id']
+                clover_client_secret = result['app_secret']
+                clover_url = result['clover_url']
+            else:
+                clover_client_id = os.getenv('CLOVER_APP_ID')
+                clover_client_secret = os.getenv('CLOVER_APP_SECRET')
+                clover_url = os.getenv('CLOVER_URL')
+
+        return clover_client_id, clover_client_secret, clover_url
 
     def _fetch_credentials(self) -> None:
         """Fetch Clover credentials from the database"""
@@ -67,40 +88,39 @@ class CloverIntegration:
         expires_at = datetime.fromisoformat(self.provider_data['expires_at'])
         return datetime.utcnow() >= expires_at - timedelta(minutes=5)  # 5-minute buffer
 
-    def get_clover_app(self):
-        with get_db_cursor() as cursor:
-            cursor.execute("""
-                           SELECT app_id, app_secret
-                           FROM restaurant_clover_app
-                           WHERE business_id = %s
-                             LIMIT 1
-                           """, (self.business_id,))
-
-            result = cursor.fetchone()
-            if result:
-                clover_client_id = result['app_id']
-                clover_client_secret = result['app_secret']
-            else:
-                clover_client_id = os.getenv('CLOVER_APP_ID')
-                clover_client_secret = os.getenv('CLOVER_APP_SECRET')
-
-        return clover_client_id, clover_client_secret
+    # def get_clover_app(self):
+    #     with get_db_cursor() as cursor:
+    #         cursor.execute("""
+    #                        SELECT app_id, app_secret
+    #                        FROM restaurant_clover_app
+    #                        WHERE business_id = %s
+    #                          LIMIT 1
+    #                        """, (self.business_id,))
+    #
+    #         result = cursor.fetchone()
+    #         if result:
+    #             clover_client_id = result['app_id']
+    #             clover_client_secret = result['app_secret']
+    #         else:
+    #             clover_client_id = os.getenv('CLOVER_APP_ID')
+    #             clover_client_secret = os.getenv('CLOVER_APP_SECRET')
+    #
+    #     return clover_client_id, clover_client_secret
 
     def _refresh_access_token(self, refresh_token: str) -> None:
         """Refresh the access token using the refresh token"""
         if not refresh_token:
             raise ValueError("No refresh token available")
 
-        clover_client_id, clover_client_secret = self.get_clover_app()
         
-        if not all([clover_client_id, clover_client_secret]):
+        if not all([self.clover_client_id, self.clover_client_secret]):
             raise ValueError("Missing Clover app credentials in configuration")
             
         response = requests.post(
-            f'{CLOVER_URL}/oauth/token',
+            f'{self.clover_url}/oauth/token',
             data={
-                'client_id': clover_client_id,
-                'client_secret': clover_client_secret,
+                'client_id': self.clover_client_id,
+                'client_secret': self.clover_client_secret,
                 'refresh_token': refresh_token,
                 'grant_type': 'refresh_token'
             }
@@ -144,7 +164,7 @@ class CloverIntegration:
     def _setup_client(self) -> None:
         """Set up the HTTP client with the current credentials"""
         #self.clover_base_url = f"https://sandbox.dev.clover.com/v3"
-        self.clover_base_url = f"{CLOVER_URL}/v3/merchants/{self.merchant_id}"
+        self.clover_base_url = f"{self.clover_url}/v3/merchants/{self.merchant_id}"
         self.headers = {
             'Authorization': f'Bearer {self.access_token}',
             'Content-Type': 'application/json',
