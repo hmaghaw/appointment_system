@@ -21,6 +21,15 @@ integration = EntityIntegrationManager(provider='clover')
 # CLOVER_URL=https://sandbox.dev.clover.com
 # PRODUCTION URL
 # CLOVER_URL=https://www.clover.com
+
+# Configure APP
+# - Web App
+# - site URL: <polydial>/api/clover/oauth/callback
+# Permissions
+# Inventory Read
+# Merchant Read
+# Orders Read Write
+
 def get_clover_credentials(business_id: int) -> Optional[Dict]:
     """Retrieve Clover credentials from the business_integration table"""
     with get_db_cursor() as cursor:
@@ -197,7 +206,7 @@ def get_clover_app(business_id):
         else:
             clover_client_id = os.getenv('CLOVER_APP_ID')
             clover_client_secret = os.getenv('CLOVER_APP_SECRET')
-            clover_url = os.getenv('clover_url')
+            clover_url = os.getenv('CLOVER_URL')
 
     return clover_client_id, clover_client_secret, clover_url
 
