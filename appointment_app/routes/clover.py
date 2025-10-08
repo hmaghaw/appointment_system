@@ -13,11 +13,7 @@ from appointment_app.services.restaurant import restaurant_service
 
 bp = Blueprint('clover', __name__, url_prefix='/api/clover')
 
-# Clover OAuth endpoints
-CLOVER_URL = os.getenv('CLOVER_URL')
-CLOVER_AUTH_URL = f"{CLOVER_URL}/oauth/authorize"
-CLOVER_TOKEN_URL = f"{CLOVER_URL}/oauth/token"
-FRONTEND_URL = os.getenv('FRONTEND_URL')
+
 
 integration = EntityIntegrationManager(provider='clover')
 
@@ -120,8 +116,9 @@ def create_clover_admin_user(business_id: int, merchant_id: str, cursor) -> int:
 def exchange_auth_code(business_id, code: str) -> Dict:
     """Exchange authorization code for access token."""
     clover_client_id, clover_client_secret, clover_url = get_clover_app(business_id)
+    clover_token_url = f"{clover_url}/oauth/token"
     response = requests.post(
-        CLOVER_TOKEN_URL,
+        clover_token_url,
         data={
             'client_id': clover_client_id,
             'client_secret': clover_client_secret,
@@ -157,8 +154,8 @@ def clover_login():
           'message': 'The one-time token is invalid, expired, or has already been used.'
         }
 
-def get_business_name(merchant_id, access_token):
-    url = f"{CLOVER_URL}/v3/merchants/{merchant_id}"
+def get_business_name(clover_url, merchant_id, access_token):
+    url = f"{clover_url}/v3/merchants/{merchant_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
     resp = requests.get(url, headers=headers).json()
     result = resp.get("name")
@@ -212,11 +209,12 @@ def clover_oauth_callback():
     """
     try:
         # Get and validate parameters
+        FRONTEND_URL = os.getenv('FRONTEND_URL')
         client_id = request.args.get('client_id')
         merchant_id = request.args.get('merchant_id')
         auth_code = request.args.get('code')
         business_id = get_business_id(merchant_id)
-
+        clover_client_id, clover_client_secret, clover_url = get_clover_app(business_id)
         if not all([client_id, merchant_id, auth_code]):
             return jsonify({
                 'success': False,
@@ -233,7 +231,7 @@ def clover_oauth_callback():
             one_time_token = temp_token.add_token(business_id, 'clover')
             return redirect(f"{FRONTEND_URL}/login-clover?token=" + one_time_token)
         else:
-            merchant_name = get_business_name(merchant_id, token_info['access_token'])
+            merchant_name = get_business_name(clover_url, merchant_id, token_info['access_token'])
 
             # Handle business and user setup
             with get_db_cursor(commit=True) as cursor:
