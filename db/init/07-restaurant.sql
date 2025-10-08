@@ -283,3 +283,11 @@ CREATE TABLE restaurant_integration (
     INDEX idx_entity_lookup (entity_type, entity_id, provider, business_id),
     INDEX idx_external_parent (external_parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE restaurant_clover_app (
+    clover_app_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT UNIQUE,
+    app_id VARCHAR(100),
+    app_secret VARCHAR(100),
+    clover_url VARCHAR(100)
+);

@@ -194,6 +194,7 @@ def get_menu():
         } for category_name, category_items in categories.items()]
 
         return jsonify({
+            'categories':list(categories.keys()),
             'menu': menu
         })
 

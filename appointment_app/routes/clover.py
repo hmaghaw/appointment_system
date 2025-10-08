@@ -17,12 +17,14 @@ bp = Blueprint('clover', __name__, url_prefix='/api/clover')
 CLOVER_URL = os.getenv('CLOVER_URL')
 CLOVER_AUTH_URL = f"{CLOVER_URL}/oauth/authorize"
 CLOVER_TOKEN_URL = f"{CLOVER_URL}/oauth/token"
-CLOVER_CLIENT_ID = os.getenv('CLOVER_APP_ID')
-CLOVER_CLIENT_SECRET = os.getenv('CLOVER_APP_SECRET')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 integration = EntityIntegrationManager(provider='clover')
 
+# SANDBOX URL
+# CLOVER_URL=https://sandbox.dev.clover.com
+# PRODUCTION URL
+# CLOVER_URL=https://www.clover.com
 def get_clover_credentials(business_id: int) -> Optional[Dict]:
     """Retrieve Clover credentials from the business_integration table"""
     with get_db_cursor() as cursor:
@@ -115,13 +117,14 @@ def create_clover_admin_user(business_id: int, merchant_id: str, cursor) -> int:
     return cursor.fetchone()['id']
 
 
-def exchange_auth_code(code: str) -> Dict:
+def exchange_auth_code(business_id, code: str) -> Dict:
     """Exchange authorization code for access token."""
+    clover_client_id, clover_client_secret, clover_url = get_clover_app(business_id)
     response = requests.post(
         CLOVER_TOKEN_URL,
         data={
-            'client_id': CLOVER_CLIENT_ID,
-            'client_secret': CLOVER_CLIENT_SECRET,
+            'client_id': clover_client_id,
+            'client_secret': clover_client_secret,
             'code': code
         }
     )
@@ -180,6 +183,27 @@ def get_business_info(business_id):
         }
     return None
 
+def get_clover_app(business_id):
+    with get_db_cursor() as cursor:
+        cursor.execute("""
+                       SELECT app_id, app_secret, clover_url
+                       FROM restaurant_clover_app
+                       WHERE business_id = %s
+                         LIMIT 1
+                       """, (business_id,))
+
+        result = cursor.fetchone()
+        if result:
+            clover_client_id = result['app_id']
+            clover_client_secret = result['app_secret']
+            clover_url = result['clover_url']
+        else:
+            clover_client_id = os.getenv('CLOVER_APP_ID')
+            clover_client_secret = os.getenv('CLOVER_APP_SECRET')
+            clover_url = os.getenv('clover_url')
+
+    return clover_client_id, clover_client_secret, clover_url
+
 @bp.route('/oauth/callback')
 def clover_oauth_callback():
     """
@@ -191,6 +215,7 @@ def clover_oauth_callback():
         client_id = request.args.get('client_id')
         merchant_id = request.args.get('merchant_id')
         auth_code = request.args.get('code')
+        business_id = get_business_id(merchant_id)
 
         if not all([client_id, merchant_id, auth_code]):
             return jsonify({
@@ -199,9 +224,9 @@ def clover_oauth_callback():
             }), 400
 
         # Get app credentials
-        token_info = exchange_auth_code(auth_code)
+        token_info = exchange_auth_code(business_id, auth_code)
 
-        business_id = get_business_id(merchant_id)
+
         temp_token = OneTimeTokenManager()
 
         if business_id:

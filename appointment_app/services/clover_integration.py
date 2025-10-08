@@ -67,13 +67,31 @@ class CloverIntegration:
         expires_at = datetime.fromisoformat(self.provider_data['expires_at'])
         return datetime.utcnow() >= expires_at - timedelta(minutes=5)  # 5-minute buffer
 
+    def get_clover_app(self):
+        with get_db_cursor() as cursor:
+            cursor.execute("""
+                           SELECT app_id, app_secret
+                           FROM restaurant_clover_app
+                           WHERE business_id = %s
+                             LIMIT 1
+                           """, (self.business_id,))
+
+            result = cursor.fetchone()
+            if result:
+                clover_client_id = result['app_id']
+                clover_client_secret = result['app_secret']
+            else:
+                clover_client_id = os.getenv('CLOVER_APP_ID')
+                clover_client_secret = os.getenv('CLOVER_APP_SECRET')
+
+        return clover_client_id, clover_client_secret
+
     def _refresh_access_token(self, refresh_token: str) -> None:
         """Refresh the access token using the refresh token"""
         if not refresh_token:
             raise ValueError("No refresh token available")
 
-        clover_client_id = os.getenv('CLOVER_APP_ID')
-        clover_client_secret = os.getenv('CLOVER_APP_SECRET')
+        clover_client_id, clover_client_secret = self.get_clover_app()
         
         if not all([clover_client_id, clover_client_secret]):
             raise ValueError("Missing Clover app credentials in configuration")
