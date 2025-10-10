@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS business (
     recharge_threshold INT NOT NULL DEFAULT 10 COMMENT 'Threshold in cents to trigger auto recharge',
     recharge_amount INT NOT NULL DEFAULT 20 COMMENT 'Recharge amount in cents when triggered',
     stripe_customer_id VARCHAR(255) UNIQUE,
+    address VARCHAR(255),
+    branch_phone_number VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB

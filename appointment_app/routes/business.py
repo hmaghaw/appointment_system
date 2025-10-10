@@ -301,6 +301,8 @@ def get_business_by_phone():
                     b.name,
                     b.timezone,
                     b.status,
+                    b.address,
+                    b.branch_phone_number,
                     b.created_at,
                     b.updated_at,
                     bp.business_phone,
