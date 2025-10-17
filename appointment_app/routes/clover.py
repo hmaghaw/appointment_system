@@ -387,7 +387,7 @@ def sync_modifier_group(modifiers, business_id):
         group_name = group['group_name']
         external_group_id = group['group_id']
         modifier_group_id = integration.entity_exists('modifier_group',external_group_id, business_id)
-        if not external_group_id:
+        if not modifier_group_id:
             # Create new modifier group
             modifier_group_id = restaurant_service.create_modifier_group(group_name, business_id)
             integration.create_entity('modifier_group', modifier_group_id, external_group_id, business_id, group_name)
