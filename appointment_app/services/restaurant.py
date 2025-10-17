@@ -13,7 +13,7 @@ class RestaurantService:
 
         self.get_db_cursor = get_db_cursor
 
-    def create_modifier(self, modifier_group_id: int, modifier_name: str, modifier_price: int) -> int:
+    def create_modifier(self, business_id,  modifier_group_id: int, modifier_name: str, modifier_price: int) -> int:
         """
         Create a new modifier and return its ID
 
@@ -28,9 +28,9 @@ class RestaurantService:
         with self.get_db_cursor(commit=True) as cursor:
             cursor.execute("""
                            INSERT INTO restaurant_modifier
-                               (modifier_group_id, name, price_delta, is_active, display_order)
-                           VALUES (%s, %s, %s, TRUE, 0)
-                           """, (modifier_group_id, modifier_name, modifier_price / 100))
+                               (business_id, modifier_group_id, name, price_delta, is_active, display_order)
+                           VALUES (%s, %s, %s, %s, TRUE, 0)
+                           """, (business_id, modifier_group_id, modifier_name, modifier_price / 100))
             return cursor.lastrowid
 
     def update_modifier(self, modifier_id: int, modifier_name: str, modifier_price: int) -> bool:

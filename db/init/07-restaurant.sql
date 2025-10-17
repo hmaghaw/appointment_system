@@ -103,6 +103,7 @@ CREATE TABLE restaurant_modifier_group (
 
 CREATE TABLE restaurant_modifier (
     modifier_id INT AUTO_INCREMENT PRIMARY KEY,
+    business_id INT NOT NULL,
     modifier_group_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,           -- e.g., Extra Cheese
     price_delta DECIMAL(10,2) DEFAULT 0,

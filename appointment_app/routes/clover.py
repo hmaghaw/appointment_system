@@ -400,6 +400,7 @@ def sync_modifier_group(modifiers, business_id):
                 # Create the modifier
                 if not modifier_id:
                     modifier_id = restaurant_service.create_modifier(
+                        business_id=business_id,
                         modifier_group_id=modifier_group_id,
                         modifier_name=modifier_name,
                         modifier_price=modifier_price

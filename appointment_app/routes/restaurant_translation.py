@@ -8,7 +8,7 @@ from appointment_app.services.ai_translate import AITranslate
 bp = Blueprint('restaurant_translations', __name__, url_prefix='/api/translate')
 
 
-def get_table_translation_values(business_id: int, table_name: str, field: str, table_pk: str = 'id', language='ar') -> dict:
+def save_fields_translations(business_id: int, table_name: str, field: str, table_pk: str = 'id', language='ar') -> dict:
     """
     Get translations for restaurant items based on the provided parameters.
 
@@ -47,6 +47,7 @@ def get_table_translation_values(business_id: int, table_name: str, field: str, 
                 "values": [{"id": row['id'], "value": row['value']} for row in results]
             }
             translated = translate(response, language)
+            save_translation(translated)
             return translated
 
     except mysql.connector.Error as e:
@@ -184,11 +185,31 @@ def get_restaurant_translations_endpoint():
     """
     data = request.get_json()
     business_id = data.get('business_id')
+    language = data.get('language')
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
-
-    translated = get_table_translation_values(business_id=business_id, table_name="restaurant_item_category", field="name", table_pk="item_category_id", language='ar')
-    save_translation(translated)
-    translated = get_table_translation_values(business_id=business_id, table_name="restaurant_item", field="name", table_pk="item_id", language='ar')
-    save_translation(translated)
+    save_fields_translations(business_id=business_id,
+                             table_name="restaurant_modifier",
+                             field="name",
+                             table_pk="modifier_id", language=language)
+    save_fields_translations(business_id=business_id,
+                             table_name="restaurant_modifier_group",
+                             field="name",
+                             table_pk="modifier_group_id", language=language)
+    save_fields_translations(business_id=business_id,
+                             table_name="restaurant_item_category",
+                             field="name",
+                             table_pk="item_category_id", language=language)
+    save_fields_translations(business_id=business_id,
+                             table_name="restaurant_item_category",
+                             field="description",
+                             table_pk="item_category_id", language=language)
+    save_fields_translations(business_id=business_id,
+                             table_name="restaurant_item",
+                             field="name",
+                             table_pk="item_id", language=language)
+    save_fields_translations(business_id=business_id,
+                             table_name="restaurant_item",
+                             field="description",
+                             table_pk="item_id", language=language)
     pass
