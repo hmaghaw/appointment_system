@@ -165,51 +165,75 @@ and I want you to generate an output like this:
 @bp.route('', methods=['POST'])
 def get_restaurant_translations_endpoint():
     """
-    Endpoint to get translations for restaurant items.
+    Endpoint to translate all restaurant content for a business.
 
     Request Body (JSON):
         {
-            "business_id": 97,
-            "table": "restaurant_item",
-            "field": "name",
-            "table_pk": "item_id"  // Optional, defaults to 'id'
+            "business_id": 97,       # Required: Business ID
+            "language": "ar"         # Optional: Language code (default: 'ar')
         }
 
     Returns:
-        JSON with the structure {
-            "business_id": int,
-            "table": str,
-            "field": str,
-            "values": [{"id": int, "value": str}, ...]
-        }
+        JSON with success/error status and translation details
     """
-    data = request.get_json()
-    business_id = data.get('business_id')
-    language = data.get('language')
-    if not data:
-        return jsonify({"error": "No JSON data provided"}), 400
-    save_fields_translations(business_id=business_id,
-                             table_name="restaurant_modifier",
-                             field="name",
-                             table_pk="modifier_id", language=language)
-    save_fields_translations(business_id=business_id,
-                             table_name="restaurant_modifier_group",
-                             field="name",
-                             table_pk="modifier_group_id", language=language)
-    save_fields_translations(business_id=business_id,
-                             table_name="restaurant_item_category",
-                             field="name",
-                             table_pk="item_category_id", language=language)
-    save_fields_translations(business_id=business_id,
-                             table_name="restaurant_item_category",
-                             field="description",
-                             table_pk="item_category_id", language=language)
-    save_fields_translations(business_id=business_id,
-                             table_name="restaurant_item",
-                             field="name",
-                             table_pk="item_id", language=language)
-    save_fields_translations(business_id=business_id,
-                             table_name="restaurant_item",
-                             field="description",
-                             table_pk="item_id", language=language)
-    pass
+    try:
+        data = request.get_json()
+        if not data or 'business_id' not in data:
+            return jsonify({
+                "status": "error",
+                "message": "business_id is required"
+            }), 400
+
+        business_id = data['business_id']
+        language = data.get('language', 'ar')
+
+        # List of tables and fields to translate
+        translation_tasks = [
+            {"table": "restaurant_modifier", "field": "name", "pk": "modifier_id"},
+            {"table": "restaurant_modifier_group", "field": "name", "pk": "modifier_group_id"},
+            {"table": "restaurant_item_category", "field": "name", "pk": "item_category_id"},
+            {"table": "restaurant_item_category", "field": "description", "pk": "item_category_id"},
+            {"table": "restaurant_item", "field": "name", "pk": "item_id"},
+            {"table": "restaurant_item", "field": "description", "pk": "item_id"}
+        ]
+
+        results = []
+        for task in translation_tasks:
+            try:
+                result = save_fields_translations(
+                    business_id=business_id,
+                    table_name=task['table'],
+                    field=task['field'],
+                    table_pk=task['pk'],
+                    language=language
+                )
+                results.append({
+                    "table": task['table'],
+                    "field": task['field'],
+                    "success": True,
+                    "items_processed": len(result.get('values', []))
+                })
+            except Exception as e:
+                results.append({
+                    "table": task['table'],
+                    "field": task['field'],
+                    "success": False,
+                    "error": str(e)
+                })
+
+        # Count successful operations
+        success_count = sum(1 for r in results if r.get('success'))
+        total_items = sum(r.get('items_processed', 0) for r in results if r.get('success'))
+
+        return jsonify({
+            "status": "success",
+            "message": f"Translation completed: {success_count}/{len(translation_tasks)} tasks successful",
+            "total_items_translated": total_items,
+            "details": results
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"An error occurred: {str(e)}"
+        }), 500
