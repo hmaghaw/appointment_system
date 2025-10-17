@@ -291,3 +291,16 @@ CREATE TABLE restaurant_clover_app (
     app_secret VARCHAR(100),
     clover_url VARCHAR(100)
 );
+
+CREATE TABLE restaurant_translation (
+  translation_id INT AUTO_INCREMENT PRIMARY KEY,
+  business_id int NOT NULL,
+  table_name VARCHAR(100) NOT NULL,
+  record_id INT NOT NULL,
+  field_name VARCHAR(100) NOT NULL,
+  language_code CHAR(5) NOT NULL,
+  value TEXT NOT NULL,
+  translation TEXT NOT NULL,
+  UNIQUE KEY uq_translation (table_name, record_id, field_name, language_code),
+  INDEX idx_table_record_lang (table_name, record_id, language_code)
+);

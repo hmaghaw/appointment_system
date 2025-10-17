@@ -41,6 +41,10 @@ API_BASE_URL=
 CLOVER_URL=
 CLOVER_APP_ID=
 CLOVER_APP_SECRET=
+
+OPENAI_MODEL=gpt-4o-mini
+DEFAULT_MAX_TOKENS=12800
+DEFAULT_TEMPERATURE=0.7
 """
 
 DEV_TEMPLATE = """ENVIRONMENT=development
@@ -83,6 +87,10 @@ API_BASE_URL=
 CLOVER_URL=
 CLOVER_APP_ID=
 CLOVER_APP_SECRET=
+
+OPENAI_MODEL=gpt-4o-mini
+DEFAULT_MAX_TOKENS=12800
+DEFAULT_TEMPERATURE=0.7
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """
@@ -175,7 +183,7 @@ if __name__ == "__main__":
     import sys
 
     # Default values
-    environment = "production"
+    environment = "dev"
     output_file = ".env"
 
     # # Check for command line arguments

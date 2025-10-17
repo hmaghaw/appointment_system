@@ -4,7 +4,6 @@ from appointment_app.config import Config
 import os
 
 
-
 def create_app(config_dict=None):
     """Create and configure the Flask application.
     
@@ -50,6 +49,8 @@ def create_app(config_dict=None):
     from appointment_app.routes.export import bp as export_bp
     from appointment_app.routes.prompt import prompt_bp
     from appointment_app.routes.restaurant_menu import bp as restaurant_menu_bp
+    from appointment_app.routes.restaurant_translation import bp as restaurant_translations_bp
+    
     # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -74,6 +75,8 @@ def create_app(config_dict=None):
     app.register_blueprint(export_bp)
     app.register_blueprint(prompt_bp)
     app.register_blueprint(restaurant_menu_bp)  # Restaurant menu endpoints
+    app.register_blueprint(restaurant_translations_bp)  # Restaurant translations endpoint
+    
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
     def health_check():

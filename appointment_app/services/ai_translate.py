@@ -3,7 +3,7 @@ from openai import OpenAI
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-
+import json
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -14,7 +14,7 @@ class AITranslate:
     Requires OPENAI_API_KEY in the environment.
     """
 
-    def __init__(self, model: str = "gpt-4o-mini"):
+    def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise EnvironmentError(
@@ -24,7 +24,12 @@ class AITranslate:
             )
 
         self.client = OpenAI(api_key=api_key)
-        self.model = model
+        self.model = os.getenv('OPENAI_MODEL', "gpt-4o-mini")
+        self.max_tokens = int(os.getenv('OPENAI_MAX_TOKENS', 12800))
+        self.temperature = float(os.getenv('OPENAI_TEMPERATURE', 0.7))
+        self.max_retries = int(os.getenv('OPENAI_MAX_RETRIES', 3))
+        self.timeout_seconds = int(os.getenv('OPENAI_TIMEOUT_SECONDS', 300))
+
 
     @staticmethod
     def _build_system_prompt(from_language: str, to_language: str, text: str) -> str:
@@ -62,6 +67,20 @@ class AITranslate:
         #     raise RuntimeError("No translation returned by the model.")
 
         return text
+
+    def translate_json(self, system_prompt, user_input):
+        resp = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_input},
+            ],
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            timeout=self.timeout_seconds # deterministic for translations
+        )
+        result = json.loads(resp.choices[0].message.content.replace("```json\n","").replace("```",""))
+        return result
 
 
 # # Example usage:
