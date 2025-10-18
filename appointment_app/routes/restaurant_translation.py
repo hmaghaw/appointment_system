@@ -237,3 +237,129 @@ def get_restaurant_translations_endpoint():
             "status": "error",
             "message": f"An error occurred: {str(e)}"
         }), 500
+
+
+@bp.route('/get_menu_by_language', methods=['POST'])
+def get_menu_by_language():
+    """
+    Get the complete menu for a restaurant with translations, grouped by category.
+
+    Request Body (JSON):
+        {
+            "business_id": 97,       # Required: Business ID
+            "language": "ar"         # Optional: Language code (default: 'ar')
+        }
+
+    Returns:
+        JSON response with translated menu items grouped by category
+    """
+    try:
+        data = request.get_json()
+        if not data or 'business_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'business_id is required'
+            }), 400
+
+        business_id = data['business_id']
+        language = data.get('language', 'ar')
+
+        with get_db_cursor(dictionary=True) as cursor:
+            # Get all active menu items with their categories
+            cursor.execute("""
+                           SELECT i.item_id,
+                                  i.name,
+                                  i.base_price,
+                                  i.description,
+                                  ic.item_category_id,
+                                  ic.name as category_name
+                           FROM restaurant_item i
+                                    LEFT JOIN restaurant_item_category_map icm ON i.item_id = icm.item_id
+                                    LEFT JOIN restaurant_item_category ic ON icm.item_category_id = ic.item_category_id
+                           WHERE i.business_id = %s
+                             AND i.is_active = 1
+                           ORDER BY ic.name, i.name
+                           """, (business_id,))
+            items = cursor.fetchall()
+
+            if not items:
+                return jsonify({
+                    'status': 'success',
+                    'menu': []
+                }), 200
+
+            # Get translations for all items and categories
+            cursor.execute("""
+                           SELECT table_name,
+                                  record_id,
+                                  field_name, translation
+                           FROM restaurant_translation
+                           WHERE business_id = %s
+                             AND language_code = %s
+                             AND table_name IN ('restaurant_item'
+                               , 'restaurant_item_category')
+                             AND field_name IN ('name'
+                               , 'description')
+                           """, (business_id, language))
+
+            translations = cursor.fetchall()
+            translation_map = {}
+            for trans in translations:
+                key = f"{trans['table_name']}_{trans['record_id']}_{trans['field_name']}"
+                translation_map[key] = trans['translation']
+
+            # Organize the data by category
+            categories = {}
+            for item in items:
+                # Get translations for item name and description
+                name_key = f"restaurant_item_{item['item_id']}_name"
+                desc_key = f"restaurant_item_{item['item_id']}_description"
+                category_name_key = f"restaurant_item_category_{item['item_category_id']}_name"
+
+                # Apply translations if available
+                translated_name = translation_map.get(name_key, item['name'])
+                translated_desc = translation_map.get(desc_key, item.get('description', ''))
+                translated_category = translation_map.get(category_name_key, item.get('category_name', 'Uncategorized'))
+
+                if translated_category not in categories:
+                    categories[translated_category] = []
+
+                # Add item to its category
+                categories[translated_category].append({
+                    'item_id': item['item_id'],
+                    'name': translated_name,
+                    'original_name': item['name'],
+                    'description': translated_desc,
+                    'original_description': item.get('description', ''),
+                    'base_price': float(item['base_price']) if item['base_price'] is not None else 0.00,
+                    'price': float(item['base_price']) if item['base_price'] is not None else 0.00
+                })
+
+            # Convert categories to the required format
+            menu = [{
+                'category': category_name,
+                'items': category_items
+            } for category_name, category_items in categories.items()]
+
+            return jsonify({
+                'status': 'success',
+                'language': language,
+                'categories': list(categories.keys()),
+                'menu': menu
+            }), 200
+
+    except mysql.connector.Error as err:
+        print(f"Database error in get_menu_by_language: {err}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Database error',
+            'error': str(err)
+        }), 500
+
+    except Exception as e:
+        print(f"Unexpected error in get_menu_by_language: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'error': str(e)
+        }), 500
