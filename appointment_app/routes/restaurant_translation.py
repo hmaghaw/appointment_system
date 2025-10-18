@@ -242,16 +242,7 @@ def get_restaurant_translations_endpoint():
 @bp.route('/get_menu_by_language', methods=['POST'])
 def get_menu_by_language():
     """
-    Get the complete menu for a restaurant with translations, grouped by category.
-
-    Request Body (JSON):
-        {
-            "business_id": 97,       # Required: Business ID
-            "language": "ar"         # Optional: Language code (default: 'ar')
-        }
-
-    Returns:
-        JSON response with translated menu items grouped by category
+    Get the complete menu for a restaurant with translations, including modifiers and options.
     """
     try:
         data = request.get_json()
@@ -288,7 +279,52 @@ def get_menu_by_language():
                     'menu': []
                 }), 200
 
-            # Get translations for all items and categories
+            # Get all item IDs for fetching options and modifiers
+            item_ids = [str(item['item_id']) for item in items]
+            item_ids_placeholders = ','.join(['%s'] * len(item_ids))
+
+            # Get all modifiers for the items
+            cursor.execute(f"""
+                SELECT 
+                    img.item_id,
+                    m.modifier_id,
+                    m.name as modifier_name,
+                    m.price_delta as modifier_price_delta,
+                    m.is_active,
+                    m.display_order,
+                    mg.modifier_group_id,
+                    mg.name as modifier_group_name,
+                    mg.is_required as modifier_required
+                FROM restaurant_item_modifier_group img
+                JOIN restaurant_modifier_group mg ON img.modifier_group_id = mg.modifier_group_id
+                JOIN restaurant_modifier m ON mg.modifier_group_id = m.modifier_group_id
+                WHERE img.item_id IN ({item_ids_placeholders}) 
+                AND m.is_active = 1
+                ORDER BY img.item_id, m.display_order, m.name
+            """, tuple(item_ids))
+            all_modifiers = cursor.fetchall()
+
+            # Get all options for the items
+            cursor.execute(f"""
+                SELECT 
+                    iog.item_id,
+                    o.option_id,
+                    o.name as option_name,
+                    o.price_delta as option_price_delta,
+                    o.is_default,
+                    o.display_order,
+                    og.option_group_id,
+                    og.name as option_group_name,
+                    og.is_required as option_required
+                FROM restaurant_item_option_group iog
+                JOIN restaurant_option_group og ON iog.option_group_id = og.option_group_id
+                JOIN restaurant_option o ON og.option_group_id = o.option_group_id
+                WHERE iog.item_id IN ({item_ids_placeholders})
+                ORDER BY iog.item_id, o.display_order, o.name
+            """, tuple(item_ids))
+            all_options = cursor.fetchall()
+
+            # Get translations for all items, categories, modifiers, and options
             cursor.execute("""
                            SELECT table_name,
                                   record_id,
@@ -296,13 +332,21 @@ def get_menu_by_language():
                            FROM restaurant_translation
                            WHERE business_id = %s
                              AND language_code = %s
-                             AND table_name IN ('restaurant_item'
-                               , 'restaurant_item_category')
+                             AND (
+                               (table_name = 'restaurant_item'
                              AND field_name IN ('name'
-                               , 'description')
+                               , 'description'))
+                              OR (table_name = 'restaurant_item_category'
+                             AND field_name = 'name')
+                              OR (table_name = 'restaurant_modifier'
+                             AND field_name = 'name')
+                              OR (table_name = 'restaurant_modifier_group'
+                             AND field_name = 'name')
+                               )
                            """, (business_id, language))
-
             translations = cursor.fetchall()
+
+            # Create a map for translations
             translation_map = {}
             for trans in translations:
                 key = f"{trans['table_name']}_{trans['record_id']}_{trans['field_name']}"
@@ -324,7 +368,57 @@ def get_menu_by_language():
                 if translated_category not in categories:
                     categories[translated_category] = []
 
-                # Add item to its category
+                # Get modifiers for this item with translations
+                item_modifiers = []
+                for mod in [m for m in all_modifiers if m['item_id'] == item['item_id']]:
+                    # Create translation keys
+                    mod_name_key = f"restaurant_modifier_{mod['modifier_id']}_name"
+                    mod_group_key = f"restaurant_modifier_group_{mod['modifier_group_id']}_name"
+
+                    # Get translations
+                    translated_mod_name = translation_map.get(mod_name_key, mod['modifier_name'])
+                    translated_group_name = translation_map.get(mod_group_key, mod['modifier_group_name'])
+
+                    item_modifiers.append({
+                        'modifier_id': mod['modifier_id'],
+                        'name': translated_mod_name,
+                        'original_name': mod['modifier_name'],
+                        'price_delta': float(mod['modifier_price_delta']) if mod[
+                                                                                 'modifier_price_delta'] is not None else 0.00,
+                        'is_active': bool(mod['is_active']),
+                        'display_order': mod['display_order'],
+                        'group_id': mod['modifier_group_id'],
+                        'group_name': translated_group_name,
+                        'original_group_name': mod['modifier_group_name'],
+                        'is_required': bool(mod['modifier_required'])
+                    })
+
+                # Get options for this item with translations
+                item_options = []
+                for opt in [o for o in all_options if o['item_id'] == item['item_id']]:
+                    # Create translation keys
+                    opt_name_key = f"restaurant_option_{opt['option_id']}_name"
+                    opt_group_key = f"restaurant_option_group_{opt['option_group_id']}_name"
+
+                    # Get translations
+                    translated_opt_name = translation_map.get(opt_name_key, opt['option_name'])
+                    translated_opt_group = translation_map.get(opt_group_key, opt['option_group_name'])
+
+                    item_options.append({
+                        'option_id': opt['option_id'],
+                        'name': translated_opt_name,
+                        'original_name': opt['option_name'],
+                        'price_delta': float(opt['option_price_delta']) if opt[
+                                                                               'option_price_delta'] is not None else 0.00,
+                        'is_default': bool(opt['is_default']),
+                        'display_order': opt['display_order'],
+                        'group_id': opt['option_group_id'],
+                        'group_name': translated_opt_group,
+                        'original_group_name': opt['option_group_name'],
+                        'is_required': bool(opt['option_required'])
+                    })
+
+                # Add item to its category with modifiers and options
                 categories[translated_category].append({
                     'item_id': item['item_id'],
                     'name': translated_name,
@@ -332,7 +426,9 @@ def get_menu_by_language():
                     'description': translated_desc,
                     'original_description': item.get('description', ''),
                     'base_price': float(item['base_price']) if item['base_price'] is not None else 0.00,
-                    'price': float(item['base_price']) if item['base_price'] is not None else 0.00
+                    'price': float(item['base_price']) if item['base_price'] is not None else 0.00,
+                    'modifiers': item_modifiers,
+                    'options': item_options
                 })
 
             # Convert categories to the required format
