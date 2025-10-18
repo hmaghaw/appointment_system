@@ -387,7 +387,7 @@ def get_menu_by_language():
                                                                                  'modifier_price_delta'] is not None else 0.00,
                         'is_active': bool(mod['is_active']),
                         'display_order': mod['display_order'],
-                        'group_id': mod['modifier_group_id'],
+                        'modifier_group_id': mod['modifier_group_id'],
                         'group_name': translated_group_name,
                         'original_group_name': mod['modifier_group_name'],
                         'is_required': bool(mod['modifier_required'])
@@ -412,7 +412,7 @@ def get_menu_by_language():
                                                                                'option_price_delta'] is not None else 0.00,
                         'is_default': bool(opt['is_default']),
                         'display_order': opt['display_order'],
-                        'group_id': opt['option_group_id'],
+                        'option_group_id': opt['option_group_id'],
                         'group_name': translated_opt_group,
                         'original_group_name': opt['option_group_name'],
                         'is_required': bool(opt['option_required'])

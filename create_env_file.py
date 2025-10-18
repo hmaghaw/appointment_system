@@ -183,7 +183,7 @@ if __name__ == "__main__":
     import sys
 
     # Default values
-    environment = "dev"
+    environment = "production"
     output_file = ".env"
 
     # # Check for command line arguments
