@@ -425,10 +425,11 @@ class CloverIntegration:
             "modifications":[],
             "options":[]
         }
-        if len(item['modifiers'])>0:
-            for modifier in item['modifiers']:
-                external_item_id = integration.get_external_id("modifier", modifier['modifier_id'])
-                payload["modifications"].append({"modifier": {"id": external_item_id}})
+        if 'modifiers' in item:
+            if len(item['modifiers'])>0:
+                for modifier in item['modifiers']:
+                    external_item_id = integration.get_external_id("modifier", modifier['modifier_id'])
+                    payload["modifications"].append({"modifier": {"id": external_item_id}})
 
         return payload
 
