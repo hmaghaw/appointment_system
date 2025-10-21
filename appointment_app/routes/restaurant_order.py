@@ -161,6 +161,9 @@ def create_order():
             }), 400
 
         order_data = data['order']
+
+        logger.info(f"Order data: {order_data}")
+
         business_id = order_data['business_id']
         business_integration = restaurant_service.get_business_integration(business_id)
         provider = business_integration['provider']
