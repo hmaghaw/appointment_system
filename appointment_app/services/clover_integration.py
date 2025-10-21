@@ -420,7 +420,7 @@ class CloverIntegration:
         external_item_id = integration.get_external_id("item", item['item_id'])
         payload = {
             "item": {"id": external_item_id},
-            "unitQty": item['quantity'],
+            "quantity": item['quantity'],
             "note": "Extra Spicy",
             "modifications":[],
             "options":[]

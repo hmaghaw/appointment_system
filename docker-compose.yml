@@ -1,24 +1,4 @@
 services:
-#  db:
-#    image: mysql:8.0
-#    container_name: appointment_db
-#    environment:
-#      MYSQL_ROOT_PASSWORD: password
-#      MYSQL_DATABASE: appointment_db
-#      MYSQL_USER: user
-#      MYSQL_PASSWORD: password
-#    ports:
-#      - "3306:3306"
-#    volumes:
-#      - ../db_data:/var/lib/mysql
-#      - ./db/init/:/docker-entrypoint-initdb.d/
-#    healthcheck:
-#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 10
-#    restart: unless-stopped
-
   api:
     build:
       context: .
@@ -38,7 +18,7 @@ services:
     command: >
       sh -c "python create_env_file.py production &&
                cd /app/appointment_app &&
-               gunicorn --bind 0.0.0.0:5000 --timeout 120 --workers 2 --threads 2 app:app"
+               gunicorn --bind 0.0.0.0:5000 --timeout 120 --workers 4 --threads 2 app:app"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
