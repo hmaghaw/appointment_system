@@ -632,8 +632,9 @@ class RestaurantService:
 
         # Add modifiers if any
         if 'modifiers' in item and isinstance(item['modifiers'], list):
-            for modifier in item['modifiers']:
-                restaurant_service.create_order_item_modifier(order_item_id, modifier)
+            if len(item['modifiers']) > 0:
+                for modifier in item['modifiers']:
+                    restaurant_service.create_order_item_modifier(order_item_id, modifier)
 
         return order_item_id
 
