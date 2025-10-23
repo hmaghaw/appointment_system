@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from appointment_app.database import get_db_cursor
 import os
 from ..services.entity_integration import EntityIntegrationManager
+from appointment_app.services.restaurant import restaurant_service
 #CLOVER_URL = os.getenv('CLOVER_URL')
 integration = EntityIntegrationManager(provider='clover')
 
@@ -212,10 +213,41 @@ class CloverIntegration:
         response = self._make_request('POST', url, json=payload)
         return response
 
-    def add_line_item(
-            self,
-            externals_order_id: str,
-            item) -> Dict[str, Any]:
+    def add_dummy_line_item(self):
+        url = f"{self.clover_base_url}/orders/4GE1B60CQE600/line_items"
+        payload = {
+            "item": {"id": "6HVP0VZ81J2GG"},
+            "modifications": [
+                {"modifier": {"id": "SJPW7Q786687W"}, "amount": 100, "quantitySold": 3},
+                {"modifier": {"id": "649HM9BH418EC"}, "amount": 100, "quantitySold": 1},
+                {"modifier": {"id": "H14KJJ8HYEZ4T"}, "amount": 100, "quantitySold": 4}
+            ],
+            "note": "Extra Spicy",
+            "unitQty": 2
+        }
+
+        resp = requests.post(url, json=payload, headers=self.headers)
+        print(resp.status_code, resp.text)
+
+        pass
+
+
+    def add_modifiers_to_line_item(self, order_id, line_item_id, modifiers):
+        # order_id
+        # line_item_id
+        # Modifier_id
+        # Modifier_qty
+        url = f"{self.clover_base_url}/orders/{order_id}/line_items/{line_item_id}/modifications"
+        for modifier in modifiers:
+            Modifier_id = modifier.get('id')
+            Modifier_qty = modifier.get('quantitySold')
+            payload = {
+                "modifier": modifier['modifier']
+            }
+            for i in range(modifier['quantitySold']):
+                response = requests.post(url=url, json=payload, headers=self.headers)
+
+    def add_line_item(self,business_id, order_id, externals_order_id: str, item) -> Dict[str, Any]:
         """
         Add a line item (with optional modifiers/options) to an existing order.
 
@@ -229,12 +261,17 @@ class CloverIntegration:
         Returns:
             dict: line item details
         """
-        url = f"/orders/{externals_order_id}/line_items"
+        payload, modifiers = self.prapare_line_item(item)
+        url = f"{self.clover_base_url}/orders/{externals_order_id}/line_items"
+        for i in range(payload['unitQty']):
+            response = requests.post(url=url, json=payload, headers=self.headers)
+            resp = response.json()
+            externals_order_line_item_id = resp['id']
+            order_line_item_id = restaurant_service.create_polydial_line_item(order_id, item)
+            integration.create_entity("order_line_item", order_line_item_id, externals_order_line_item_id, business_id)
 
-        payload = self.prapare_line_item(item)
-
-        response = self._make_request('POST', url, json=payload)
-        return response
+        # We Add the modifies to the last item
+        s = self.add_modifiers_to_line_item(externals_order_id, externals_order_line_item_id, modifiers)
 
 
     def create_order_with_items(
@@ -420,18 +457,17 @@ class CloverIntegration:
         external_item_id = integration.get_external_id("item", item['item_id'])
         payload = {
             "item": {"id": external_item_id},
-            "quantity": item['quantity'],
-            "note": "Extra Spicy",
-            "modifications":[],
-            "options":[]
+            "unitQty": item['quantity'],
+            "note": "Extra Spicy"
         }
+        modifications = []
         if 'modifiers' in item:
             if len(item['modifiers'])>0:
                 for modifier in item['modifiers']:
                     external_item_id = integration.get_external_id("modifier", modifier['modifier_id'])
-                    payload["modifications"].append({"modifier": {"id": external_item_id}})
+                    modifications.append({"modifier": {"id": external_item_id},"amount": 100, "quantitySold": modifier['quantity']})
 
-        return payload
+        return payload, modifications
 
 
 

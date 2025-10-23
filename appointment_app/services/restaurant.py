@@ -612,13 +612,14 @@ class RestaurantService:
         with get_db_cursor(commit=True) as cursor:
             cursor.execute("""
                            INSERT INTO restaurant_order_item_modifier
-                               (order_item_id, modifier_id, name, price_delta)
-                           VALUES (%s, %s, %s, %s)
+                               (order_item_id, modifier_id, name, price_delta, quantity)
+                           VALUES (%s, %s, %s, %s, %s)
                            """, (
                                order_item_id,
                                modifier.get('modifier_id'),
                                modifier.get('name', ''),
-                               modifier.get('price_delta', 0.0)
+                               modifier.get('price_delta', 0.0),
+                               modifier.get('quantity', 1)
                            ))
             return cursor.lastrowid
 

@@ -163,6 +163,7 @@ CREATE TABLE restaurant_order_item_modifier (
     modifier_id INT NOT NULL,
     name varchar(100),
     price_delta DECIMAL(10,2) NOT NULL,
+    quantity INT default 1,
     FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id),
     FOREIGN KEY (modifier_id) REFERENCES restaurant_modifier(modifier_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -253,16 +254,7 @@ CREATE TABLE restaurant_integration (
     integration_id INT AUTO_INCREMENT PRIMARY KEY,
 
     -- What type of entity is being mapped
-    entity_type ENUM(
-        'item',
-        'modifier',
-        'modifier_group',
-        'option',
-        'option_group',
-        'category',
-        'combo'
-    ) NOT NULL,
-
+    entity_type VARCHAR(50) ,
     -- Local entity reference (points to the corresponding table in your schema)
     entity_id INT NOT NULL,
     name VARCHAR(255) ,

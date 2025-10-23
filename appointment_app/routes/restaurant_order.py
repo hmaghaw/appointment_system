@@ -203,16 +203,18 @@ def create_order():
                     restaurant_service.update_order(order_id, total_price=total_price)
             elif provider == 'clover':
                 clover = CloverIntegration(order_data['business_id'])
+
+                #x = clover.add_dummy()
                 order_id = restaurant_service.create_order(order_data)
                 externals_order = clover.create_order()
                 externals_order_id=externals_order['id']
                 integration.create_entity("order", order_id, externals_order_id,business_id)
+
                 for item in order_data['items']:
-                    item_id = item['item_id']
-                    order_line_item_id = restaurant_service.create_polydial_line_item(order_id, item)
-                    externals_order_line_item = clover.add_line_item(externals_order_id=externals_order_id, item=item)
-                    externals_order_line_item_id = externals_order_line_item['id']
-                    integration.create_entity("order_line_item", order_line_item_id, externals_order_line_item_id, business_id)
+                    # order_line_item_id = restaurant_service.create_polydial_line_item(order_id, item)
+                    externals_order_line_item = clover.add_line_item(business_id=business_id,order_id=order_id, externals_order_id=externals_order_id, item=item)
+                    # externals_order_line_item_id = externals_order_line_item['id']
+                    # integration.create_entity("order_line_item", order_line_item_id, externals_order_line_item_id, business_id)
             elif provider == 'square':
                pass
 
@@ -223,6 +225,8 @@ def create_order():
 
             return jsonify({
                 'status': 'success',
+                'polydial_order_id': order_id,
+                'externals_order_id': externals_order_id,
                 'message': 'Order created successfully'
             }), 201
 
