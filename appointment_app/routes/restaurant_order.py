@@ -203,10 +203,10 @@ def create_order():
                     restaurant_service.update_order(order_id, total_price=total_price)
             elif provider == 'clover':
                 clover = CloverIntegration(order_data['business_id'])
-
+                order_total = clover.calculate_order_total(order_data)
                 #x = clover.add_dummy()
                 order_id = restaurant_service.create_order(order_data)
-                externals_order = clover.create_order()
+                externals_order = clover.create_order(order_total)
                 externals_order_id=externals_order['id']
                 integration.create_entity("order", order_id, externals_order_id,business_id)
 

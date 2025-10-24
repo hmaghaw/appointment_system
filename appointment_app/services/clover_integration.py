@@ -198,7 +198,37 @@ class CloverIntegration:
                 return self._make_request(method, endpoint, **kwargs)
             raise
 
-    def create_order(self, title: str = "Customer Order") -> Dict[str, Any]:
+    def calculate_order_total(self, order_data: dict) -> float:
+        """
+        Calculate the total for an order given your order_data structure.
+
+        Args:
+            order_data (dict): Contains 'items' list with each item having
+                               'base_price', 'quantity', and optional 'modifiers'.
+
+        Returns:
+            float: The total value of the order rounded to 2 decimals.
+        """
+        items = order_data.get("items", [])
+        total = 0.0
+
+        for item in items:
+            # Base item subtotal = base price * quantity
+            base_total = float(item.get("base_price", 0)) * float(item.get("quantity", 1))
+
+            # Add modifier prices (each modifier: price_delta * quantity)
+            modifier_total = sum(
+                float(mod.get("price_delta", 0)) * float(mod.get("quantity", 1))
+                for mod in item.get("modifiers", [])
+                if mod.get("is_active", True)
+            )
+
+            # Add up base and modifiers
+            total += base_total + modifier_total
+
+        return round(total, 2)
+
+    def create_order(self, order_total, title: str = "Customer Order") -> Dict[str, Any]:
         """
         Create a new order in Clover
 
@@ -208,8 +238,14 @@ class CloverIntegration:
         Returns:
             dict: The created order details
         """
+        order_total_cents = order_total * 100
         url = f"/orders"
-        payload = {"state": "open", "title": title}
+        payload = {"state": "open",
+                   "title": title,
+                   "manualTransaction": True,   # 👈 must be True for custom totals
+                    "total": order_total_cents,               # in cents
+                    "amount": order_total_cents               # in cents
+                   }
         response = self._make_request('POST', url, json=payload)
         return response
 
