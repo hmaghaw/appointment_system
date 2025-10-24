@@ -242,31 +242,12 @@ class CloverIntegration:
         url = f"/orders"
         payload = {"state": "open",
                    "title": title,
-                   "manualTransaction": True,   # 👈 must be True for custom totals
+                   "manualTransaction": False,   # 👈 must be True for custom totals
                     "total": order_total_cents,               # in cents
                     "amount": order_total_cents               # in cents
                    }
         response = self._make_request('POST', url, json=payload)
         return response
-
-    def add_dummy_line_item(self):
-        url = f"{self.clover_base_url}/orders/4GE1B60CQE600/line_items"
-        payload = {
-            "item": {"id": "6HVP0VZ81J2GG"},
-            "modifications": [
-                {"modifier": {"id": "SJPW7Q786687W"}, "amount": 100, "quantitySold": 3},
-                {"modifier": {"id": "649HM9BH418EC"}, "amount": 100, "quantitySold": 1},
-                {"modifier": {"id": "H14KJJ8HYEZ4T"}, "amount": 100, "quantitySold": 4}
-            ],
-            "note": "Extra Spicy",
-            "unitQty": 2
-        }
-
-        resp = requests.post(url, json=payload, headers=self.headers)
-        print(resp.status_code, resp.text)
-
-        pass
-
 
     def add_modifiers_to_line_item(self, order_id, line_item_id, modifiers):
         # order_id
@@ -491,10 +472,13 @@ class CloverIntegration:
 
     def prapare_line_item(self, item):
         external_item_id = integration.get_external_id("item", item['item_id'])
+        note = ""
+        if 'note' in item:
+            note = item['note']
         payload = {
             "item": {"id": external_item_id},
             "unitQty": item['quantity'],
-            "note": "Extra Spicy"
+            "note": note
         }
         modifications = []
         if 'modifiers' in item:

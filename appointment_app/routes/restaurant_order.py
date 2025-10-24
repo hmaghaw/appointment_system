@@ -211,10 +211,7 @@ def create_order():
                 integration.create_entity("order", order_id, externals_order_id,business_id)
 
                 for item in order_data['items']:
-                    # order_line_item_id = restaurant_service.create_polydial_line_item(order_id, item)
                     externals_order_line_item = clover.add_line_item(business_id=business_id,order_id=order_id, externals_order_id=externals_order_id, item=item)
-                    # externals_order_line_item_id = externals_order_line_item['id']
-                    # integration.create_entity("order_line_item", order_line_item_id, externals_order_line_item_id, business_id)
             elif provider == 'square':
                pass
 
