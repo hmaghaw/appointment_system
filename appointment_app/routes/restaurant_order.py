@@ -202,8 +202,10 @@ def create_order():
                     total_price = sum(item['price'] * item['quantity'] for item in order_data['items'])
                     restaurant_service.update_order(order_id, total_price=total_price)
             elif provider == 'clover':
+                tax = 0.09
                 clover = CloverIntegration(order_data['business_id'])
                 order_total = clover.calculate_order_total(order_data)
+                order_tax =  round(order_total * tax,2)
                 #x = clover.add_dummy()
                 order_id = restaurant_service.create_order(order_data)
                 externals_order = clover.create_order(order_total)
@@ -224,6 +226,9 @@ def create_order():
                 'status': 'success',
                 'polydial_order_id': order_id,
                 'externals_order_id': externals_order_id,
+                'order_total': order_total,
+                'order_data': order_data,
+                'order_tax': order_tax,
                 'message': 'Order created successfully'
             }), 201
 
