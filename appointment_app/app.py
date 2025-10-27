@@ -12,8 +12,9 @@ def create_app(config_dict=None):
         If None, uses default configuration from Config class.
     """
     app = Flask(__name__)
+    app.config['JSON_SORT_KEYS'] = False
     app.config.from_object(Config)
-    
+
     # Update config with provided dictionary if any
     if config_dict:
         app.config.update(config_dict)

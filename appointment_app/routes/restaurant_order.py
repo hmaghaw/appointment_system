@@ -227,7 +227,7 @@ def create_order():
                 'polydial_order_id': order_id,
                 'externals_order_id': externals_order_id,
                 'order_total': order_total,
-                'order_data': order_data,
+                'order': order_data,
                 'order_tax': order_tax,
                 'message': 'Order created successfully'
             }), 201

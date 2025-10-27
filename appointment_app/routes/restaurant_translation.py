@@ -380,17 +380,14 @@ def get_menu_by_language():
                     translated_group_name = translation_map.get(mod_group_key, mod['modifier_group_name'])
 
                     item_modifiers.append({
-                        'modifier_id': mod['modifier_id'],
                         'name': translated_mod_name,
                         'original_name': mod['modifier_name'],
-                        'price_delta': float(mod['modifier_price_delta']) if mod[
-                                                                                 'modifier_price_delta'] is not None else 0.00,
-                        'is_active': bool(mod['is_active']),
-                        'display_order': mod['display_order'],
-                        'modifier_group_id': mod['modifier_group_id'],
+                        'price_delta': float(mod['modifier_price_delta']) if mod['modifier_price_delta'] is not None else 0.00,
                         'group_name': translated_group_name,
                         'original_group_name': mod['modifier_group_name'],
-                        'is_required': bool(mod['modifier_required'])
+                        'is_required': bool(mod['modifier_required']),
+                        'modifier_id': mod['modifier_id'],
+                        'modifier_group_id': mod['modifier_group_id']
                     })
 
                 # Get options for this item with translations
@@ -420,13 +417,12 @@ def get_menu_by_language():
 
                 # Add item to its category with modifiers and options
                 categories[translated_category].append({
-                    'item_id': item['item_id'],
                     'name': translated_name,
                     'original_name': item['name'],
                     'description': translated_desc,
                     'original_description': item.get('description', ''),
                     'base_price': float(item['base_price']) if item['base_price'] is not None else 0.00,
-                    'price': float(item['base_price']) if item['base_price'] is not None else 0.00,
+                    'item_id': item['item_id'],
                     'modifiers': item_modifiers,
                     'options': item_options
                 })
@@ -437,11 +433,12 @@ def get_menu_by_language():
                 'items': category_items
             } for category_name, category_items in categories.items()]
 
+            menu_string=json.dumps(menu, sort_keys=False)
             return jsonify({
                 'status': 'success',
                 'language': language,
                 'categories': list(categories.keys()),
-                'menu': menu
+                'menu': menu_string
             }), 200
 
     except mysql.connector.Error as err:
