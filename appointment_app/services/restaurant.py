@@ -569,8 +569,8 @@ class RestaurantService:
                                order_id,
                                item['item_id'],
                                item['quantity'],
-                               item.get('base_price', item['price']),
-                               item['price'] * item['quantity']
+                               item.get('base_price'),
+                               item['base_price'] * item['quantity']
                            ))
             return cursor.lastrowid
 
