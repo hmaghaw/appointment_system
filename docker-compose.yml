@@ -29,8 +29,8 @@ services:
 
   restaurant_mcp:
     build:
-      context: .
-      dockerfile: mcp_server/Dockerfile
+      context: ./mcp_server
+      dockerfile: Dockerfile
     env_file:
       - .env
     container_name: restaurant_mcp
@@ -39,4 +39,6 @@ services:
     volumes:
       - ./mcp_server/mcp_server:/app/mcp_server
     command: [ "python", "mcp_server/mcp_ws_server.py" ]
+    depends_on:
+      - api
     restart: unless-stopped
