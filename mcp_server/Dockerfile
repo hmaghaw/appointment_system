@@ -5,7 +5,7 @@ WORKDIR /app
 # Install git (needed for MCP)
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./mcp_server /app/mcp_server
