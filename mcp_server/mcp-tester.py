@@ -3,7 +3,8 @@ import json
 import websockets
 
 async def try_mcp_server():
-    uri = "ws://localhost:7000/mcp"
+    #uri = "ws://localhost:7000/"
+    uri = "wss://mcp.polydial.com/"
     # Connect to your MCP WebSocket server
     async with websockets.connect(uri) as websocket:
         print(f"✅ Connected to MCP server at {uri}")
@@ -16,7 +17,7 @@ async def try_mcp_server():
                                                                  {'base_price': 10.25, 'item_id': 1129, 'modifiers': [],
                                                                   'name': 'Basbusa Masrawy', 'note': '', 'options': [],
                                                                   'price': 10.25, 'quantity': 1}]}
-        action = "create_order"
+        action = "update_customer"
         if action == "validate_order":
             payload = {
                 "type": "tool_call",
@@ -45,8 +46,8 @@ async def try_mcp_server():
                 "name": "update_customer",
                 "arguments": {
                     "customer_id": 33,
-                    "first_name": "Hani",
-                    "last_name": "Elmaghawri",
+                    "first_name": "Hany",
+                    "last_name": "El-Maghawry",
                     }
             }
 
