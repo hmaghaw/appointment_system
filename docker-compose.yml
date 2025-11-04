@@ -30,7 +30,7 @@ services:
   restaurant_mcp:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: mcp_server/Dockerfile
     env_file:
       - .env
     container_name: restaurant_mcp
