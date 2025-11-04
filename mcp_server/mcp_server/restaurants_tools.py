@@ -16,7 +16,10 @@ def log_execution_time(func):
 
 class RestaurantTools:
     def __init__(self):
-        self.base_url = os.getenv("API_BASE_URL", "http://localhost:5000")
+        if os.getenv("ENVIRONMENT") == "development":
+            self.base_url = os.getenv("API_BASE_URL", "http://localhost:5000")
+        else:
+            self.base_url = "http://api:5000"
         auth_token = utils.generate_jwt_token()
         self.headers = {"Content-Type": "application/json"}
         if auth_token:
