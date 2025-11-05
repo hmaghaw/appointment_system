@@ -206,5 +206,33 @@ def run_all_tests():
         sys.exit(1)
 
 
+def test_mcp_manifest():
+    """Test the MCP manifest endpoint"""
+    print("\n=== Testing MCP Manifest ===")
+    url = f"{BASE_URL}/.well-known/mcp.json"
+
+    try:
+        response = requests.get(url)
+        print(f"Status Code: {response.status_code}")
+        data = response.json()
+
+        # Basic validation of the response structure
+        assert response.status_code == 200, "Status code should be 200"
+        assert "name" in data, "Response should include 'name' field"
+        assert "version" in data, "Response should include 'version' field"
+        assert "endpoints" in data, "Response should include 'endpoints' field"
+
+        # Check if all expected endpoints are present
+        endpoint_names = {ep["name"] for ep in data["endpoints"]}
+        expected_endpoints = {"create_order", "validate_order", "update_customer", "health_check"}
+        assert endpoint_names.issuperset(expected_endpoints), "Missing expected endpoints"
+
+        print("Response contains valid MCP manifest")
+        return True
+
+    except Exception as e:
+        print(f"Error testing MCP manifest: {e}")
+        return False
+
 if __name__ == "__main__":
     run_all_tests()

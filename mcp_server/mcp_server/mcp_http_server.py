@@ -89,6 +89,148 @@ async def verify_api_key(x_api_key: str = Header(...)):
         )
     return x_api_key
 
+
+@app.get("/.well-known/mcp.json")
+def get_manifest():
+    """
+    Returns a manifest of all available API endpoints with their details.
+    This follows the MCP (Machine Communication Protocol) specification.
+    """
+    return {
+        "name": "RestaurantMCP",
+        "version": "1.0.0",
+        "description": "RESTful API for restaurant operations",
+        "endpoints": [
+            {
+                "name": "create_order",
+                "path": "/api/orders",
+                "method": "POST",
+                "description": "Create a new restaurant order",
+                "request_model": {
+                    "type": "object",
+                    "properties": {
+                        "language_code": {"type": "string"},
+                        "business_id": {"type": "integer"},
+                        "customer_id": {"type": "integer"},
+                        "business_phone": {"type": "string"},
+                        "customer_phone": {"type": "string"},
+                        "items": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/OrderItem"}
+                        }
+                    },
+                    "required": ["language_code", "business_id", "customer_id", "business_phone", "customer_phone", "items"]
+                },
+                "response_model": {
+                    "type": "object",
+                    "properties": {
+                        "success": {"type": "boolean"},
+                        "message": {"type": "string"},
+                        "order_id": {"type": "string"},
+                        "total": {"type": "number"}
+                    }
+                }
+            },
+            {
+                "name": "validate_order",
+                "path": "/api/orders/validate",
+                "method": "POST",
+                "description": "Validate an order and return calculated totals",
+                "request_model": {
+                    "$ref": "#/definitions/OrderRequest"
+                },
+                "response_model": {
+                    "type": "object",
+                    "properties": {
+                        "response": {"type": "string"}
+                    }
+                }
+            },
+            {
+                "name": "update_customer",
+                "path": "/api/customers",
+                "method": "PUT",
+                "description": "Update customer information and/or preferred language",
+                "request_model": {
+                    "type": "object",
+                    "properties": {
+                        "customer_id": {"type": "integer"},
+                        "first_name": {"type": "string", "nullable": True},
+                        "last_name": {"type": "string", "nullable": True},
+                        "language": {"type": "string", "nullable": True}
+                    },
+                    "required": ["customer_id"]
+                },
+                "response_model": {
+                    "type": "object",
+                    "properties": {
+                        "success": {"type": "boolean"},
+                        "message": {"type": "string"}
+                    }
+                }
+            },
+            {
+                "name": "health_check",
+                "path": "/health",
+                "method": "GET",
+                "description": "Health check endpoint",
+                "response_model": {
+                    "type": "object",
+                    "properties": {
+                        "status": {"type": "string"},
+                        "version": {"type": "string"}
+                    }
+                }
+            }
+        ],
+        "definitions": {
+            "OrderRequest": {
+                "type": "object",
+                "properties": {
+                    "language_code": {"type": "string"},
+                    "business_id": {"type": "integer"},
+                    "customer_id": {"type": "integer"},
+                    "business_phone": {"type": "string"},
+                    "customer_phone": {"type": "string"},
+                    "items": {
+                        "type": "array",
+                        "items": {"$ref": "#/definitions/OrderItem"}
+                    }
+                },
+                "required": ["language_code", "business_id", "customer_id", "business_phone", "customer_phone", "items"]
+            },
+            "OrderItem": {
+                "type": "object",
+                "properties": {
+                    "base_price": {"type": "number"},
+                    "item_id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "note": {"type": "string"},
+                    "options": {"type": "array", "items": {}},
+                    "modifiers": {
+                        "type": "array",
+                        "items": {"$ref": "#/definitions/Modifier"}
+                    },
+                    "price": {"type": "number"},
+                    "quantity": {"type": "integer"}
+                },
+                "required": ["base_price", "item_id", "name", "options", "modifiers", "price", "quantity"]
+            },
+            "Modifier": {
+                "type": "object",
+                "properties": {
+                    "is_active": {"type": "boolean"},
+                    "modifier_group_id": {"type": "integer"},
+                    "modifier_id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "price_delta": {"type": "number"},
+                    "quantity": {"type": "integer"}
+                },
+                "required": ["is_active", "modifier_group_id", "modifier_id", "name", "price_delta", "quantity"]
+            }
+        }
+    }
+
 # API Endpoints
 @app.post("/api/orders", response_model=OrderResponse, tags=["Orders"])
 async def create_order(order: OrderRequest):
