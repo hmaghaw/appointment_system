@@ -4,6 +4,8 @@ import time
 import requests
 from functools import wraps
 import utils
+from dotenv import load_dotenv
+from pathlib import Path
 def log_execution_time(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -16,6 +18,11 @@ def log_execution_time(func):
 
 class RestaurantTools:
     def __init__(self):
+        if not os.getenv("ENVIRONMENT"):
+            env_path = Path(__file__).resolve().parents[2] / ".env"
+            if env_path.exists():
+                load_dotenv(env_path)
+
         if os.getenv("ENVIRONMENT") == "development":
             self.base_url = os.getenv("API_BASE_URL", "http://localhost:5000")
         else:
@@ -24,62 +31,6 @@ class RestaurantTools:
         self.headers = {"Content-Type": "application/json"}
         if auth_token:
             self.headers["Authorization"] = f"Bearer {auth_token}"
-
-    def generate_jwt_token(validity=8640):
-        """
-        Generate JWT token for API authentication with time synchronization handling.
-
-        Args:
-            validity: Token validity in seconds (default: 24 hours)
-
-        Returns:
-            str: JWT token string
-
-        Raises:
-            ValueError: If JWT_SECRET_KEY is not set
-            Exception: For any other error during token generation
-        """
-        try:
-            SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-            if not SECRET_KEY:
-                raise ValueError("JWT_SECRET_KEY is not set in environment variables")
-
-            # Get current time with a small buffer (60 seconds) to account for clock skew
-            current_time = int(time.time())
-            iat = current_time - 60  # Subtract 60 seconds to handle minor clock differences
-
-            payload = {
-                'user_id': 999,
-                'email': "hanyelgaml@ideationmax.com",
-                'business_id': 999,
-                'role': "admin",
-                'exp': current_time + validity,
-                'iat': iat,
-                'nbf': iat  # Not Before - token is valid from this time
-            }
-
-            token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
-            logger.debug("Successfully generated JWT token")
-
-            # Verify the token can be decoded (sanity check)
-            try:
-                decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'], options={"verify_exp": False})
-                logger.debug(f"Token generated successfully. Expires at: {datetime.fromtimestamp(decoded['exp'])}")
-            except Exception as e:
-                logger.error(f"Generated token failed validation: {e}")
-                raise Exception(f"Failed to validate generated token: {e}")
-
-            return token
-
-        except jwt.PyJWTError as e:
-            error_msg = f"JWT token generation failed: {str(e)}"
-            logger.error(error_msg)
-            raise Exception(error_msg)
-        except Exception as e:
-            error_msg = f"Unexpected error generating JWT token: {str(e)}"
-            logger.error(error_msg)
-            raise Exception(error_msg)
-
 
     def update_customer_language(self, customer_id,language):
         """
