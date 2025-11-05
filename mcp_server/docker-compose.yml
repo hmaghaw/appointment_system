@@ -10,5 +10,5 @@ services:
       - "7000:7000"
     volumes:
       - ./mcp_server:/app/mcp_server
-    command: [ "python", "mcp_server/mcp_ws_server.py" ]
+    command: [ "python", "mcp_server/mcp_http_server.py" ]
     restart: unless-stopped
