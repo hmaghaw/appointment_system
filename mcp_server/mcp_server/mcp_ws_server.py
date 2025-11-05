@@ -5,6 +5,37 @@ import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from mcp.server.fastmcp import FastMCP
 from restaurants_tools import RestaurantTools
+from pydantic import BaseModel
+from typing import List, Optional
+# ---------- Pydantic Models ----------
+
+class Modifier(BaseModel):
+    is_active: bool
+    modifier_group_id: int
+    modifier_id: int
+    name: str
+    price_delta: float
+    quantity: int
+
+class Item(BaseModel):
+    base_price: float
+    item_id: int
+    name: str
+    note: Optional[str] = ""
+    options: List[dict]
+    modifiers: List[Modifier]
+    price: float
+    quantity: int
+
+class Order(BaseModel):
+    language_code: str
+    business_id: int
+    customer_id: int
+    business_phone: str
+    customer_phone: str
+    items: List[Item]
+
+
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -29,12 +60,12 @@ def update_customer_language(customer_id, language: str):
     return restaurant_tools.update_customer_language(customer_id, language)
 
 @mcp.tool()
-def create_order(order: dict):
+def create_order(order: Order):
     """Create a restaurant order."""
     return restaurant_tools.create_order(order)
 
 @mcp.tool()
-def validate_order(order: dict):
+def validate_order(order: Order):
     """Validate order items and calculate totals."""
     # This is a simplified version - you might want to implement more robust validation
     if not isinstance(order, dict) or 'items' not in order:
