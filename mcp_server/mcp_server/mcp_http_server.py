@@ -100,6 +100,16 @@ def get_manifest():
         "name": "RestaurantMCP",
         "version": "1.0.0",
         "description": "RESTful API for restaurant operations",
+        "transport": {
+            "type": "SSE",  # or "WebSocket" / "STREAMABLE_HTTP" depending on what your server actually uses
+            "url": "https://mcp.polydial.com/"
+        },
+        "server": {
+            "language": "python",
+            "framework": "fastapi",
+            "library": "mcp",
+            "runtime": "uvicorn"
+        },
         "endpoints": [
             {
                 "name": "create_order",
