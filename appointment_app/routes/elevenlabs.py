@@ -1,13 +1,14 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
 import logging
+# Add this import at the top with other imports
+from appointment_app.services.elevenlabs_tools import restuarant_tools
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create a Blueprint for ElevenLabs routes
-bp = Blueprint('elevenlabs', __name__, url_prefix='/webhook')
+bp = Blueprint('elevenlabs', __name__, url_prefix='/elevenlabs/tools/')
 
 @bp.route('/call_init', methods=['POST'])
 def handle_call_init():
@@ -68,3 +69,66 @@ def handle_call_init():
             'status': 'error',
             'message': f'Failed to process webhook: {str(e)}'
         }), 500
+
+
+
+# Add these new routes before the end of the file
+@bp.route('/update_customer_language', methods=['POST'])
+def update_language():
+    try:
+        data = request.get_json()
+        language = data.get('language')
+        if not language:
+            return jsonify({"error": "Language parameter is required"}), 400
+
+        result = restuarant_tools.update_customer_language(language=language)
+        return jsonify({"status": "success", "message": result})
+    except Exception as e:
+        logger.error(f"Error in update_language: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/update_customer', methods=['POST'])
+def update_customer():
+    try:
+        data = request.get_json()
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+
+        if not all([first_name, last_name]):
+            return jsonify({"error": "Both first_name and last_name are required"}), 400
+
+        result = restuarant_tools.update_customer(first_name=first_name, last_name=last_name)
+        return jsonify({"status": "success", "message": result})
+    except Exception as e:
+        logger.error(f"Error in update_customer: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/create_order', methods=['POST'])
+def create_order():
+    try:
+        data = request.get_json()
+        order = data.get('order')
+
+        if not order:
+            return jsonify({"error": "Order data is required"}), 400
+
+        result = restuarant_tools.create_order(order=order)
+        return jsonify({"status": "success", "message": result})
+    except Exception as e:
+        logger.error(f"Error in create_order: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/validate_order', methods=['POST'])
+def validate_order():
+    try:
+        data = request.get_json()
+        order = data.get('order')
+
+        if not order:
+            return jsonify({"error": "Order data is required"}), 400
+
+        result = restuarant_tools.validate_order(order=order)
+        return jsonify({"status": "success", "result": result})
+    except Exception as e:
+        logger.error(f"Error in validate_order: {str(e)}")
+        return jsonify({"error": str(e)}), 500

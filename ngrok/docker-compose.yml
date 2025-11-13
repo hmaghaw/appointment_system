@@ -4,7 +4,7 @@ services:
   ngrok:
     image: ngrok/ngrok
     #command: http app:8000 --log=stdout  # Connect directly to app service
-    command: http 192.168.1.2:5000 --log=stdout  # Connect directly to app service
+    command: http 192.168.1.10:5000 --log=stdout  # Connect directly to app service
     #command: http 192.168.100.155:8000 --log=stdout  # Connect directly to app service
     env_file:
       - ../.env
