@@ -5,8 +5,11 @@ from datetime import datetime
 import jwt
 import pytz
 from zoneinfo import ZoneInfo  # Python 3.9+
-
+from dotenv import load_dotenv
+from pathlib import Path
 logger = logging.getLogger(__name__)
+env_path = Path(__file__).parent.parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 def generate_jwt_token(validity=8640):
     """

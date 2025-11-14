@@ -3,8 +3,11 @@ import os
 from pathlib import Path
 import requests
 from dotenv import load_dotenv
-
+import logging
+import time
 from appointment_app.services.utils import generate_jwt_token
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables from the root .env file
 env_path = Path(__file__).parent.parent / '.env'
@@ -192,5 +195,100 @@ class RestaurantTools:
             from_=business_phone,  # Your Twilio phone number
             to=customer_phone  # The recipient's phone number
         )
+
+    def upsert_customer(self, customer_phone: str, business_phone: str):
+        """Create or update a customer record."""
+        url = f"{self.base_url}/api/customers/upsert"
+        payload = {
+            "customer_phone": customer_phone,
+            "business_phone": business_phone
+        }
+        response = requests.post(url, json=payload, headers=self.headers)
+        return response.json()
+
+    def get_business_by_phone(self, business_phone: str) :
+        """Get business details by phone number."""
+        url = f"{self.base_url}/api/business/by-phone"
+        payload = {"business_phone": business_phone}
+
+        # Add request timeout and retry logic
+        max_retries = 3
+        timeout_seconds = 10  # Increased timeout
+
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Attempt {attempt + 1}/{max_retries} - Fetching business details for {business_phone}")
+
+                # Add debug logging for headers (without sensitive info)
+                safe_headers = {k: v for k, v in self.headers.items() if k.lower() != 'authorization'}
+                logger.debug(f"Request headers: {safe_headers}")
+                logger.debug(f"Request payload: {payload}")
+
+                # Make the request with timeout
+                response = requests.post(
+                    url,
+                    json=payload,
+                    headers=self.headers,
+                    timeout=timeout_seconds
+                )
+
+                # Log response status and headers
+                logger.debug(f"Response status: {response.status_code}")
+                logger.debug(f"Response headers: {dict(response.headers)}")
+
+                response.raise_for_status()
+                return response.json()
+
+            except requests.exceptions.Timeout:
+                logger.warning(
+                    f"Request timed out after {timeout_seconds} seconds (attempt {attempt + 1}/{max_retries})")
+                if attempt == max_retries - 1:  # Last attempt
+                    raise Exception("Request timed out after multiple retries. Please check your network connection.")
+
+            except requests.exceptions.HTTPError as http_err:
+                error_msg = f"HTTP error: {http_err}"
+                if hasattr(http_err, 'response') and http_err.response is not None:
+                    error_msg += f"\nResponse: {http_err.response.text}"
+                    error_msg += f"\nStatus Code: {http_err.response.status_code}"
+                    logger.error(error_msg)
+
+                    if http_err.response.status_code == 401:
+                        # Log more details about the auth issue
+                        logger.error("Authentication failed. Please verify:")
+                        logger.error("1. JWT_SECRET_KEY in .env is correct")
+                        logger.error("2. The token is being properly included in the Authorization header")
+                        logger.error(f"3. The API endpoint is correct: {url}")
+
+                        # Print the actual token for debugging (be careful with this in production)
+                        auth_header = self.headers.get('Authorization', '')
+                        if auth_header.startswith('Bearer '):
+                            logger.debug(f"JWT Token: {auth_header[7:]}")
+
+                        raise Exception(
+                            "Authentication failed. Please check your API credentials and ensure the JWT token is valid.")
+
+                    # For other HTTP errors, include the status code in the error message
+                    raise Exception(f"HTTP error {http_err.response.status_code}: {http_err}")
+
+                raise Exception(f"Failed to get business details: {http_err}")
+
+            except requests.exceptions.RequestException as req_err:
+                logger.error(f"Request failed: {req_err}")
+                if attempt == max_retries - 1:  # Last attempt
+                    raise Exception(f"Failed to connect to the server: {req_err}")
+
+            except Exception as e:
+                logger.error(f"Unexpected error: {str(e)}")
+                if attempt == max_retries - 1:  # Last attempt
+                    raise Exception(f"An unexpected error occurred: {str(e)}")
+
+            # Wait before retrying (exponential backoff)
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s, etc.
+                logger.info(f"Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+
+        # This should theoretically never be reached due to the raises above
+        raise Exception("Failed to get business details after multiple attempts")
 
 restuarant_tools = RestaurantTools()

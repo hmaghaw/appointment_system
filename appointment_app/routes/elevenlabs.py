@@ -26,26 +26,50 @@ def handle_call_init():
         "timestamp": "2025-11-02T18:10:44.321Z"
     }
     """
+
+
     try:
         # Get JSON data from request
+        language = "en"
         data = request.get_json()
-        
-        # Log the received data
-        logger.info(f"Received call init webhook: {data}")
-        
         # Validate required fields
         required_fields = [
-            'type', 'caller_number', 'called_number', 
-            'call_sid', 'agent_id', 'direction', 
-            'integration', 'timestamp'
+            'caller_id', 'called_number',
         ]
-        
+
         for field in required_fields:
             if field not in data:
                 return jsonify({
                     'status': 'error',
                     'message': f'Missing required field: {field}'
                 }), 400
+
+
+        customer_phone = data.get('caller_id')
+        business_phone = data.get('called_number')
+        call_sid = data.get('call_sid')
+
+        customer_data = restuarant_tools.upsert_customer(
+            customer_phone=customer_phone,
+            business_phone=business_phone
+        )
+        customer_id = customer_data.get('customer_id')
+        customer_language = customer_data.get('language')
+        first_name = customer_data.get('first_name')
+        last_name = customer_data.get('last_name')
+
+        business_data = restuarant_tools.get_business_by_phone(business_phone=business_phone)
+        business_id = business_data.get('business_id')
+        business_name = business_data.get('name')
+        business_language = business_data.get('language_code')
+
+        if customer_language:
+            language = customer_language
+
+        # Log the received data
+        logger.info(f"Received call init webhook: {data}")
+        
+
         
         # Process the call initialization data
         # TODO: Add your custom logic here to handle the call initiation
@@ -53,14 +77,29 @@ def handle_call_init():
         # or trigger some other action in your application
         
         # Log the processed data
-        logger.info(f"Processed call from {data['caller_number']} to {data['called_number']} "
-                   f"with agent {data['agent_id']}")
+        logger.info(f"Processed call from {customer_phone} to {business_phone} ")
         
         # Return success response
         return jsonify({
             'status': 'success',
             'message': 'Call initiation received successfully',
-            'data': data
+            'customer': {
+                'customer_id': customer_id,
+                'first_name': first_name,
+                'last_name': last_name,
+                'language': customer_language,
+                'phone': customer_phone
+            },
+            'business': {
+                'business_id': business_id,
+                'name': business_name,
+                'language': business_language,
+                'phone': business_phone
+            },
+            'call': {
+                'call_sid': call_sid,
+                'preferred_language': language
+            }
         }), 200
         
     except Exception as e:
