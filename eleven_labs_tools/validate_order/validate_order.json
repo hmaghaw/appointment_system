@@ -24,17 +24,6 @@
           "description": "Order object",
           "properties": [
             {
-              "id": "total",
-              "type": "number",
-              "value_type": "llm_prompt",
-              "description": "Total order amount",
-              "dynamic_variable": "",
-              "constant_value": "",
-              "enum": null,
-              "is_system_provided": false,
-              "required": true
-            },
-            {
               "id": "customer_phone",
               "type": "number",
               "value_type": "dynamic_variable",
