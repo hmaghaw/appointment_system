@@ -65,7 +65,8 @@ def handle_call_init():
 
         if customer_language:
             language = customer_language
-
+        else:
+            language = business_language
         # Log the received data
         logger.info(f"Received call init webhook: {data}")
         
@@ -92,13 +93,13 @@ def handle_call_init():
             },
             'business': {
                 'business_id': business_id,
-                'name': business_name,
+                'business_name': business_name,
                 'language': business_language,
                 'phone': business_phone
             },
             'call': {
                 'call_sid': call_sid,
-                'preferred_language': language
+                'prefered_language': language
             }
         }), 200
         
