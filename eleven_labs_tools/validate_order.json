@@ -1,0 +1,287 @@
+{
+  "type": "webhook",
+  "name": "validate_order",
+  "description": "validate the order's items and modifiers and find the total of the order",
+  "disable_interruptions": true,
+  "force_pre_tool_speech": "auto",
+  "assignments": [],
+  "tool_call_sound": null,
+  "tool_call_sound_behavior": "auto",
+  "execution_mode": "immediate",
+  "api_schema": {
+    "url": "https://a90e100653fd.ngrok-free.app/elevenlabs/tools/validate_order",
+    "method": "POST",
+    "path_params_schema": [],
+    "query_params_schema": [],
+    "request_body_schema": {
+      "id": "body",
+      "type": "object",
+      "description": "Contains order details including items, modifiers, options, and total.",
+      "properties": [
+        {
+          "id": "order",
+          "type": "object",
+          "description": "Order object",
+          "properties": [
+            {
+              "id": "items",
+              "type": "array",
+              "description": "Array of ordered items",
+              "items": {
+                "id": "",
+                "type": "object",
+                "description": "Single item in the order",
+                "properties": [
+                  {
+                    "id": "quantity",
+                    "type": "integer",
+                    "value_type": "llm_prompt",
+                    "description": "Quantity ordered",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": true
+                  },
+                  {
+                    "id": "base_price",
+                    "type": "number",
+                    "value_type": "llm_prompt",
+                    "description": "Base price of item",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": true
+                  },
+                  {
+                    "id": "item_id",
+                    "type": "integer",
+                    "value_type": "llm_prompt",
+                    "description": "Item ID",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": true
+                  },
+                  {
+                    "id": "price",
+                    "type": "number",
+                    "value_type": "llm_prompt",
+                    "description": "Final price for this item",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": true
+                  },
+                  {
+                    "id": "modifiers",
+                    "type": "array",
+                    "description": "Item modifiers list",
+                    "items": {
+                      "id": "",
+                      "type": "object",
+                      "description": "Modifier object",
+                      "properties": [
+                        {
+                          "id": "is_active",
+                          "type": "boolean",
+                          "value_type": "llm_prompt",
+                          "description": "Whether modifier is active",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": false
+                        },
+                        {
+                          "id": "price_delta",
+                          "type": "number",
+                          "value_type": "llm_prompt",
+                          "description": "Price adjustment for modifier",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": false
+                        },
+                        {
+                          "id": "modifier_id",
+                          "type": "integer",
+                          "value_type": "llm_prompt",
+                          "description": "Modifier ID",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": true
+                        },
+                        {
+                          "id": "modifier_group_id",
+                          "type": "integer",
+                          "value_type": "llm_prompt",
+                          "description": "Modifier group ID",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": true
+                        },
+                        {
+                          "id": "name",
+                          "type": "string",
+                          "value_type": "llm_prompt",
+                          "description": "Modifier name",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": true
+                        }
+                      ],
+                      "required": false,
+                      "value_type": "llm_prompt"
+                    },
+                    "required": false,
+                    "value_type": "llm_prompt"
+                  },
+                  {
+                    "id": "options",
+                    "type": "array",
+                    "description": "Item options list",
+                    "items": {
+                      "id": "",
+                      "type": "object",
+                      "description": "Option object",
+                      "properties": [
+                        {
+                          "id": "option_group_id",
+                          "type": "integer",
+                          "value_type": "llm_prompt",
+                          "description": "Option group ID",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": true
+                        },
+                        {
+                          "id": "name",
+                          "type": "string",
+                          "value_type": "llm_prompt",
+                          "description": "Option name",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": true
+                        },
+                        {
+                          "id": "option_id",
+                          "type": "integer",
+                          "value_type": "llm_prompt",
+                          "description": "Option ID",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": true
+                        },
+                        {
+                          "id": "price_delta",
+                          "type": "number",
+                          "value_type": "llm_prompt",
+                          "description": "Price adjustment for this option",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": false
+                        },
+                        {
+                          "id": "display_order",
+                          "type": "integer",
+                          "value_type": "llm_prompt",
+                          "description": "Display order",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": false
+                        },
+                        {
+                          "id": "is_default",
+                          "type": "boolean",
+                          "value_type": "llm_prompt",
+                          "description": "Whether this option is default",
+                          "dynamic_variable": "",
+                          "constant_value": "",
+                          "enum": null,
+                          "is_system_provided": false,
+                          "required": false
+                        }
+                      ],
+                      "required": false,
+                      "value_type": "llm_prompt"
+                    },
+                    "required": false,
+                    "value_type": "llm_prompt"
+                  },
+                  {
+                    "id": "name",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "Item name",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": true
+                  }
+                ],
+                "required": false,
+                "value_type": "llm_prompt"
+              },
+              "required": true,
+              "value_type": "llm_prompt"
+            },
+            {
+              "id": "customer_phone",
+              "type": "number",
+              "value_type": "dynamic_variable",
+              "description": "",
+              "dynamic_variable": "system__caller_id",
+              "constant_value": "",
+              "enum": null,
+              "is_system_provided": false,
+              "required": true
+            },
+            {
+              "id": "business_phone",
+              "type": "number",
+              "value_type": "dynamic_variable",
+              "description": "",
+              "dynamic_variable": "system__called_number",
+              "constant_value": "",
+              "enum": null,
+              "is_system_provided": false,
+              "required": true
+            }
+          ],
+          "required": true,
+          "value_type": "llm_prompt"
+        }
+      ],
+      "required": false,
+      "value_type": "llm_prompt"
+    },
+    "request_headers": [],
+    "auth_connection": null
+  },
+  "response_timeout_secs": 20,
+  "dynamic_variables": {
+    "dynamic_variable_placeholders": {}
+  }
+}

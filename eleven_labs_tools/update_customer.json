@@ -1,0 +1,54 @@
+{
+  "type": "webhook",
+  "name": "update_customer",
+  "description": "Update or store the customer's name after it is provided.",
+  "disable_interruptions": true,
+  "force_pre_tool_speech": "auto",
+  "assignments": [],
+  "tool_call_sound": "typing",
+  "tool_call_sound_behavior": "auto",
+  "execution_mode": "immediate",
+  "api_schema": {
+    "url": "https://a90e100653fd.ngrok-free.app/elevenlabs/tools/update_customer",
+    "method": "POST",
+    "path_params_schema": [],
+    "query_params_schema": [],
+    "request_body_schema": {
+      "id": "body",
+      "type": "object",
+      "description": "Customer name update payload.",
+      "properties": [
+        {
+          "id": "first_name",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Customer's first name.",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "is_system_provided": false,
+          "required": true
+        },
+        {
+          "id": "last_name",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Customer's last name.",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "is_system_provided": false,
+          "required": true
+        }
+      ],
+      "required": false,
+      "value_type": "llm_prompt"
+    },
+    "request_headers": [],
+    "auth_connection": null
+  },
+  "response_timeout_secs": 20,
+  "dynamic_variables": {
+    "dynamic_variable_placeholders": {}
+  }
+}
