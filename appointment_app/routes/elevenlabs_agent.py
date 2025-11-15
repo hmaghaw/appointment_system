@@ -4,7 +4,9 @@ import os
 from dotenv import load_dotenv
 from elevenlabs import ElevenLabs
 from elevenlabs.conversational_ai.conversation import Conversation, ClientTools
-
+import json
+from pathlib import Path
+from appointment_app.services.prompt_restaurant import RestaurantPrompt
 load_dotenv()
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
@@ -65,32 +67,46 @@ def create_agent():
     try:
         data = request.get_json()
 
-        # Validate required fields
-        required_fields = ['name', 'prompt', 'voice_id', 'model_id']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Missing required field: {field}'
-                }), 400
+        # # Validate required fields
+        # required_fields = ['name', 'prompt', 'voice_id', 'model_id']
+        # for field in required_fields:
+        #     if field not in data:
+        #         return jsonify({
+        #             'status': 'error',
+        #             'message': f'Missing required field: {field}'
+        #         }), 400
 
         # Create agent using the ElevenLabs client
-        agent = client.conversational_ai.agents.create(
-            name=data['name'],
-            prompt=data['prompt'],
-            voice_id=data['voice_id'],
-            model_id=data['model_id'],
-            settings=data.get('settings', {
-                'stability': 0.5,
-                'similarity_boost': 0.75,
-                'style': 0.0,
-                'use_speaker_boost': True
-            })
+        restaurant_prompt = RestaurantPrompt(97, 'en')
+        prompt = restaurant_prompt.prepare_system_prompt()
+        client.conversational_ai.agents.create(
+            conversation_config={
+                "agent": {
+                    "first_message": "hany",
+                    "language": "en",
+                    "prompt": {
+                        "prompt": "",
+                        "llm": "gpt-4o-mini",
+                        "max_tokens": -1,
+                        "temperature": 0,
+                        "tool_ids": [
+                            "tool_1501k9wze482fsy8j5xgpn4q85tr",
+                            "tool_2201k9t4vxp2em8sxqvzcgzxdyxd",
+                            "tool_8001k9t4yb2ye15th9qkqjs8j6a6",
+                            "tool_9401k9wz3gx1f1hte9kg3rd9qqe4"
+                        ],
+                        "ignore_default_personality": False,
+                        "timezone": "America/New_York",
+                    },
+                    "dynamic_variables": {},
+                    "disable_first_message_interruptions": False
+                }
+            },
+            name="Kofia"
         )
 
         return jsonify({
-            'status': 'success',
-            'data': agent
+            'status': 'success'
         }), 201
 
     except Exception as e:
@@ -101,8 +117,8 @@ def create_agent():
             'details': str(e)
         }), 500
 
-@bp.route('/update/<agent_id>', methods=['POST'])
-def update_agent(agent_id):
+@bp.route('/update', methods=['POST'])
+def update_agent():
     """
     Update an existing agent in ElevenLabs
     Expected payload (all fields optional except agent_id in URL):
@@ -115,28 +131,30 @@ def update_agent(agent_id):
     """
     try:
         data = request.get_json()
-
-        if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'No update data provided'
-            }), 400
+        restaurant_prompt = RestaurantPrompt(97,'en')
+        prompt = restaurant_prompt.prepare_system_prompt()
+        # pass
+        # if not data:
+        #     return jsonify({
+        #         'status': 'error',
+        #         'message': 'No update data provided'
+        #     }), 400
 
         # Update agent using the ElevenLabs client
-        updated_agent = client.conversational_ai.agents.update(
-            agent_id=agent_id,
+        client.conversational_ai.agents.update(
+            agent_id="agent_1901ka449emffr09jq88fp5t98ca",
             conversation_config={
                 "agent": {
+                    "first_message": "Thank you for callin PolyDial",
                     "prompt": {
-                        "prompt": "You are a nice person helping others"
+                        "prompt": prompt
                     }
                 }
             }
         )
 
         return jsonify({
-            'status': 'success',
-            'data': updated_agent
+            'status': 'success'
         })
 
     except Exception as e:
@@ -206,6 +224,30 @@ def create_server_tool():
     try:
         data = request.get_json()
 
+        tools_path = str(Path(__file__).parent.parent) + "/eleven_labs_tools"
+        filename = f"{tools_path}/new_create_order.json"
+
+        with open(filename, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        tool = client.conversational_ai.tools.create(
+                   {
+                        "type": "webhook",
+                        "name": "new_create_order",
+                        "description": "Create a restaurant order with items, options, and modifiers",
+                        "api_schema": {
+                            "url": "https://a90e100653fd.ngrok-free.app/elevenlabs/tools/create_order",
+                            "method": "POST",
+                            "request_body_schema": {}
+                        },
+                        "response_timeout_secs": 20,
+                        "dynamic_variables": {}
+                    }
+                )
+
+        print(tool.id)
+
+
         # Validate required fields
         required_fields = ['name', 'description', 'endpoint_url']
         for field in required_fields:
@@ -219,19 +261,7 @@ def create_server_tool():
         auth_type = data.get('auth_type', 'none')
         auth_config = data.get('auth_config', {})
 
-        # Create the tool using the ElevenLabs client
-        tool = client.conversational_ai.tools.create(
-            name=data['name'],
-            description=data['description'],
-            type="server_tool",
-            config={
-                "endpoint_url": data['endpoint_url'],
-                "auth": {
-                    "type": auth_type,
-                    "config": auth_config
-                }
-            }
-        )
+
 
         return jsonify({
             'status': 'success',

@@ -52,6 +52,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.restaurant_menu import bp as restaurant_menu_bp
     from appointment_app.routes.restaurant_translation import bp as restaurant_translations_bp
     from appointment_app.routes.elevenlabs import bp as elevenlabs_bp
+    from appointment_app.routes.elevenlabs_agent import bp as elevenlabs_agent_bp
     # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -78,6 +79,8 @@ def create_app(config_dict=None):
     app.register_blueprint(restaurant_menu_bp)  # Restaurant menu endpoints
     app.register_blueprint(restaurant_translations_bp)  # Restaurant translations endpoint
     app.register_blueprint(elevenlabs_bp)  # ElevenLabs webhook endpoints
+    app.register_blueprint(elevenlabs_agent_bp)
+
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
     def health_check():
