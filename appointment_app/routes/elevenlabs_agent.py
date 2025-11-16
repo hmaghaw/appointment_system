@@ -54,107 +54,42 @@ def list_agents():
 
 @bp.route('/create', methods=['POST'])
 def create_agent():
-    """
-    Create a new agent in ElevenLabs
-    Expected payload:
-    {
-        "name": "Agent Name",
-        "prompt": "Agent's prompt text",
-        "voice_id": "voice_id_string",
-        "model_id": "model_id_string"
-    }
-    """
-    try:
-        data = request.get_json()
-        business_id = data.get('business_id')
-        language = data.get('language',"en")
+    data = request.get_json()
+    business_id = data.get('business_id')
+    language = data.get('language',"en")
 
-        restaurant_agent = RestaurantAgent(business_id, language)
-        agent_specs = restaurant_agent.agent_specs()
-        client.conversational_ai.agents.create(
-            conversation_config={
-                "agent": {
-                    "first_message": agent_specs.get("first_message",""),
-                    "language": agent_specs.get("llm",""),
-                    "prompt": {
-                        "prompt": agent_specs.get("llm",""),
-                        "llm": agent_specs.get("max_tokens",""),
-                        "max_tokens": agent_specs.get("max_tokens",""),
-                        "temperature": agent_specs.get("temperature",""),
-                        "tool_ids": [
-                            "tool_1501k9wze482fsy8j5xgpn4q85tr",
-                            "tool_2201k9t4vxp2em8sxqvzcgzxdyxd",
-                            "tool_8001k9t4yb2ye15th9qkqjs8j6a6",
-                            "tool_9401k9wz3gx1f1hte9kg3rd9qqe4"
-                        ],
-                        "ignore_default_personality": False,
-                        "timezone": "America/New_York",
-                    },
-                    "dynamic_variables": {},
-                    "disable_first_message_interruptions": False
-                }
-            },
-            name= agent_specs.get("business_name","")
-        )
-
-        return jsonify({
-            'status': 'success'
-        }), 201
-
-    except Exception as e:
-        logger.error(f"Error in create_agent: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Internal server error',
-            'details': str(e)
-        }), 500
+    restaurant_agent = RestaurantAgent(business_id, language)
+    result = restaurant_agent.create_elevenlabs_agent(business_id, language)
+    if result['status'] == 'success':
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
 
 @bp.route('/update', methods=['POST'])
 def update_agent():
-    """
-    Update an existing agent in ElevenLabs
-    Expected payload (all fields optional except agent_id in URL):
-    {
-        "name": "Updated Agent Name",
-        "prompt": "Updated prompt",
-        "voice_id": "new_voice_id",
-        "model_id": "new_model_id"
-    }
-    """
-    try:
-        data = request.get_json()
-        business_id = data.get('business_id')
-        language = data.get('language', "en")
-        restaurant_agent = RestaurantAgent(business_id, language)
-        agent_specs = restaurant_agent.agent_specs()
-        prompt = agent_specs.get("prompt","")
-        elevenlabs_agent_id = agent_specs.get("elevenlabs_agent_id","")
-        first_message = agent_specs.get("first_message","")
+    data = request.get_json()
+    business_id = data.get('business_id')
+    language = data.get('language', "en")
 
-        # Update agent using the ElevenLabs client
-        client.conversational_ai.agents.update(
-            agent_id=elevenlabs_agent_id,
-            conversation_config={
-                "agent": {
-                    "first_message": first_message,
-                    "prompt": {
-                        "prompt": prompt
-                    }
-                }
-            }
-        )
+    restaurant_agent = RestaurantAgent(business_id, language)
+    result = restaurant_agent.update_elevenlabs_agent(business_id, language)
+    if result['status'] == 'success':
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
 
-        return jsonify({
-            'status': 'success'
-        })
+@bp.route('/upsert', methods=['POST'])
+def upsert_agent():
+    data = request.get_json()
+    business_id = data.get('business_id')
+    language = data.get('language', "en")
 
-    except Exception as e:
-        logger.error(f"Error in update_agent: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Internal server error',
-            'details': str(e)
-        }), 500
+    restaurant_agent = RestaurantAgent(business_id, language)
+    result = restaurant_agent.upsert_elevenlabs_agent(business_id, language)
+    if result['status'] == 'success':
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
 
 @bp.route('/assign_tool_to_agent', methods=['POST'])
 def assign_tool_to_agent():

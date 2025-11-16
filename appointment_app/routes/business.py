@@ -428,7 +428,8 @@ def update_business():
         allowed_fields = {
             'is_auto_recharge': int,
             'recharge_threshold': int,
-            'recharge_amount': int
+            'recharge_amount': int,
+            'elevenlabs_agent_id': str
         }
         
         # Filter and validate update fields

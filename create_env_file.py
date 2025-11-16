@@ -45,6 +45,8 @@ CLOVER_APP_SECRET=
 OPENAI_MODEL=gpt-4o-mini
 DEFAULT_MAX_TOKENS=12800
 DEFAULT_TEMPERATURE=0.7
+
+ELEVENLABS_API_KEY=
 """
 
 DEV_TEMPLATE = """ENVIRONMENT=development
@@ -91,6 +93,8 @@ CLOVER_APP_SECRET=
 OPENAI_MODEL=gpt-4o-mini
 DEFAULT_MAX_TOKENS=12800
 DEFAULT_TEMPERATURE=0.7
+
+ELEVENLABS_API_KEY=
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import requests
 import json
 from ..services.clover_integration import CloverIntegration
+from ..services.restaurant_agent import RestaurantAgent
 from ..database import get_db_cursor
 from appointment_app.services.auth_token_validator import generate_jwt_token, verify_bearer_token, generate_clover_jwt_token
 import os
@@ -339,6 +340,14 @@ def sync_clover_data():
         sync_item_categories(item_categories, business_id)
 
         # Options and Combos are not handled
+
+        restaurant_agent = RestaurantAgent(business_id)
+        result = restaurant_agent.upsert_elevenlabs_agent(business_id)
+        if result['status'] == 'success':
+            pass
+        else:
+            return jsonify(result), 500
+
 
         return jsonify({
             "success": True,

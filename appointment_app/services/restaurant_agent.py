@@ -6,6 +6,7 @@ import pytz
 import requests
 from dotenv import load_dotenv
 from appointment_app.services.utils import generate_jwt_token
+from elevenlabs import ElevenLabs
 
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -15,10 +16,16 @@ API_BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:5000')
 OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
 DEFAULT_MAX_TOKENS = os.getenv('DEFAULT_MAX_TOKENS', -1)
 DEFAULT_TEMPERATURE = os.getenv('DEFAULT_TEMPERATURE', 0.7)
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
+# Initialize ElevenLabs client
+client = ElevenLabs(
+    api_key=ELEVENLABS_API_KEY,
+    base_url="https://api.elevenlabs.io"
+)
 
 class RestaurantAgent:
-    def __init__(self, business_id, language):
+    def __init__(self, business_id, language="en"):
         self.base_url = API_BASE_URL
         auth_token = generate_jwt_token()
         self.headers = {"Content-Type": "application/json"}
@@ -54,6 +61,18 @@ class RestaurantAgent:
             "business_id": self.business_id,
         }
         response = requests.post(url, json=payload, headers=self.headers)
+        response.encoding = 'utf-8'
+        res1 = response.json()
+
+        return res1
+
+    def update_business_info(self, elevenlabs_agent_id):
+        url = f"{self.base_url}/api/business"
+        payload = {
+            "business_id": self.business_id,
+            "elevenlabs_agent_id": elevenlabs_agent_id
+        }
+        response = requests.put(url, json=payload, headers=self.headers)
         response.encoding = 'utf-8'
         res1 = response.json()
 
@@ -561,7 +580,113 @@ validate_order({"order": "example_order"})
             "language": "en",
             "elevenlabs_agent_id": elevenlabs_agent_id
         }
-#
+
+    def update_elevenlabs_agent(self, business_id, language):
+        try:
+            restaurant_agent = RestaurantAgent(business_id, language)
+            agent_specs = restaurant_agent.agent_specs()
+            prompt = agent_specs.get("prompt", "")
+            elevenlabs_agent_id = agent_specs.get("elevenlabs_agent_id", "")
+            first_message = agent_specs.get("first_message", "")
+            business_name = agent_specs.get("business_name", "")
+
+            # Update agent using the ElevenLabs client
+            client.conversational_ai.agents.update(
+                agent_id=elevenlabs_agent_id,
+                conversation_config={
+                    "agent": {
+                        "first_message": first_message,
+                        "prompt": {
+                            "prompt": prompt
+                        }
+                    }
+                },
+                name=business_name
+            )
+            return {
+                'status': 'success'
+            }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': 'Internal server error',
+                'details': str(e)
+            }
+
+    def create_elevenlabs_agent(self, business_id, language):
+        try:
+            # ------------------------
+            # 1. Build Restaurant Agent Specs
+            # ------------------------
+            restaurant_agent = RestaurantAgent(business_id, language)
+            agent_specs = restaurant_agent.agent_specs()
+
+            # ------------------------
+            # 2. Extract values once
+            # ------------------------
+            business_name = agent_specs.get("business_name", "")
+            first_message = agent_specs.get("first_message", "")
+            prompt = agent_specs.get("prompt", "")
+
+            llm =  OPENAI_MODEL
+            max_tokens = DEFAULT_MAX_TOKENS
+            temperature = DEFAULT_TEMPERATURE
+
+            timezone = "America/New_York"  # static
+            tool_ids = [
+                "tool_1501k9wze482fsy8j5xgpn4q85tr",
+                "tool_2201k9t4vxp2em8sxqvzcgzxdyxd",
+                "tool_8001k9t4yb2ye15th9qkqjs8j6a6",
+                "tool_9401k9wz3gx1f1hte9kg3rd9qqe4"
+            ]
+
+            # ------------------------
+            # 3. Build request body cleanly
+            # ------------------------
+            result = client.conversational_ai.agents.create(
+                conversation_config={
+                    "agent": {
+                        "first_message": first_message,
+                        "language": language,
+                        "prompt": {
+                            "prompt": prompt,
+                            "llm": llm,
+                            "max_tokens": max_tokens,
+                            "temperature": temperature,
+                            "tool_ids": tool_ids,
+                            "ignore_default_personality": False,
+                            "timezone": timezone,
+                        },
+                        "dynamic_variables": {},
+                        "disable_first_message_interruptions": False
+                    }
+                },
+                name=business_name
+            )
+            self.update_business_info( result.agent_id)
+            return {
+                'status': 'success'
+            }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': 'Internal server error',
+                'details': str(e)
+            }
+
+    def upsert_elevenlabs_agent(self, business_id, language='en'):
+        restaurant_agent = RestaurantAgent(business_id, language)
+        agent_specs = restaurant_agent.agent_specs()
+        elevenlabs_agent_id = agent_specs.get("elevenlabs_agent_id", "")
+        if elevenlabs_agent_id == "":
+            result=self.create_elevenlabs_agent(business_id, language)
+        else:
+            result=self.update_elevenlabs_agent(business_id, language)
+
+        return result
+
+
+#           }
 # restaurant_prompt = RestaurantAgent(97, 'en')
 # prompt = restaurant_prompt.agent_specs()
 # pass
