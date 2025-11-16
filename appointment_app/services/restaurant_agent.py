@@ -12,17 +12,22 @@ load_dotenv(dotenv_path=env_path)
 
 # Get API base URL from environment variables with fallback
 API_BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:5000')
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+DEFAULT_MAX_TOKENS = os.getenv('DEFAULT_MAX_TOKENS', -1)
+DEFAULT_TEMPERATURE = os.getenv('DEFAULT_TEMPERATURE', 0.7)
 
 
-class RestaurantPrompt:
-    def __init__(self, business_id,language):
+class RestaurantAgent:
+    def __init__(self, business_id, language):
+        self.base_url = API_BASE_URL
         auth_token = generate_jwt_token()
         self.headers = {"Content-Type": "application/json"}
         if auth_token:
             self.headers["Authorization"] = f"Bearer {auth_token}"
 
         self.business_id = business_id
-        self.base_url = API_BASE_URL
+
+
         self.language = language
         self.menu_data = self.get_nemu_data(self.business_id)
         self.categories = self.menu_data['categories']
@@ -36,6 +41,17 @@ class RestaurantPrompt:
         payload = {
             "business_id": business_id,
             "language": "ar"
+        }
+        response = requests.post(url, json=payload, headers=self.headers)
+        response.encoding = 'utf-8'
+        res1 = response.json()
+
+        return res1
+
+    def get_business_info(self):
+        url = f"{self.base_url}/api/business/get"
+        payload = {
+            "business_id": self.business_id,
         }
         response = requests.post(url, json=payload, headers=self.headers)
         response.encoding = 'utf-8'
@@ -397,66 +413,6 @@ If a JSON or function output is mistakenly produced, ignore it completely and co
         """
         return result
 
-    def prepare_system_prompt(self):
-        result = ""
-
-        # ==========================================
-        # 1️⃣ CORE CONTEXT
-        # ==========================================
-        # ==========================================
-        # 4️⃣ INTRODUCTION AND GREETING
-        # ==========================================
-        result = self.intro()
-        result += self.add_separator()
-        # ==========================================
-        # 4️⃣ Language Behaviour
-        # ==========================================
-        # result += self.language_behavior()
-        # result += self.add_separator()
-        # ==========================================
-        # 4️⃣ Order Sequence
-        # ==========================================
-        result += self.order_sequence()
-        result += self.add_separator()
-        # ==========================================
-        # 4️⃣ ORDER COMPLETION AND CALL CLOSING
-        # ==========================================
-        result += "## ORDER COMPLETION AND CALL CLOSING\n"
-        result += self.order_completion_and_call_closing()
-        result += self.add_separator()
-        # ==========================================
-        # 4️⃣ RESPONSE FORMATTING AND OUTPUT CONTROL
-        # ==========================================
-        result += "## RESPONSE FORMATTING AND OUTPUT CONTROL\n"
-        result += self.response_formatting_and_output_control()
-        result += self.add_separator()
-        # ==========================================
-        # 4️⃣ MENU REFERENCE
-        # ==========================================
-        result += "## MENU DATA REFERENCE\n"
-        result += self.show_menu_data()
-        result += self.add_separator()
-
-        # ==========================================
-        # 6️⃣ META & FUNCTION INSTRUCTIONS
-        # ==========================================
-        result += "## SYSTEM FUNCTIONS\n"
-        result += "### CURRENT DATE & TIME\n"
-        result += self.current_date_and_time()
-        result += self.add_separator()
-
-        result += "## RESPONSE FORMAT\n"
-        result += self.response_format()
-        result += self.add_separator()
-
-        result += "## STRICT RULES\n"
-        result += self.strict_rules()
-        result += self.add_separator()
-
-        result += "## FUNCTION CALLING INSTRUCTIONS\n"
-        result += self.functions_calling_instructions()
-
-        return result
 
     def current_date_and_time(self):
         timezone = "America/Toronto"
@@ -528,6 +484,84 @@ validate_order({"order": "example_order"})
 ```"""
         return result
 
-# restaurant_prompt = RestaurantPrompt(97,'en')
-# prompt = restaurant_prompt.prepare_system_prompt()
+    def prepare_system_prompt(self):
+        result = ""
+
+        # ==========================================
+        # 1️⃣ CORE CONTEXT
+        # ==========================================
+        # ==========================================
+        # 4️⃣ INTRODUCTION AND GREETING
+        # ==========================================
+        result = self.intro()
+        result += self.add_separator()
+        # ==========================================
+        # 4️⃣ Language Behaviour
+        # ==========================================
+        # result += self.language_behavior()
+        # result += self.add_separator()
+        # ==========================================
+        # 4️⃣ Order Sequence
+        # ==========================================
+        result += self.order_sequence()
+        result += self.add_separator()
+        # ==========================================
+        # 4️⃣ ORDER COMPLETION AND CALL CLOSING
+        # ==========================================
+        result += "## ORDER COMPLETION AND CALL CLOSING\n"
+        result += self.order_completion_and_call_closing()
+        result += self.add_separator()
+        # ==========================================
+        # 4️⃣ RESPONSE FORMATTING AND OUTPUT CONTROL
+        # ==========================================
+        result += "## RESPONSE FORMATTING AND OUTPUT CONTROL\n"
+        result += self.response_formatting_and_output_control()
+        result += self.add_separator()
+        # ==========================================
+        # 4️⃣ MENU REFERENCE
+        # ==========================================
+        result += "## MENU DATA REFERENCE\n"
+        result += self.show_menu_data()
+        result += self.add_separator()
+
+        # ==========================================
+        # 6️⃣ META & FUNCTION INSTRUCTIONS
+        # ==========================================
+        result += "## SYSTEM FUNCTIONS\n"
+        result += "### CURRENT DATE & TIME\n"
+        result += self.current_date_and_time()
+        result += self.add_separator()
+
+        result += "## RESPONSE FORMAT\n"
+        result += self.response_format()
+        result += self.add_separator()
+
+        result += "## STRICT RULES\n"
+        result += self.strict_rules()
+        result += self.add_separator()
+
+        result += "## FUNCTION CALLING INSTRUCTIONS\n"
+        result += self.functions_calling_instructions()
+
+        return result
+
+    def agent_specs(self):
+        business_info = self.get_business_info()
+        business_name = business_info.get("name", "")
+        elevenlabs_agent_id = business_info.get("elevenlabs_agent_id", "")
+        prompt = self.prepare_system_prompt()
+        first_message = f"Thank you for calling {business_name}, How can I help you today?"
+        return {
+            "prompt": prompt,
+            "first_message": first_message,
+            "business_name": business_name,
+            "max_tokens": DEFAULT_MAX_TOKENS,
+            "temperature": DEFAULT_TEMPERATURE,
+            "llm": OPENAI_MODEL,
+            "language": "en",
+            "elevenlabs_agent_id": elevenlabs_agent_id
+        }
+#
+# restaurant_prompt = RestaurantAgent(97, 'en')
+# prompt = restaurant_prompt.agent_specs()
 # pass

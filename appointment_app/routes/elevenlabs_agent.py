@@ -6,7 +6,7 @@ from elevenlabs import ElevenLabs
 from elevenlabs.conversational_ai.conversation import Conversation, ClientTools
 import json
 from pathlib import Path
-from appointment_app.services.prompt_restaurant import RestaurantPrompt
+from appointment_app.services.restaurant_agent import RestaurantAgent
 load_dotenv()
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
@@ -66,29 +66,21 @@ def create_agent():
     """
     try:
         data = request.get_json()
+        business_id = data.get('business_id')
+        language = data.get('language',"en")
 
-        # # Validate required fields
-        # required_fields = ['name', 'prompt', 'voice_id', 'model_id']
-        # for field in required_fields:
-        #     if field not in data:
-        #         return jsonify({
-        #             'status': 'error',
-        #             'message': f'Missing required field: {field}'
-        #         }), 400
-
-        # Create agent using the ElevenLabs client
-        restaurant_prompt = RestaurantPrompt(97, 'en')
-        prompt = restaurant_prompt.prepare_system_prompt()
+        restaurant_agent = RestaurantAgent(business_id, language)
+        agent_specs = restaurant_agent.agent_specs()
         client.conversational_ai.agents.create(
             conversation_config={
                 "agent": {
-                    "first_message": "hany",
-                    "language": "en",
+                    "first_message": agent_specs.get("first_message",""),
+                    "language": agent_specs.get("llm",""),
                     "prompt": {
-                        "prompt": "",
-                        "llm": "gpt-4o-mini",
-                        "max_tokens": -1,
-                        "temperature": 0,
+                        "prompt": agent_specs.get("llm",""),
+                        "llm": agent_specs.get("max_tokens",""),
+                        "max_tokens": agent_specs.get("max_tokens",""),
+                        "temperature": agent_specs.get("temperature",""),
                         "tool_ids": [
                             "tool_1501k9wze482fsy8j5xgpn4q85tr",
                             "tool_2201k9t4vxp2em8sxqvzcgzxdyxd",
@@ -102,7 +94,7 @@ def create_agent():
                     "disable_first_message_interruptions": False
                 }
             },
-            name="Kofia"
+            name= agent_specs.get("business_name","")
         )
 
         return jsonify({
@@ -131,21 +123,20 @@ def update_agent():
     """
     try:
         data = request.get_json()
-        restaurant_prompt = RestaurantPrompt(97,'en')
-        prompt = restaurant_prompt.prepare_system_prompt()
-        # pass
-        # if not data:
-        #     return jsonify({
-        #         'status': 'error',
-        #         'message': 'No update data provided'
-        #     }), 400
+        business_id = data.get('business_id')
+        language = data.get('language', "en")
+        restaurant_agent = RestaurantAgent(business_id, language)
+        agent_specs = restaurant_agent.agent_specs()
+        prompt = agent_specs.get("prompt","")
+        elevenlabs_agent_id = agent_specs.get("elevenlabs_agent_id","")
+        first_message = agent_specs.get("first_message","")
 
         # Update agent using the ElevenLabs client
         client.conversational_ai.agents.update(
-            agent_id="agent_1901ka449emffr09jq88fp5t98ca",
+            agent_id=elevenlabs_agent_id,
             conversation_config={
                 "agent": {
-                    "first_message": "Thank you for callin PolyDial",
+                    "first_message": first_message,
                     "prompt": {
                         "prompt": prompt
                     }
