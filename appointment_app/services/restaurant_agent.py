@@ -607,9 +607,9 @@ validate_order({"order": "example_order"})
                 platform_settings={
                     "overrides": {
                         "conversation_config_override": {
-                            "conversation": {},
                             "agent": {
-                                "first_message": True
+                                "first_message": True,
+                                "language": True
                             }
                         },
                         "enable_conversation_initiation_client_data_from_webhook": True
@@ -673,6 +673,17 @@ validate_order({"order": "example_order"})
                         },
                         "dynamic_variables": {},
                         "disable_first_message_interruptions": False
+                    }
+                },
+                platform_settings={
+                    "overrides": {
+                        "conversation_config_override": {
+                            "agent": {
+                                "first_message": True,
+                                "language": True
+                            }
+                        },
+                        "enable_conversation_initiation_client_data_from_webhook": True
                     }
                 },
                 name=business_name

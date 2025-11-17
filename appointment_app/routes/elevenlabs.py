@@ -25,13 +25,42 @@ bp = Blueprint('elevenlabs', __name__, url_prefix='/elevenlabs/tools/')
 
 @bp.route('/call_init', methods=['POST'])
 def handle_call_init():
-    custom_first_message = f"Welcome! Your caller ID ."
+    data = request.get_json()
+    customer_phone = data.get('caller_id')
+    business_phone = data.get('called_number')
+    call_sid = data.get('call_sid')
+
+    customer_data = restuarant_tools.upsert_customer(
+        customer_phone=customer_phone,
+        business_phone=business_phone
+    )
+    customer_id = customer_data.get('customer_id')
+    customer_language = customer_data.get('language')
+    first_name = customer_data.get('first_name')
+    last_name = customer_data.get('last_name')
+
+    business_data = restuarant_tools.get_business_by_phone(business_phone=business_phone)
+    business_id = business_data.get('business_id')
+    business_name = business_data.get('name')
+    business_language = business_data.get('language_code')
+
+    if first_name == "Guest":
+        first_name = ""
+
+    custom_first_message = f"Hi {first_name}, thank you for calling {business_name}. How can I help you today?"
+
+    if customer_language:
+        language = customer_language
+    else:
+        language = business_language
+    # Log the received data
+    logger.info(f"Received call init webhook: {data}")
 
     return jsonify({
   "type": "conversation_initiation_client_data",
   "conversation_config_override": {
     "agent": {
-      "first_message": "Hi, I'm Alexis from ElevenLabs support. How can I help you today?",
+      "first_message": custom_first_message,
       "language": "en"
     }
   },
