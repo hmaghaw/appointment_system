@@ -6,6 +6,9 @@ from elevenlabs import ElevenLabs
 from elevenlabs.conversational_ai.conversation import Conversation, ClientTools
 import json
 from pathlib import Path
+
+from pycparser.ply.yacc import resultlimit
+
 from appointment_app.services.restaurant_agent import RestaurantAgent
 load_dotenv()
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
@@ -23,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 # Create a Blueprint for ElevenLabs Agent routes
 bp = Blueprint('elevenlabs_agent', __name__, url_prefix='/elevenlabs/agent')
+
+
 
 @bp.route('/list', methods=['GET'])
 def list_agents():
@@ -86,6 +91,18 @@ def upsert_agent():
 
     restaurant_agent = RestaurantAgent(business_id, language)
     result = restaurant_agent.upsert_elevenlabs_agent(business_id, language)
+    if result['status'] == 'success':
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
+
+@bp.route('/assign_phone_number', methods=['POST'])
+def assign_phone_number():
+    data = request.get_json()
+    business_id = data.get('business_id')
+    business_phone = data.get('business_phone')
+    restaurant_agent = RestaurantAgent(business_id)
+    result = restaurant_agent.assign_phone_number(business_phone)
     if result['status'] == 'success':
         return jsonify(result), 200
     else:

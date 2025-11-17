@@ -5,6 +5,8 @@ from pathlib import Path
 import pytz
 import requests
 from dotenv import load_dotenv
+from typing_extensions import override
+
 from appointment_app.services.utils import generate_jwt_token
 from elevenlabs import ElevenLabs
 
@@ -17,6 +19,8 @@ OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
 DEFAULT_MAX_TOKENS = os.getenv('DEFAULT_MAX_TOKENS', -1)
 DEFAULT_TEMPERATURE = os.getenv('DEFAULT_TEMPERATURE', 0.7)
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 
 # Initialize ElevenLabs client
 client = ElevenLabs(
@@ -33,7 +37,8 @@ class RestaurantAgent:
             self.headers["Authorization"] = f"Bearer {auth_token}"
 
         self.business_id = business_id
-
+        self.business_info = self.get_business_info()
+        self.business_name = self.business_info.get("name", "")
 
         self.language = language
         self.menu_data = self.get_nemu_data(self.business_id)
@@ -565,15 +570,13 @@ validate_order({"order": "example_order"})
         return result
 
     def agent_specs(self):
-        business_info = self.get_business_info()
-        business_name = business_info.get("name", "")
-        elevenlabs_agent_id = business_info.get("elevenlabs_agent_id", "")
+        elevenlabs_agent_id = self.business_info.get("elevenlabs_agent_id", "")
         prompt = self.prepare_system_prompt()
-        first_message = f"Thank you for calling {business_name}, How can I help you today?"
+        first_message = f"Thank you for calling {self.business_name}, How can I help you today?"
         return {
             "prompt": prompt,
             "first_message": first_message,
-            "business_name": business_name,
+            "business_name": self.business_name,
             "max_tokens": DEFAULT_MAX_TOKENS,
             "temperature": DEFAULT_TEMPERATURE,
             "llm": OPENAI_MODEL,
@@ -685,6 +688,63 @@ validate_order({"order": "example_order"})
 
         return result
 
+    def import_phone_number_from_twilio(self, business_phone, business_name):
+        try:
+            result = client.conversational_ai.phone_numbers.create(
+                request={
+                    "provider": "twilio",
+                    "phone_number": business_phone,
+                    "label": business_name,
+                    "sid": TWILIO_ACCOUNT_SID,
+                    "token": TWILIO_AUTH_TOKEN
+                }
+            )
+            phone_number_id = result.phone_number_id
+
+        #phone_number_id = "phnum_8801k912nv33fhtbrg275wxhhwzt"
+            return {
+                'status': 'success',
+                'phone_number_id': phone_number_id
+            }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': 'Internal server error',
+                'details': str(e)
+            }
+
+    def assign_phone_number(self, business_phone):
+        agent_specs = self.agent_specs()
+        business_name = agent_specs.get("business_name", "")
+        elevenlabs_agent_id = agent_specs.get("elevenlabs_agent_id", "")
+        result = self.import_phone_number_from_twilio(business_phone, business_name)
+        phone_number_id = result.get("phone_number_id","")
+        if phone_number_id=="":
+            return result
+        else:
+            if elevenlabs_agent_id == "":
+                return {
+                    'status': 'error',
+                    'message': 'Internal server error',
+                    'details': "Agent Does not exist"
+                }
+            else:
+                try:
+                    client.conversational_ai.phone_numbers.update(
+                        phone_number_id=phone_number_id,
+                        agent_id=elevenlabs_agent_id
+                    )
+                    return {
+                        'status': 'success',
+                        'phone_number_id': phone_number_id
+                    }
+                except Exception as e:
+                    return {
+                        'status': 'error',
+                        'message': 'Internal server error',
+                        'details': str(e)
+                    }
+        pass
 
 #           }
 # restaurant_prompt = RestaurantAgent(97, 'en')
