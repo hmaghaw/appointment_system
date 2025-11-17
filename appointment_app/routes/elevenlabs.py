@@ -1,7 +1,20 @@
 from flask import Blueprint, request, jsonify
 import logging
+from dotenv import load_dotenv
+import os
 # Add this import at the top with other imports
-from appointment_app.services.elevenlabs_tools import restuarant_tools
+from appointment_app.services.restaurant_tools import restuarant_tools
+from elevenlabs.conversational_ai.conversation import Conversation, ConversationInitiationData
+from elevenlabs import ElevenLabs
+load_dotenv()
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+
+# Initialize ElevenLabs client
+client = ElevenLabs(
+    api_key=ELEVENLABS_API_KEY,
+    base_url="https://api.elevenlabs.io"
+)
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -12,103 +25,21 @@ bp = Blueprint('elevenlabs', __name__, url_prefix='/elevenlabs/tools/')
 
 @bp.route('/call_init', methods=['POST'])
 def handle_call_init():
-    """
-    Handle call initialization webhook from ElevenLabs
-    Expected payload:
-    {
-        "type": "conversation_initiation_client_data",
-        "caller_number": "+16475550123",
-        "called_number": "+14165550999",
-        "call_sid": " CAc9302b7e34f64970b92e15fb41a37c18",
-        "agent_id": "agent_73eaa0a4e28d",
-        "direction": "inbound",
-        "integration": "twilio",
-        "timestamp": "2025-11-02T18:10:44.321Z"
+    custom_first_message = f"Welcome! Your caller ID ."
+
+    return jsonify({
+  "type": "conversation_initiation_client_data",
+  "conversation_config_override": {
+    "agent": {
+      "first_message": "Hi, I'm Alexis from ElevenLabs support. How can I help you today?",
+      "language": "en"
     }
-    """
-
-
-    try:
-        # Get JSON data from request
-        language = "en"
-        data = request.get_json()
-        # Validate required fields
-        required_fields = [
-            'caller_id', 'called_number',
-        ]
-
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Missing required field: {field}'
-                }), 400
-
-
-        customer_phone = data.get('caller_id')
-        business_phone = data.get('called_number')
-        call_sid = data.get('call_sid')
-
-        customer_data = restuarant_tools.upsert_customer(
-            customer_phone=customer_phone,
-            business_phone=business_phone
-        )
-        customer_id = customer_data.get('customer_id')
-        customer_language = customer_data.get('language')
-        first_name = customer_data.get('first_name')
-        last_name = customer_data.get('last_name')
-
-        business_data = restuarant_tools.get_business_by_phone(business_phone=business_phone)
-        business_id = business_data.get('business_id')
-        business_name = business_data.get('name')
-        business_language = business_data.get('language_code')
-
-        if customer_language:
-            language = customer_language
-        else:
-            language = business_language
-        # Log the received data
-        logger.info(f"Received call init webhook: {data}")
-        
-
-        
-        # Process the call initialization data
-        # TODO: Add your custom logic here to handle the call initiation
-        # For example, you might want to store this information in a database
-        # or trigger some other action in your application
-        
-        # Log the processed data
-        logger.info(f"Processed call from {customer_phone} to {business_phone} ")
-        
-        # Return success response
-        return jsonify({
-            'status': 'success',
-            'message': 'Call initiation received successfully',
-            'customer': {
-                'customer_id': customer_id,
-                'first_name': first_name,
-                'last_name': last_name,
-                'language': customer_language,
-                'phone': customer_phone
-            },
-            'business': {
-                'business_id': business_id,
-                'business_name': business_name,
-                'language': business_language,
-                'phone': business_phone
-            },
-            'call': {
-                'call_sid': call_sid,
-                'prefered_language': language
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error processing call init webhook: {str(e)}", exc_info=True)
-        return jsonify({
-            'status': 'error',
-            'message': f'Failed to process webhook: {str(e)}'
-        }), 500
+  },
+  "dynamic_variables": {
+    "user_name": "John",
+    "account_type": "premium"
+  }
+})
 
 
 

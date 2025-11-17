@@ -604,6 +604,17 @@ validate_order({"order": "example_order"})
                         }
                     }
                 },
+                platform_settings={
+                    "overrides": {
+                        "conversation_config_override": {
+                            "conversation": {},
+                            "agent": {
+                                "first_message": True
+                            }
+                        },
+                        "enable_conversation_initiation_client_data_from_webhook": True
+                    }
+                },
                 name=business_name
             )
             return {
