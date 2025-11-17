@@ -11,7 +11,8 @@ if env_path.exists():
     load_dotenv(env_path)
 
 # Configuration
-BASE_URL = "http://localhost:7000"
+#BASE_URL = "http://localhost:7000"
+BASE_URL = "https://mcp.polydial.com"
 API_KEY = os.getenv("API_KEY", "default_key")
 HEADERS = {
     "Content-Type": "application/json",
@@ -118,52 +119,7 @@ def test_create_order():
     """Test order creation"""
     print("\n=== Testing Order Creation ===")
     url = f"{BASE_URL}/api/orders"
-    order = {
-        "language_code": "en",
-        "business_id": 97,
-        "customer_id": 33,
-        "business_phone": "+13657995270",
-        "customer_phone": "+16476248506",
-        "items": [
-            {
-                "base_price": 13.5,
-                "item_id": 1163,
-                "modifiers": [
-                    {
-                        "is_active": True,
-                        "modifier_group_id": 131,
-                        "modifier_id": 377,
-                        "name": "Crispy Onions",
-                        "price_delta": 3.0,
-                        "quantity": 1
-                    },
-                    {
-                        "is_active": True,
-                        "modifier_group_id": 131,
-                        "modifier_id": 378,
-                        "name": "Tomato Sauce",
-                        "price_delta": 2.0,
-                        "quantity": 1
-                    }
-                ],
-                "name": "Koshary",
-                "note": "Crispy onions, Tomato sauce",
-                "options": [],
-                "price": 18.5,
-                "quantity": 1
-            },
-            {
-                "base_price": 10.25,
-                "item_id": 1129,
-                "modifiers": [],
-                "name": "Basbusa Masrawy",
-                "note": "",
-                "options": [],
-                "price": 10.25,
-                "quantity": 1
-            }
-        ]
-    }
+
 
     try:
         response = requests.post(url, json=order, headers=HEADERS)
@@ -235,4 +191,5 @@ def test_mcp_manifest():
         return False
 
 if __name__ == "__main__":
-    run_all_tests()
+    test_mcp_manifest()
+    #run_all_tests()

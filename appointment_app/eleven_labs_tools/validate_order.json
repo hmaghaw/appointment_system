@@ -9,7 +9,7 @@
   "tool_call_sound_behavior": "auto",
   "execution_mode": "immediate",
   "api_schema": {
-    "url": "https://a90e100653fd.ngrok-free.app/elevenlabs/tools/validate_order",
+    "url": "https://eb7325aa23cd.ngrok-free.app/elevenlabs/tools/validate_order",
     "method": "POST",
     "path_params_schema": [],
     "query_params_schema": [],

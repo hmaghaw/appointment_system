@@ -65,8 +65,8 @@ def handle_call_init():
     }
   },
   "dynamic_variables": {
-    "user_name": "John",
-    "account_type": "premium"
+    "business_id": business_id,
+    "customer_id": customer_id
   }
 })
 
