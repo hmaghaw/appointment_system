@@ -27,18 +27,3 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  restaurant_mcp:
-    build:
-      context: ./mcp_server
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    container_name: restaurant_mcp
-    ports:
-      - "7000:7000"
-    volumes:
-      - ./mcp_server/mcp_server:/app/mcp_server
-    command: [ "python", "mcp_server/mcp_http_server.py" ]
-    depends_on:
-      - api
-    restart: unless-stopped
