@@ -47,6 +47,7 @@ DEFAULT_MAX_TOKENS=12800
 DEFAULT_TEMPERATURE=0.7
 
 ELEVENLABS_API_KEY=
+ELEVENLABS_AGENT=NO
 """
 
 DEV_TEMPLATE = """ENVIRONMENT=development
@@ -95,6 +96,7 @@ DEFAULT_MAX_TOKENS=12800
 DEFAULT_TEMPERATURE=0.7
 
 ELEVENLABS_API_KEY=
+ELEVENLABS_AGENT=NO
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """

@@ -312,38 +312,6 @@ If a JSON or function output is mistakenly produced, ignore it completely and co
 Date and Time: Monday, 2025-November-03, 11:16 AM
 
 Timezone: America/Toronto
----
-
-## RESPONSE FORMAT
-```json
-{
- "order": {
- "business_id": {{business_id}},
- "customer_id": {{customer_id}},
- "items": [
- {
- "item_id": <integer>,
- "name": "<item name>",
- "base_price": <float>,
- "quantity": <integer>,
- "note": "<optional customer note>",
- "modifiers": [
- {
- "modifier_group_id": <integer>,
- "modifier_id": <integer>,
- "name": "<modifier name>",
- "price_delta": <float>,
- "quantity": <integer>,
- "is_active": true
- }
- ],
- "options": [],
- "price": <float>
- }
- ]
- }
-}
-```
 
 ---
 

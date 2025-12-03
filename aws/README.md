@@ -69,29 +69,6 @@ server {
 
     location / {
         proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-
-# ==========================
-# MCP WebSocket Service (Port 7000)
-# ==========================
-server {
-    listen 443 ssl;
-    server_name mcp.polydial.com;
-
-    ssl_certificate     /home/ec2-user/.certbot/config/live/polydial.com/fullchain.pem;
-    ssl_certificate_key /home/ec2-user/.certbot/config/live/polydial.com/privkey.pem;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
-    location / {
-        proxy_pass http://localhost:7000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -99,17 +76,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 600s;
-        proxy_send_timeout 600s;
-        proxy_connect_timeout 60s;
     }
-}
-
-# Redirect HTTP to HTTPS for MCP
-server {
-    listen 80;
-    server_name mcp.polydial.com;
-    return 301 https://$host$request_uri;
 }
 
 # ==========================
