@@ -556,9 +556,9 @@ validate_order({"order": "example_order"})
         result += self.current_date_and_time()
         result += self.add_separator()
 
-        result += "## RESPONSE FORMAT\n"
-        result += self.response_format()
-        result += self.add_separator()
+        # result += "## RESPONSE FORMAT\n"
+        # result += self.response_format()
+        # result += self.add_separator()
 
         result += "## STRICT RULES\n"
         result += self.strict_rules()
