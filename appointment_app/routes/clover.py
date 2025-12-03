@@ -14,7 +14,7 @@ from appointment_app.services.restaurant import restaurant_service
 
 bp = Blueprint('clover', __name__, url_prefix='/api/clover')
 
-
+ELEVENLABS_AGENT = os.getenv("ELEVENLABS_AGENT", "NO")
 
 integration = EntityIntegrationManager(provider='clover')
 
@@ -340,13 +340,13 @@ def sync_clover_data():
         sync_item_categories(item_categories, business_id)
 
         # Options and Combos are not handled
-
-        restaurant_agent = RestaurantAgent(business_id)
-        result = restaurant_agent.upsert_elevenlabs_agent(business_id)
-        if result['status'] == 'success':
-            pass
-        else:
-            return jsonify(result), 500
+        if ELEVENLABS_AGENT== "YES":
+            restaurant_agent = RestaurantAgent(business_id)
+            result = restaurant_agent.upsert_elevenlabs_agent(business_id)
+            if result['status'] == 'success':
+                pass
+            else:
+                return jsonify(result), 500
 
 
         return jsonify({
