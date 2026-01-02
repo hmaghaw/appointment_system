@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS subscription_plan (
 -- Business table
 CREATE TABLE IF NOT EXISTS business (
     business_id INT AUTO_INCREMENT PRIMARY KEY,
-    business_type ENUM('restaurant','general') NOT NULL DEFAULT 'general',
+    business_type ENUM('restaurant','general','car_rental') NOT NULL DEFAULT 'general',
     name VARCHAR(255) NOT NULL,
     timezone VARCHAR(50) NOT NULL DEFAULT 'America/Toronto',
     status VARCHAR(20) NOT NULL DEFAULT 'active',
