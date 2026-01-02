@@ -53,6 +53,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.restaurant_translation import bp as restaurant_translations_bp
     from appointment_app.routes.elevenlabs import bp as elevenlabs_bp
     from appointment_app.routes.elevenlabs_agent import bp as elevenlabs_agent_bp
+    from appointment_app.routes.car_rental import bp as car_rental_bp
     # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -71,8 +72,8 @@ def create_app(config_dict=None):
     app.register_blueprint(premium_numbers_bp, url_prefix='/api')  # Premium numbers endpoints
     app.register_blueprint(restaurants_bp)  # Restaurant endpoints (prefix is defined in the blueprint)
     app.register_blueprint(onboarding_bp)  # Onboarding endpoints
-    app.register_blueprint(restaurant_combo_bp)
     app.register_blueprint(restaurant_order_bp)
+    app.register_blueprint(car_rental_bp)
     app.register_blueprint(clover_bp)  # Clover integration endpoints
     app.register_blueprint(export_bp)
     app.register_blueprint(prompt_bp)
