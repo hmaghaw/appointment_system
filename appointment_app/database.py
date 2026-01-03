@@ -61,3 +61,24 @@ def get_db_cursor(commit=False, database=None, dictionary=True, use_call_db=Fals
         finally:
             if cursor:
                 cursor.close()
+
+@contextmanager
+def db_transaction(database=None, dictionary=True, use_call_db=False):
+    with get_db_connection(database, use_call_db=use_call_db) as conn:
+        cursor = None
+        try:
+            conn.autocommit = False
+            cursor = conn.cursor(dictionary=dictionary)
+
+            yield cursor   # ← all SQL happens here
+
+            conn.commit()
+        except Error as e:
+            conn.rollback()
+            db_type = "call history" if use_call_db else "main"
+            print(f"{db_type.capitalize()} database error: {e}")
+            raise
+        finally:
+            if cursor:
+                cursor.close()
+
