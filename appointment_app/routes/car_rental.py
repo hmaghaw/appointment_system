@@ -72,6 +72,33 @@ class ReservationRequest:
 
         return True, None
 
+def build_voice_confirmation(response):
+    pickup = datetime.fromisoformat(response['pickup_datetime'])
+    dropoff = datetime.fromisoformat(response['dropoff_datetime'])
+
+    addons = response.get('add_ons', [])
+    insurance = response.get('insurance_options', [])
+
+    addons_text = ""
+    if addons:
+        addons_text = ", with " + ", ".join(
+            f"{a['quantity']} {a['add_on_name']}" if a.get("quantity", 1) > 1 else a['add_on_name']
+            for a in addons
+        )
+
+    insurance_text = ""
+    if insurance:
+        insurance_text = ", and insurance"
+
+    return (
+        f"You're renting a {response['car_specs']} for {response['rental_days']} days, "
+        f"from {pickup.strftime('%B %d at %I:%M %p')} "
+        f"to {dropoff.strftime('%B %d at %I:%M %p')}"
+        f"{addons_text}{insurance_text}. "
+        f"The total is ${response['total_amount']:.2f}. "
+        f"Shall I confirm your booking?"
+    )
+
 
 def check_vehicle_availability(
         vehicle_id: int,
@@ -619,4 +646,241 @@ def list_branches():
         return jsonify({
             'success': False,
             'error': str(e)
+        }), 500
+
+
+@bp.route('/confirm_reservation', methods=['POST'])
+def confirm_reservation():
+    """
+    Preview a car rental reservation with detailed pricing and vehicle information
+    WITHOUT creating the reservation in the database.
+    This allows the customer to review before final confirmation.
+
+    Expected JSON Payload:
+    {
+        "business_id": 98,
+        "customer_id": 52,
+        "pickup_datetime": "2026-02-15T10:00:00",
+        "dropoff_datetime": "2026-02-20T10:00:00",
+        "pickup_location_id": 4,
+        "dropoff_location_id": 4,
+        "vehicle_class_id": 1,
+        "vehicle_id": 1,  // optional
+        "rate_plan_id": 1,
+        "add_ons": [  // optional
+            {"add_on_id": 1, "quantity": 1},
+            {"add_on_id": 2, "quantity": 2}
+        ],
+        "insurance_options": [  // optional
+            {"insurance_option_id": 1}
+        ]
+    }
+
+    Returns:
+    {
+        "success": true,
+        "response": {
+            "vehicle_id": 1,
+            "car_specs": "Toyota-2024 Camry",
+            "rental_days": 5,
+            "base_amount": 225.0,
+            "addon_amount": 160.0,
+            "insurance_amount": 125.0,
+            "subtotal": 510.0,
+            "taxes_amount": 66.3,
+            "total_amount": 576.3,
+            "pickup_datetime": "2026-02-15T10:00:00",
+            "dropoff_datetime": "2026-02-20T10:00:00",
+            "add_ons": [
+                {"add_on_id": 1, "add_on_name": "GPS Navigation", "quantity": 1},
+                {"add_on_id": 2, "add_on_name": "Child Seat", "quantity": 2}
+            ],
+            "insurance_options": [
+                {"insurance_option_id": 1, "insurance_option_name": "Collision Damage Waiver"}
+            ]
+        }
+    }
+    """
+
+    # Parse and validate request
+    reservation_req = ReservationRequest(request.get_json() or {})
+    is_valid, error_message = reservation_req.validate()
+
+    if not is_valid:
+        return jsonify({
+            'success': False,
+            'error': error_message
+        }), 400
+
+    try:
+        selected_vehicle_id = reservation_req.vehicle_id
+
+        if not selected_vehicle_id:
+            # Find an available vehicle
+            selected_vehicle_id = find_available_vehicle(
+                reservation_req.business_id,
+                reservation_req.vehicle_class_id,
+                reservation_req.pickup_location_id,
+                reservation_req.pickup_datetime,
+                reservation_req.dropoff_datetime
+            )
+
+            if not selected_vehicle_id:
+                return jsonify({
+                    'success': False,
+                    'error': 'No vehicles available for the requested class and time period'
+                }), 404
+        else:
+            # Validate specific vehicle exists and is available
+            with get_db_cursor(dictionary=True) as cursor:
+                cursor.execute(
+                    """SELECT v.vehicle_id
+                       FROM car_rental_vehicle v
+                                JOIN car_rental_vehicle_inventory i ON v.vehicle_id = i.vehicle_id
+                       WHERE v.vehicle_id = %s
+                         AND v.business_id = %s
+                         AND v.vehicle_class_id = %s
+                         AND v.is_active = 1
+                         AND i.location_id = %s
+                         AND i.operational_status = 'ready'""",
+                    (selected_vehicle_id, reservation_req.business_id,
+                     reservation_req.vehicle_class_id, reservation_req.pickup_location_id)
+                )
+
+                if not cursor.fetchone():
+                    return jsonify({
+                        'success': False,
+                        'error': 'Requested vehicle is not available or invalid'
+                    }), 400
+
+            # Check availability for the time period
+            if not check_vehicle_availability(
+                    selected_vehicle_id,
+                    reservation_req.pickup_datetime,
+                    reservation_req.dropoff_datetime
+            ):
+                return jsonify({
+                    'success': False,
+                    'error': 'Requested vehicle is not available for the specified time period'
+                }), 409
+
+        # Get vehicle specifications
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute(
+                """SELECT concat(m.model_name, ' ', m.body_type, ' ',v.transmission, ' ',v.model_year) as car_specs
+                    FROM car_rental_vehicle v
+                    JOIN car_rental_vehicle_model m
+                      ON v.vehicle_model_id = m.vehicle_model_id
+                    WHERE v.vehicle_id = %s""",
+                (selected_vehicle_id,)
+            )
+            vehicle_info = cursor.fetchone()
+
+        if not vehicle_info:
+            return jsonify({
+                'success': False,
+                'error': 'Vehicle information not found'
+            }), 404
+
+        car_specs = vehicle_info['car_specs']
+
+        # Calculate rental days
+        rental_days = calculate_rental_days(
+            reservation_req.pickup_datetime,
+            reservation_req.dropoff_datetime
+        )
+
+        # Get rate pricing
+        rate_info = get_rate_price(
+            reservation_req.rate_plan_id,
+            reservation_req.vehicle_class_id,
+            reservation_req.pickup_location_id,
+            reservation_req.pickup_datetime
+        )
+
+        if not rate_info:
+            return jsonify({
+                'success': False,
+                'error': 'No pricing found for the selected rate plan and vehicle class'
+            }), 404
+
+        # Calculate base amount
+        base_amount = calculate_base_amount(rate_info, rental_days)
+
+        # Process add-ons
+        addon_total = Decimal('0.00')
+        addon_details = []
+
+        for addon in reservation_req.add_ons:
+            addon_info = get_addon_pricing(addon['add_on_id'])
+            if not addon_info:
+                return jsonify({
+                    'success': False,
+                    'error': f"Invalid add-on ID: {addon['add_on_id']}"
+                }), 400
+
+            addon_amount = calculate_addon_amount(
+                addon_info,
+                addon['quantity'],
+                rental_days
+            )
+            addon_total += addon_amount
+            addon_details.append({
+                'add_on_id': addon['add_on_id'],
+                'add_on_name': addon_info['name'],
+                'quantity': addon['quantity']
+            })
+
+        # Process insurance options
+        insurance_total = Decimal('0.00')
+        insurance_details = []
+
+        for insurance in reservation_req.insurance_options:
+            insurance_info = get_insurance_pricing(insurance['insurance_option_id'])
+            if not insurance_info:
+                return jsonify({
+                    'success': False,
+                    'error': f"Invalid insurance option ID: {insurance['insurance_option_id']}"
+                }), 400
+
+            insurance_amount = calculate_insurance_amount(insurance_info, rental_days)
+            insurance_total += insurance_amount
+            insurance_details.append({
+                'insurance_option_id': insurance['insurance_option_id'],
+                'insurance_option_name': insurance_info['name']
+            })
+
+        # Calculate totals
+        subtotal = base_amount + addon_total + insurance_total
+        taxes_amount = calculate_taxes(subtotal)
+        total_amount = subtotal + taxes_amount
+
+        response = {
+                'vehicle_id': selected_vehicle_id,
+                'car_specs': car_specs,
+                'rental_days': rental_days,
+                'base_amount': float(base_amount),
+                'addon_amount': float(addon_total),
+                'insurance_amount': float(insurance_total),
+                'subtotal': float(subtotal),
+                'taxes_amount': float(taxes_amount),
+                'total_amount': float(total_amount),
+                'pickup_datetime': reservation_req.pickup_datetime.isoformat(),
+                'dropoff_datetime': reservation_req.dropoff_datetime.isoformat(),
+                'add_ons': addon_details,
+                'insurance_options': insurance_details
+            }
+        confirmation_message = build_voice_confirmation(response)
+        # Return preview response (NO database insertion)
+        return jsonify({
+            'success': True,
+            'response': response,
+            'confirmation_message': confirmation_message
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error confirming reservation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while processing the reservation preview'
         }), 500
