@@ -1438,3 +1438,204 @@ def update_reservation():
             'success': False,
             'error': 'An error occurred while updating the reservation'
         }), 500
+
+
+@bp.route('/list_available_vehicles', methods=['POST'])
+def list_available_vehicles():
+    """
+    List all available vehicles for a given time period
+    Can optionally filter by location and/or vehicle class
+
+    Expected JSON Payload:
+    {
+        "from": "2026-02-15T10:00:00",  // mandatory - pickup datetime
+        "to": "2026-02-20T10:00:00",    // mandatory - dropoff datetime
+        "location_id": 1,                // optional - filter by pickup location
+        "vehicle_class_id": 2            // optional - filter by vehicle class
+    }
+
+    Returns:
+    {
+        "success": true,
+        "response": {
+            "available_vehicles": [
+                {
+                    "vehicle_id": 1,
+                    "car_specs": "Camry Sedan Automatic 2024",
+                    "vehicle_class_id": 2,
+                    "vehicle_class_name": "Standard",
+                    "location_id": 1,
+                    "location_name": "Downtown Branch",
+                    "license_plate": "ABC123",
+                    "vin": "1HGBH41JXMN109186",
+                    "color": "Silver",
+                    "seats": 5,
+                    "doors": 4,
+                    "transmission": "Automatic",
+                    "fuel_type": "Gasoline",
+                    "daily_mileage_limit": 200
+                },
+                {
+                    "vehicle_id": 5,
+                    "car_specs": "Accord Sedan Automatic 2023",
+                    "vehicle_class_id": 2,
+                    "vehicle_class_name": "Standard",
+                    "location_id": 1,
+                    "location_name": "Downtown Branch",
+                    "license_plate": "XYZ789",
+                    "vin": "1HGBH41JXMN109187",
+                    "color": "Blue",
+                    "seats": 5,
+                    "doors": 4,
+                    "transmission": "Automatic",
+                    "fuel_type": "Gasoline",
+                    "daily_mileage_limit": 200
+                }
+            ],
+            "count": 2,
+            "search_criteria": {
+                "from": "2026-02-15T10:00:00",
+                "to": "2026-02-20T10:00:00",
+                "location_id": 1,
+                "vehicle_class_id": 2
+            }
+        }
+    }
+    """
+
+    data = request.get_json() or {}
+
+    # Validate required fields
+    if 'from' not in data or 'to' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Missing required fields: from and to datetime are mandatory'
+        }), 400
+
+    from_datetime = data.get('from')
+    to_datetime = data.get('to')
+    location_id = data.get('location_id')
+    vehicle_class_id = data.get('vehicle_class_id')
+
+    # Validate and parse datetime
+    try:
+        pickup_datetime = datetime.fromisoformat(from_datetime.replace('Z', '+00:00'))
+        dropoff_datetime = datetime.fromisoformat(to_datetime.replace('Z', '+00:00'))
+    except (ValueError, AttributeError) as e:
+        return jsonify({
+            'success': False,
+            'error': f"Invalid datetime format: {str(e)}"
+        }), 400
+
+    # Validate date logic
+    if dropoff_datetime <= pickup_datetime:
+        return jsonify({
+            'success': False,
+            'error': 'Dropoff datetime (to) must be after pickup datetime (from)'
+        }), 400
+
+    try:
+        # Build dynamic query
+        query = """
+                SELECT v.vehicle_id, \
+                       CONCAT(m.model_name, ' ', m.body_type, ' ', v.transmission, ' ', v.model_year) as car_specs, \
+                       v.vehicle_class_id, \
+                       vc.class_name                                                                  as vehicle_class_name, \
+                       i.location_id, \
+                       l.name                                                                         as location_name, \
+                       v.license_plate, \
+                       v.vin, \
+                       v.color, \
+                       v.seats, \
+                       v.doors, \
+                       v.transmission, \
+                       v.fuel_type, \
+                       v.daily_mileage_limit
+                FROM car_rental_vehicle v
+                         JOIN car_rental_vehicle_model m ON v.vehicle_model_id = m.vehicle_model_id
+                         JOIN car_rental_vehicle_class vc ON v.vehicle_class_id = vc.vehicle_class_id
+                         JOIN car_rental_vehicle_inventory i ON v.vehicle_id = i.vehicle_id
+                         JOIN car_rental_location l ON i.location_id = l.location_id
+                WHERE v.is_active = 1
+                  AND i.operational_status = 'ready' \
+                """
+
+        params = []
+
+        # Add optional filters
+        if location_id:
+            query += " AND i.location_id = %s"
+            params.append(location_id)
+
+        if vehicle_class_id:
+            query += " AND v.vehicle_class_id = %s"
+            params.append(vehicle_class_id)
+
+        # Add availability check - exclude vehicles with conflicting schedules
+        query += """
+              AND NOT EXISTS (
+                SELECT 1
+                FROM car_rental_vehicle_schedule s
+                WHERE s.vehicle_id = v.vehicle_id
+                  AND s.status IN ('tentative', 'confirmed', 'active')
+                  AND (
+                    (s.start_datetime < %s AND s.end_datetime > %s) OR
+                    (s.start_datetime < %s AND s.end_datetime > %s) OR
+                    (s.start_datetime >= %s AND s.end_datetime <= %s)
+                  )
+              )
+            ORDER BY vc.class_name, m.model_name, v.model_year DESC
+        """
+
+        # Add datetime parameters for availability check
+        params.extend([
+            dropoff_datetime, pickup_datetime,
+            dropoff_datetime, pickup_datetime,
+            pickup_datetime, dropoff_datetime
+        ])
+
+        # Execute query
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute(query, tuple(params))
+            vehicles = cursor.fetchall()
+
+        # Format response
+        available_vehicles = []
+        for vehicle in vehicles:
+            available_vehicles.append({
+                'vehicle_id': vehicle['vehicle_id'],
+                'car_specs': vehicle['car_specs'],
+                'vehicle_class_id': vehicle['vehicle_class_id'],
+                'vehicle_class_name': vehicle['vehicle_class_name'],
+                'location_id': vehicle['location_id'],
+                'location_name': vehicle['location_name'],
+                'license_plate': vehicle['license_plate'],
+                'vin': vehicle['vin'],
+                'color': vehicle['color'],
+                'seats': vehicle['seats'],
+                'doors': vehicle['doors'],
+                'transmission': vehicle['transmission'],
+                'fuel_type': vehicle['fuel_type'],
+                'daily_mileage_limit': vehicle['daily_mileage_limit']
+            })
+
+        return jsonify({
+            'success': True,
+            'response': {
+                'available_vehicles': available_vehicles,
+                'count': len(available_vehicles),
+                'search_criteria': {
+                    'from': pickup_datetime.isoformat(),
+                    'to': dropoff_datetime.isoformat(),
+                    'location_id': location_id,
+                    'vehicle_class_id': vehicle_class_id
+                }
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error listing available vehicles: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while retrieving available vehicles'
+        }), 500
