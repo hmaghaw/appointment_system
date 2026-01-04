@@ -1014,3 +1014,427 @@ def cancel_reservation():
             'success': False,
             'error': 'An error occurred while cancelling the reservation'
         }), 500
+
+@bp.route('/update_reservation', methods=['POST'])
+def update_reservation():
+    """
+    Update an existing car rental reservation
+    Can modify: duration (pickup/dropoff times), add-ons, and insurance options
+    Vehicle cannot be changed - only availability for new duration is verified
+
+    Expected JSON Payload:
+    {
+        "reservation_id": 4,
+        "business_id": 98,  // optional for validation
+        "pickup_datetime": "2026-02-15T10:00:00",  // optional
+        "dropoff_datetime": "2026-02-22T10:00:00",  // optional
+        "add_ons": [  // optional - replaces all existing add-ons
+            {"add_on_id": 1, "quantity": 2},
+            {"add_on_id": 3, "quantity": 1}
+        ],
+        "insurance_options": [  // optional - replaces all existing insurance
+            {"insurance_option_id": 2}
+        ]
+    }
+
+    Returns:
+    {
+        "success": true,
+        "response": {
+            "reservation_id": 4,
+            "vehicle_id": 1,
+            "car_specs": "Toyota-2024 Camry",
+            "rental_days": 7,
+            "base_amount": 315.0,
+            "addon_amount": 180.0,
+            "insurance_amount": 140.0,
+            "subtotal": 635.0,
+            "taxes_amount": 82.55,
+            "total_amount": 717.55,
+            "reservation_status": "confirmed",
+            "pickup_datetime": "2026-02-15T10:00:00",
+            "dropoff_datetime": "2026-02-22T10:00:00",
+            "add_ons": [
+                {"add_on_id": 1, "add_on_name": "GPS Navigation", "quantity": 2},
+                {"add_on_id": 3, "add_on_name": "Wifi Hotspot", "quantity": 1}
+            ],
+            "insurance_options": [
+                {"insurance_option_id": 2, "insurance_option_name": "Personal Accident Insurance"}
+            ],
+            "message": "Reservation updated successfully"
+        }
+    }
+    """
+
+    data = request.get_json() or {}
+
+    # Validate required fields
+    if 'reservation_id' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Missing required field: reservation_id'
+        }), 400
+
+    reservation_id = data.get('reservation_id')
+    business_id = data.get('business_id')
+    new_pickup_datetime = data.get('pickup_datetime')
+    new_dropoff_datetime = data.get('dropoff_datetime')
+    new_add_ons = data.get('add_ons')
+    new_insurance_options = data.get('insurance_options')
+
+    # Validate at least one field is being updated
+    if not any([new_pickup_datetime, new_dropoff_datetime, new_add_ons is not None,
+                new_insurance_options is not None]):
+        return jsonify({
+            'success': False,
+            'error': 'At least one field must be provided for update (pickup_datetime, dropoff_datetime, add_ons, or insurance_options)'
+        }), 400
+
+    try:
+        # Get existing reservation details
+        with get_db_cursor(dictionary=True) as cursor:
+            query = """
+                SELECT 
+                    r.reservation_id,
+                    r.business_id,
+                    r.reservation_status,
+                    r.pickup_datetime,
+                    r.dropoff_datetime,
+                    r.vehicle_id,
+                    r.vehicle_class_id,
+                    r.pickup_location_id,
+                    r.dropoff_location_id,
+                    r.rate_plan_id,
+                    r.vehicle_schedule_id,
+                    CONCAT(m.model_name, ' ', m.body_type, ' ', v.transmission, ' ', v.model_year) as car_specs
+                FROM car_rental_reservation r
+                JOIN car_rental_vehicle v ON r.vehicle_id = v.vehicle_id
+                JOIN car_rental_vehicle_model m ON v.vehicle_model_id = m.vehicle_model_id
+                WHERE r.reservation_id = %s
+                    """
+
+            params = [reservation_id]
+            if business_id:
+                query += " AND r.business_id = %s"
+                params.append(business_id)
+
+            cursor.execute(query, tuple(params))
+            reservation = cursor.fetchone()
+
+        if not reservation:
+            return jsonify({
+                'success': False,
+                'error': 'Reservation not found'
+            }), 404
+
+        # Check if reservation can be updated
+        if reservation['reservation_status'] not in ['confirmed', 'pending']:
+            return jsonify({
+                'success': False,
+                'error': f"Cannot update reservation with status: {reservation['reservation_status']}"
+            }), 400
+
+        # Validate and parse datetime if provided
+        pickup_datetime = reservation['pickup_datetime']
+        dropoff_datetime = reservation['dropoff_datetime']
+
+        if new_pickup_datetime:
+            try:
+                pickup_datetime = datetime.fromisoformat(new_pickup_datetime.replace('Z', '+00:00'))
+            except (ValueError, AttributeError) as e:
+                return jsonify({
+                    'success': False,
+                    'error': f"Invalid pickup_datetime format: {str(e)}"
+                }), 400
+
+        if new_dropoff_datetime:
+            try:
+                dropoff_datetime = datetime.fromisoformat(new_dropoff_datetime.replace('Z', '+00:00'))
+            except (ValueError, AttributeError) as e:
+                return jsonify({
+                    'success': False,
+                    'error': f"Invalid dropoff_datetime format: {str(e)}"
+                }), 400
+
+        # Validate date logic
+        if dropoff_datetime <= pickup_datetime:
+            return jsonify({
+                'success': False,
+                'error': 'Dropoff datetime must be after pickup datetime'
+            }), 400
+
+        # Check vehicle availability if dates are changing
+        if new_pickup_datetime or new_dropoff_datetime:
+            # Check availability excluding current reservation's schedule
+            query = """
+                    SELECT COUNT(*) as conflict_count
+                    FROM car_rental_vehicle_schedule
+                    WHERE vehicle_id = %s
+                      AND vehicle_schedule_id != %s
+                      AND status IN ('tentative' \
+                        , 'confirmed' \
+                        , 'active')
+                      AND (
+                        (start_datetime \
+                        < %s \
+                      AND end_datetime \
+                        > %s) \
+                       OR
+                        (start_datetime \
+                        < %s \
+                      AND end_datetime \
+                        > %s) \
+                       OR
+                        (start_datetime >= %s \
+                      AND end_datetime <= %s)
+                        ) \
+                    """
+
+            with get_db_cursor(dictionary=True) as cursor:
+                cursor.execute(query, (
+                    reservation['vehicle_id'],
+                    reservation['vehicle_schedule_id'],
+                    dropoff_datetime, pickup_datetime,
+                    dropoff_datetime, pickup_datetime,
+                    pickup_datetime, dropoff_datetime
+                ))
+                result = cursor.fetchone()
+
+            if result['conflict_count'] > 0:
+                return jsonify({
+                    'success': False,
+                    'error': 'Vehicle is not available for the requested time period'
+                }), 409
+
+        # Calculate rental days
+        rental_days = calculate_rental_days(pickup_datetime, dropoff_datetime)
+
+        # Get rate pricing
+        rate_info = get_rate_price(
+            reservation['rate_plan_id'],
+            reservation['vehicle_class_id'],
+            reservation['pickup_location_id'],
+            pickup_datetime
+        )
+
+        if not rate_info:
+            return jsonify({
+                'success': False,
+                'error': 'No pricing found for the rate plan and vehicle class'
+            }), 404
+
+        # Calculate base amount
+        base_amount = calculate_base_amount(rate_info, rental_days)
+
+        # Process add-ons (use new ones if provided, otherwise keep existing)
+        addon_total = Decimal('0.00')
+        addon_details = []
+
+        add_ons_to_process = new_add_ons if new_add_ons is not None else []
+
+        # Validate add-ons format if provided
+        if new_add_ons is not None:
+            if not isinstance(new_add_ons, list):
+                return jsonify({
+                    'success': False,
+                    'error': 'add_ons must be an array'
+                }), 400
+
+            for addon in new_add_ons:
+                if not isinstance(addon, dict) or 'add_on_id' not in addon or 'quantity' not in addon:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Invalid add_on format. Each must have add_on_id and quantity'
+                    }), 400
+
+        for addon in add_ons_to_process:
+            addon_info = get_addon_pricing(addon['add_on_id'])
+            if not addon_info:
+                return jsonify({
+                    'success': False,
+                    'error': f"Invalid add-on ID: {addon['add_on_id']}"
+                }), 400
+
+            addon_amount = calculate_addon_amount(
+                addon_info,
+                addon['quantity'],
+                rental_days
+            )
+            addon_total += addon_amount
+            addon_details.append({
+                'add_on_id': addon['add_on_id'],
+                'add_on_name': addon_info['name'],
+                'quantity': addon['quantity'],
+                'price': addon_amount
+            })
+
+        # Process insurance options (use new ones if provided, otherwise keep existing)
+        insurance_total = Decimal('0.00')
+        insurance_details = []
+
+        insurance_to_process = new_insurance_options if new_insurance_options is not None else []
+
+        # Validate insurance format if provided
+        if new_insurance_options is not None:
+            if not isinstance(new_insurance_options, list):
+                return jsonify({
+                    'success': False,
+                    'error': 'insurance_options must be an array'
+                }), 400
+
+            for insurance in new_insurance_options:
+                if not isinstance(insurance, dict) or 'insurance_option_id' not in insurance:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Invalid insurance_option format. Each must have insurance_option_id'
+                    }), 400
+
+        for insurance in insurance_to_process:
+            insurance_info = get_insurance_pricing(insurance['insurance_option_id'])
+            if not insurance_info:
+                return jsonify({
+                    'success': False,
+                    'error': f"Invalid insurance option ID: {insurance['insurance_option_id']}"
+                }), 400
+
+            insurance_amount = calculate_insurance_amount(insurance_info, rental_days)
+            insurance_total += insurance_amount
+            insurance_details.append({
+                'insurance_option_id': insurance['insurance_option_id'],
+                'insurance_option_name': insurance_info['name'],
+                'price': insurance_amount
+            })
+
+        # Calculate totals
+        subtotal = base_amount + addon_total + insurance_total
+        taxes_amount = calculate_taxes(subtotal)
+        total_amount = subtotal + taxes_amount
+
+        # Update reservation in database
+        with db_transaction(dictionary=True) as cursor:
+            # Update reservation
+            cursor.execute(
+                """UPDATE car_rental_reservation
+                   SET pickup_datetime  = %s,
+                       dropoff_datetime = %s,
+                       base_amount      = %s,
+                       taxes_amount     = %s,
+                       total_amount     = %s,
+                       updated_at       = %s
+                   WHERE reservation_id = %s""",
+                (
+                    pickup_datetime,
+                    dropoff_datetime,
+                    float(base_amount),
+                    float(taxes_amount),
+                    float(total_amount),
+                    datetime.now(),
+                    reservation_id
+                )
+            )
+
+            # Update vehicle schedule if dates changed
+            if new_pickup_datetime or new_dropoff_datetime:
+                cursor.execute(
+                    """UPDATE car_rental_vehicle_schedule
+                       SET start_datetime = %s,
+                           end_datetime   = %s,
+                           updated_at     = %s
+                       WHERE vehicle_schedule_id = %s""",
+                    (
+                        pickup_datetime,
+                        dropoff_datetime,
+                        datetime.now(),
+                        reservation['vehicle_schedule_id']
+                    )
+                )
+
+            # Update add-ons if provided
+            if new_add_ons is not None:
+                # Delete existing add-ons
+                cursor.execute(
+                    "DELETE FROM car_rental_reservation_add_on WHERE reservation_id = %s",
+                    (reservation_id,)
+                )
+
+                # Insert new add-ons
+                for addon_detail in addon_details:
+                    cursor.execute(
+                        """INSERT INTO car_rental_reservation_add_on
+                               (reservation_id, add_on_id, quantity, price)
+                           VALUES (%s, %s, %s, %s)""",
+                        (
+                            reservation_id,
+                            addon_detail['add_on_id'],
+                            addon_detail['quantity'],
+                            float(addon_detail['price'])
+                        )
+                    )
+
+            # Update insurance options if provided
+            if new_insurance_options is not None:
+                # Delete existing insurance
+                cursor.execute(
+                    "DELETE FROM car_rental_reservation_insurance WHERE reservation_id = %s",
+                    (reservation_id,)
+                )
+
+                # Insert new insurance options
+                for insurance_detail in insurance_details:
+                    cursor.execute(
+                        """INSERT INTO car_rental_reservation_insurance
+                               (reservation_id, insurance_option_id, price)
+                           VALUES (%s, %s, %s)""",
+                        (
+                            reservation_id,
+                            insurance_detail['insurance_option_id'],
+                            float(insurance_detail['price'])
+                        )
+                    )
+
+        # Prepare response (remove 'price' from details for response)
+        response_addons = [
+            {
+                'add_on_id': addon['add_on_id'],
+                'add_on_name': addon['add_on_name'],
+                'quantity': addon['quantity']
+            }
+            for addon in addon_details
+        ]
+
+        response_insurance = [
+            {
+                'insurance_option_id': ins['insurance_option_id'],
+                'insurance_option_name': ins['insurance_option_name']
+            }
+            for ins in insurance_details
+        ]
+
+        return jsonify({
+            'success': True,
+            'response': {
+                'reservation_id': reservation_id,
+                'vehicle_id': reservation['vehicle_id'],
+                'car_specs': reservation['car_specs'],
+                'rental_days': rental_days,
+                'base_amount': float(base_amount),
+                'addon_amount': float(addon_total),
+                'insurance_amount': float(insurance_total),
+                'subtotal': float(subtotal),
+                'taxes_amount': float(taxes_amount),
+                'total_amount': float(total_amount),
+                'reservation_status': reservation['reservation_status'],
+                'pickup_datetime': pickup_datetime.isoformat(),
+                'dropoff_datetime': dropoff_datetime.isoformat(),
+                'add_ons': response_addons,
+                'insurance_options': response_insurance,
+                'message': 'Reservation updated successfully'
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error updating reservation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while updating the reservation'
+        }), 500
