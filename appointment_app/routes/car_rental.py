@@ -1657,3 +1657,203 @@ def list_available_vehicles():
             'success': False,
             'error': 'An error occurred while retrieving available vehicles'
         }), 500
+
+
+@bp.route('/list_add_ons', methods=['POST'])
+def list_add_ons():
+    """
+    List all active add-ons for a business
+
+    Expected JSON Payload:
+    {
+        "business_id": 98  // mandatory - business ID
+    }
+
+    Returns:
+    {
+        "success": true,
+        "response": {
+            "add_ons": [
+                {
+                    "add_on_id": 1,
+                    "name": "GPS Navigation",
+                    "pricing_unit": "per_day",
+                    "base_price": 10.00
+                },
+                {
+                    "add_on_id": 2,
+                    "name": "Child Seat",
+                    "pricing_unit": "per_rental",
+                    "base_price": 25.00
+                },
+                {
+                    "add_on_id": 3,
+                    "name": "Additional Driver",
+                    "pricing_unit": "per_day",
+                    "base_price": 15.00
+                }
+            ],
+            "count": 3
+        }
+    }
+    """
+
+    data = request.get_json() or {}
+
+    # Validate required field
+    if 'business_id' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Missing required field: business_id'
+        }), 400
+
+    business_id = data.get('business_id')
+
+    # Validate business_id type
+    if not isinstance(business_id, int):
+        return jsonify({
+            'success': False,
+            'error': 'Invalid type for business_id, expected integer'
+        }), 400
+
+    try:
+        # Query to get all active add-ons for the business
+        query = """
+                SELECT add_on_id, \
+                       name, \
+                       pricing_unit, \
+                       base_price
+                FROM car_rental_add_on
+                WHERE business_id = %s
+                  AND is_active = 1
+                ORDER BY name \
+                """
+
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute(query, (business_id,))
+            add_ons = cursor.fetchall()
+
+        # Format response
+        add_ons_list = []
+        for add_on in add_ons:
+            add_ons_list.append({
+                'add_on_id': add_on['add_on_id'],
+                'name': add_on['name'],
+                'pricing_unit': add_on['pricing_unit'],
+                'base_price': float(add_on['base_price'])
+            })
+
+        return jsonify({
+            'success': True,
+            'response': {
+                'add_ons': add_ons_list,
+                'count': len(add_ons_list)
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error listing add-ons: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while retrieving add-ons'
+        }), 500
+
+
+@bp.route('/list_insurance_options', methods=['POST'])
+def list_insurance_options():
+    """
+    List all active insurance options for a business
+
+    Expected JSON Payload:
+    {
+        "business_id": 98  // mandatory - business ID
+    }
+
+    Returns:
+    {
+        "success": true,
+        "response": {
+            "insurance_options": [
+                {
+                    "insurance_option_id": 1,
+                    "name": "Collision Damage Waiver",
+                    "pricing_unit": "per_day",
+                    "base_price": 25.00
+                },
+                {
+                    "insurance_option_id": 2,
+                    "name": "Personal Accident Insurance",
+                    "pricing_unit": "per_day",
+                    "base_price": 20.00
+                },
+                {
+                    "insurance_option_id": 3,
+                    "name": "Theft Protection",
+                    "pricing_unit": "per_rental",
+                    "base_price": 50.00
+                }
+            ],
+            "count": 3
+        }
+    }
+    """
+
+    data = request.get_json() or {}
+
+    # Validate required field
+    if 'business_id' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Missing required field: business_id'
+        }), 400
+
+    business_id = data.get('business_id')
+
+    # Validate business_id type
+    if not isinstance(business_id, int):
+        return jsonify({
+            'success': False,
+            'error': 'Invalid type for business_id, expected integer'
+        }), 400
+
+    try:
+        # Query to get all active insurance options for the business
+        query = """
+                SELECT insurance_option_id, \
+                       name, \
+                       pricing_unit, \
+                       base_price
+                FROM car_rental_insurance_option
+                WHERE business_id = %s
+                  AND is_active = 1
+                ORDER BY name \
+                """
+
+        with get_db_cursor(dictionary=True) as cursor:
+            cursor.execute(query, (business_id,))
+            insurance_options = cursor.fetchall()
+
+        # Format response
+        insurance_options_list = []
+        for insurance in insurance_options:
+            insurance_options_list.append({
+                'insurance_option_id': insurance['insurance_option_id'],
+                'name': insurance['name'],
+                'pricing_unit': insurance['pricing_unit'],
+                'base_price': float(insurance['base_price'])
+            })
+
+        return jsonify({
+            'success': True,
+            'response': {
+                'insurance_options': insurance_options_list,
+                'count': len(insurance_options_list)
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error listing insurance options: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while retrieving insurance options'
+        }), 500
