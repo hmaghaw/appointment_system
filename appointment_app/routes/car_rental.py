@@ -884,3 +884,133 @@ def confirm_reservation():
             'success': False,
             'error': 'An error occurred while processing the reservation preview'
         }), 500
+
+
+@bp.route('/cancel_reservation', methods=['POST'])
+def cancel_reservation():
+    """
+    Cancel an existing car rental reservation
+
+    Expected JSON Payload:
+    {
+        "reservation_id": 4,
+        "business_id": 98  // optional for additional validation
+    }
+
+    Returns:
+    {
+        "success": true,
+        "response": {
+            "reservation_id": 4,
+            "reservation_status": "cancelled",
+            "cancelled_at": "2026-01-03T14:30:00",
+            "message": "Reservation cancelled successfully"
+        }
+    }
+    """
+
+    data = request.get_json() or {}
+
+    # Validate required fields
+    if 'reservation_id' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Missing required field: reservation_id'
+        }), 400
+
+    reservation_id = data.get('reservation_id')
+    business_id = data.get('business_id')  # Optional
+
+    try:
+        # Check if reservation exists and get its current status
+        with get_db_cursor(dictionary=True) as cursor:
+            query = """
+                    SELECT reservation_id, \
+                           business_id, \
+                           reservation_status, \
+                           vehicle_schedule_id, \
+                           pickup_datetime
+                    FROM car_rental_reservation
+                    WHERE reservation_id = %s \
+                    """
+
+            params = [reservation_id]
+            if business_id:
+                query += " AND business_id = %s"
+                params.append(business_id)
+
+            cursor.execute(query, tuple(params))
+            reservation = cursor.fetchone()
+
+        if not reservation:
+            return jsonify({
+                'success': False,
+                'error': 'Reservation not found'
+            }), 404
+
+        # Check if reservation can be cancelled
+        if reservation['reservation_status'] == 'cancelled':
+            return jsonify({
+                'success': False,
+                'error': 'Reservation is already cancelled'
+            }), 400
+
+        if reservation['reservation_status'] == 'completed':
+            return jsonify({
+                'success': False,
+                'error': 'Cannot cancel a completed reservation'
+            }), 400
+
+        if reservation['reservation_status'] == 'active':
+            return jsonify({
+                'success': False,
+                'error': 'Cannot cancel an active rental. Please process return first.'
+            }), 400
+
+        # Check if pickup time has passed (optional business rule)
+        current_time = datetime.now()
+        if reservation['pickup_datetime'] and reservation['pickup_datetime'] < current_time:
+            return jsonify({
+                'success': False,
+                'error': 'Cannot cancel a reservation after the pickup time has passed'
+            }), 400
+
+        cancelled_at = current_time
+
+        # Cancel the reservation and update vehicle schedule
+        with db_transaction(dictionary=True) as cursor:
+            # Update reservation status
+            cursor.execute(
+                """UPDATE car_rental_reservation
+                   SET reservation_status = 'cancelled',
+                       updated_at         = %s
+                   WHERE reservation_id = %s""",
+                (cancelled_at, reservation_id)
+            )
+
+            # Update or delete vehicle schedule block
+            if reservation['vehicle_schedule_id']:
+                cursor.execute(
+                    """UPDATE car_rental_vehicle_schedule
+                       SET status     = 'cancelled',
+                           updated_at = %s
+                       WHERE vehicle_schedule_id = %s""",
+                    (cancelled_at, reservation['vehicle_schedule_id'])
+                )
+
+        return jsonify({
+            'success': True,
+            'response': {
+                'reservation_id': reservation_id,
+                'reservation_status': 'cancelled',
+                'cancelled_at': cancelled_at.isoformat(),
+                'message': 'Reservation cancelled successfully'
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error cancelling reservation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while cancelling the reservation'
+        }), 500
