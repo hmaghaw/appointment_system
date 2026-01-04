@@ -1448,6 +1448,7 @@ def list_available_vehicles():
 
     Expected JSON Payload:
     {
+        "business_id": 98,               // mandatory - business ID
         "from": "2026-02-15T10:00:00",  // mandatory - pickup datetime
         "to": "2026-02-20T10:00:00",    // mandatory - dropoff datetime
         "location_id": 1,                // optional - filter by pickup location
@@ -1494,6 +1495,7 @@ def list_available_vehicles():
             ],
             "count": 2,
             "search_criteria": {
+                "business_id": 98,
                 "from": "2026-02-15T10:00:00",
                 "to": "2026-02-20T10:00:00",
                 "location_id": 1,
@@ -1506,16 +1508,30 @@ def list_available_vehicles():
     data = request.get_json() or {}
 
     # Validate required fields
+    if 'business_id' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Missing required field: business_id'
+        }), 400
+
     if 'from' not in data or 'to' not in data:
         return jsonify({
             'success': False,
             'error': 'Missing required fields: from and to datetime are mandatory'
         }), 400
 
+    business_id = data.get('business_id')
     from_datetime = data.get('from')
     to_datetime = data.get('to')
     location_id = data.get('location_id')
     vehicle_class_id = data.get('vehicle_class_id')
+
+    # Validate business_id type
+    if not isinstance(business_id, int):
+        return jsonify({
+            'success': False,
+            'error': 'Invalid type for business_id, expected integer'
+        }), 400
 
     # Validate and parse datetime
     try:
@@ -1556,11 +1572,12 @@ def list_available_vehicles():
                          JOIN car_rental_vehicle_class vc ON v.vehicle_class_id = vc.vehicle_class_id
                          JOIN car_rental_vehicle_inventory i ON v.vehicle_id = i.vehicle_id
                          JOIN car_rental_location l ON i.location_id = l.location_id
-                WHERE v.is_active = 1
+                WHERE v.business_id = %s
+                  AND v.is_active = 1
                   AND i.operational_status = 'ready' \
                 """
 
-        params = []
+        params = [business_id]
 
         # Add optional filters
         if location_id:
@@ -1625,6 +1642,7 @@ def list_available_vehicles():
                 'available_vehicles': available_vehicles,
                 'count': len(available_vehicles),
                 'search_criteria': {
+                    'business_id': business_id,
                     'from': pickup_datetime.isoformat(),
                     'to': dropoff_datetime.isoformat(),
                     'location_id': location_id,
