@@ -11,8 +11,8 @@ class ReservationRequest:
     """Data class for reservation request payload"""
 
     def __init__(self, data: Dict[str, Any]):
-        self.business_id = data.get('business_id')
-        self.customer_id = data.get('customer_id')
+        self.business_id = int(data.get('business_id'))
+        self.customer_id = int(data.get('customer_id'))
         self.pickup_datetime = data.get('pickup_datetime')
         self.dropoff_datetime = data.get('dropoff_datetime')
         self.pickup_location_id = data.get('pickup_location_id')
@@ -1520,7 +1520,7 @@ def list_available_vehicles():
             'error': 'Missing required fields: from and to datetime are mandatory'
         }), 400
 
-    business_id = data.get('business_id')
+    business_id = int(data.get('business_id'))
     from_datetime = data.get('from')
     to_datetime = data.get('to')
     location_id = data.get('location_id')
@@ -1625,15 +1625,15 @@ def list_available_vehicles():
                 'vehicle_class_id': vehicle['vehicle_class_id'],
                 'vehicle_class_name': vehicle['vehicle_class_name'],
                 'location_id': vehicle['location_id'],
-                'location_name': vehicle['location_name'],
-                'license_plate': vehicle['license_plate'],
-                'vin': vehicle['vin'],
-                'color': vehicle['color'],
-                'seats': vehicle['seats'],
-                'doors': vehicle['doors'],
-                'transmission': vehicle['transmission'],
-                'fuel_type': vehicle['fuel_type'],
-                'daily_mileage_limit': vehicle['daily_mileage_limit']
+                'location_name': vehicle['location_name']
+                # 'license_plate': vehicle['license_plate'],
+                # 'vin': vehicle['vin'],
+                # 'color': vehicle['color'],
+                # 'seats': vehicle['seats'],
+                # 'doors': vehicle['doors'],
+                # 'transmission': vehicle['transmission'],
+                # 'fuel_type': vehicle['fuel_type'],
+                # 'daily_mileage_limit': vehicle['daily_mileage_limit']
             })
 
         return jsonify({
