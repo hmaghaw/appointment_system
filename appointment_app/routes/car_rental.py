@@ -198,11 +198,13 @@ def calculate_rental_days(pickup_datetime: datetime, dropoff_datetime: datetime)
 
 
 def get_rate_price(
-        rate_plan_id: int,
         vehicle_class_id: int,
         pickup_location_id: int,
-        pickup_datetime: datetime
+        pickup_datetime: datetime,
+        rate_plan_id: int
 ) -> Optional[Dict[str, Decimal]]:
+    if rate_plan_id == -1:
+        rate_plan_id = 1
     """Get pricing information for the rate plan"""
     query = """
             SELECT price_per_day, price_per_week
@@ -428,10 +430,10 @@ def make_reservation():
 
         # 7. Get rate pricing
         rate_info = get_rate_price(
-            reservation_req.rate_plan_id,
             reservation_req.vehicle_class_id,
             reservation_req.pickup_location_id,
-            reservation_req.pickup_datetime
+            reservation_req.pickup_datetime,
+            reservation_req.rate_plan_id
         )
 
         if not rate_info:
@@ -801,10 +803,10 @@ def confirm_reservation():
 
         # Get rate pricing
         rate_info = get_rate_price(
-            reservation_req.rate_plan_id,
             reservation_req.vehicle_class_id,
             reservation_req.pickup_location_id,
-            reservation_req.pickup_datetime
+            reservation_req.pickup_datetime,
+            reservation_req.rate_plan_id
         )
 
         if not rate_info:
@@ -1220,10 +1222,10 @@ def update_reservation():
 
         # Get rate pricing
         rate_info = get_rate_price(
-            reservation['rate_plan_id'],
             reservation['vehicle_class_id'],
             reservation['pickup_location_id'],
-            pickup_datetime
+            pickup_datetime,
+            reservation['rate_plan_id']
         )
 
         if not rate_info:
