@@ -10,17 +10,26 @@ bp = Blueprint('car_rental', __name__, url_prefix='/api/car_rental')
 class ReservationRequest:
     """Data class for reservation request payload"""
 
+    def _safe_int(self, value, default=-1):
+        """Safely convert value to int, returning default if conversion fails"""
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+
     def __init__(self, data: Dict[str, Any]):
-        self.business_id = int(data.get('business_id'))
-        self.customer_id = int(data.get('customer_id'))
+        self.business_id = self._safe_int(data.get('business_id'))
+        self.customer_id = self._safe_int(data.get('customer_id'))
         self.pickup_datetime = data.get('pickup_datetime')
         self.dropoff_datetime = data.get('dropoff_datetime')
-        self.pickup_location_id = int(data.get('pickup_location_id',"-1"))
-        self.dropoff_location_id = int(data.get('dropoff_location_id',"-1"))
-        self.vehicle_class_id = int(data.get('vehicle_class_id',"-1"))
-        self.vehicle_id = int(data.get('vehicle_id',"-1"))  # Optional
-        self.rate_plan_id = int(data.get('rate_plan_id',"-1"))
-        self.rental_request_id = int(data.get('rental_request_id',"-1"))  # Optional
+        self.pickup_location_id = self._safe_int(data.get('pickup_location_id'))
+        self.dropoff_location_id = self._safe_int(data.get('dropoff_location_id'))
+        self.vehicle_class_id = self._safe_int(data.get('vehicle_class_id'))
+        self.vehicle_id = self._safe_int(data.get('vehicle_id'))  # Optional
+        self.rate_plan_id = self._safe_int(data.get('rate_plan_id'))
+        self.rental_request_id = self._safe_int(data.get('rental_request_id'))  # Optional
         self.add_ons = data.get('add_ons', [])  # Optional
         self.insurance_options = data.get('insurance_options', [])  # Optional
 
