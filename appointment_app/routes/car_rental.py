@@ -360,6 +360,12 @@ def make_reservation():
     reservation_req = ReservationRequest(request.get_json() or {})
     is_valid, error_message = reservation_req.validate()
 
+    if reservation_req.dropoff_location_id == -1:
+        reservation_req.dropoff_location_id = reservation_req.pickup_location_id
+
+    if reservation_req.rate_plan_id == -1:
+        reservation_req.rate_plan_id = 1
+
     if not is_valid:
         return jsonify({
             'success': False,
