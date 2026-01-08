@@ -1565,18 +1565,20 @@ def list_available_vehicles():
         # Build dynamic query
         query = """
                 SELECT v.vehicle_id, \
-                       CONCAT(m.model_name, ' ', m.body_type, ' ', v.transmission, ' ', v.model_year) as car_specs, \
-                       v.vehicle_class_id, \
-                       vc.class_name                                                                  as vehicle_class_name, \
-                       i.location_id, \
-                       l.name                                                                         as location_name, \
-                       v.license_plate, \
-                       v.vin, \
-                       v.color, \
-                       v.seats, \
-                       v.doors, \
-                       v.transmission, \
-                       v.fuel_type, \
+                       CONCAT(m.model_name, ' ', m.body_type, ' ', v.transmission, ' ', v.model_year) as car_specs, 
+                       v.vehicle_class_id, 
+                       v.daily_price, 
+                       v.weekly_price,                     
+                       vc.class_name as vehicle_class_name, 
+                       i.location_id, 
+                       l.name  as location_name, 
+                       v.license_plate, 
+                       v.vin, 
+                       v.color, 
+                       v.seats, 
+                       v.doors, 
+                       v.transmission, 
+                       v.fuel_type, 
                        v.daily_mileage_limit
                 FROM car_rental_vehicle v
                          JOIN car_rental_vehicle_model m ON v.vehicle_model_id = m.vehicle_model_id
@@ -1634,6 +1636,8 @@ def list_available_vehicles():
                 'vehicle_id': vehicle['vehicle_id'],
                 'car_specs': vehicle['car_specs'],
                 'vehicle_class_id': vehicle['vehicle_class_id'],
+                'daily_price': vehicle['daily_price'],
+                'weekly_price': vehicle['weekly_price'],
                 'vehicle_class_name': vehicle['vehicle_class_name'],
                 'location_id': vehicle['location_id'],
                 'location_name': vehicle['location_name']
