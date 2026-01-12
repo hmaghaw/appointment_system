@@ -1,0 +1,114 @@
+<mxfile host="app.diagrams.net" modified="2026-01-12T00:00:00.000Z" agent="ChatGPT" version="24.7.8">
+  <diagram id="polydial-arch" name="PolyDial Architecture Diagram">
+    <mxGraphModel dx="1420" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="PolyDial Architecture Diagram" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1200" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Group: Public Internet -->
+        <mxCell id="grp_public" value="Public Internet" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=28;fillColor=#f5f5f5;strokeColor=#b3b3b3;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="520" height="520" as="geometry"/>
+        </mxCell>
+
+        <!-- User -->
+        <mxCell id="user" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c6c6c;" vertex="1" parent="grp_public">
+          <mxGeometry x="30" y="70" width="200" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Twilio -->
+        <mxCell id="twilio" value="Twilio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c6c6c;" vertex="1" parent="grp_public">
+          <mxGeometry x="270" y="70" width="200" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Webhook / Phone Call -->
+        <mxCell id="webhook" value="Webhook / Phone Call" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c6c6c;" vertex="1" parent="grp_public">
+          <mxGeometry x="150" y="170" width="240" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Group: AWS / VPC -->
+        <mxCell id="grp_aws" value="AWS / VPC" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=28;fillColor=#eef7ff;strokeColor=#7aa7d9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="90" width="820" height="520" as="geometry"/>
+        </mxCell>
+
+        <!-- AI Agent Server -->
+        <mxCell id="ai_agent" value="AI Agent Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" vertex="1" parent="grp_aws">
+          <mxGeometry x="40" y="70" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- MCP Server -->
+        <mxCell id="mcp" value="MCP Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" vertex="1" parent="grp_aws">
+          <mxGeometry x="320" y="70" width="220" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Business API Server -->
+        <mxCell id="business_api" value="Business API Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" vertex="1" parent="grp_aws">
+          <mxGeometry x="580" y="70" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Database -->
+        <mxCell id="db" value="Database" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#ffffff;strokeColor=#2b78c5;" vertex="1" parent="grp_aws">
+          <mxGeometry x="540" y="200" width="170" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Redis -->
+        <mxCell id="redis" value="Redis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;" vertex="1" parent="grp_aws">
+          <mxGeometry x="730" y="210" width="140" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges -->
+        <!-- User -> Twilio -->
+        <mxCell id="e1" value="Call / SMS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_public" source="user" target="twilio">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Twilio -> Webhook -->
+        <mxCell id="e2" value="Webhook Events" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_public" source="twilio" target="webhook">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Webhook -> AI Agent (cross-group edge lives on root) -->
+        <mxCell id="e3" value="Voice / Call Handling" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="webhook" target="ai_agent">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- AI Agent <-> MCP -->
+        <mxCell id="e4" value="Tool Calls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="ai_agent" target="mcp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e5" value="Results" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="mcp" target="ai_agent">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- MCP -> Business API -->
+        <mxCell id="e6" value="API Requests" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="mcp" target="business_api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Business API <-> Database -->
+        <mxCell id="e7" value="Read/Write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="business_api" target="db">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e8" value="Query Results" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="db" target="business_api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Business API <-> Redis -->
+        <mxCell id="e9" value="Cache Read/Write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="business_api" target="redis">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e10" value="Cache Hits" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="redis" target="business_api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
