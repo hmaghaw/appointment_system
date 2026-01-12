@@ -1,113 +1,104 @@
-<mxfile host="app.diagrams.net" modified="2026-01-12T00:00:00.000Z" agent="ChatGPT" version="24.7.8">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.3.0">
   <diagram id="polydial-arch" name="PolyDial Architecture Diagram">
-    <mxGraphModel dx="1420" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="3184" dy="2841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
       <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-
-        <!-- Title -->
-        <mxCell id="title" value="PolyDial Architecture Diagram" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="1200" height="40" as="geometry"/>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;" value="PolyDial Architecture Diagram" vertex="1">
+          <mxGeometry height="40" width="1380" x="310" y="-970" as="geometry" />
         </mxCell>
-
-        <!-- Group: Public Internet -->
-        <mxCell id="grp_public" value="Public Internet" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=28;fillColor=#f5f5f5;strokeColor=#b3b3b3;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="40" y="90" width="520" height="520" as="geometry"/>
+        <mxCell id="e3" edge="1" parent="1" source="webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="ai_agent" value="Voice / Call Handling">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- User -->
-        <mxCell id="user" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c6c6c;" vertex="1" parent="grp_public">
-          <mxGeometry x="30" y="70" width="200" height="60" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-37" edge="1" parent="1" source="85UHDubq4O4wpsDI-ksy-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1190" y="-240" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Twilio -->
-        <mxCell id="twilio" value="Twilio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c6c6c;" vertex="1" parent="grp_public">
-          <mxGeometry x="270" y="70" width="200" height="60" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-17" parent="1" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=26;fillColor=#ffffff;strokeColor=#d6a04a;fontStyle=1;" value="External API Servers" vertex="1">
+          <mxGeometry height="224" width="330" x="1430" y="-351" as="geometry">
+            <mxRectangle height="30" width="150" x="810" y="250" as="alternateBounds" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Webhook / Phone Call -->
-        <mxCell id="webhook" value="Webhook / Phone Call" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c6c6c;" vertex="1" parent="grp_public">
-          <mxGeometry x="150" y="170" width="240" height="60" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-18" parent="85UHDubq4O4wpsDI-ksy-17" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d3b;" value="Car Rental API" vertex="1">
+          <mxGeometry height="60" width="240" x="40" y="50" as="geometry" />
         </mxCell>
-
-        <!-- Group: AWS / VPC -->
-        <mxCell id="grp_aws" value="AWS / VPC" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=28;fillColor=#eef7ff;strokeColor=#7aa7d9;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="600" y="90" width="820" height="520" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-19" parent="85UHDubq4O4wpsDI-ksy-17" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d3b;" value="Restaurant API" vertex="1">
+          <mxGeometry height="60" width="240" x="40" y="130" as="geometry" />
         </mxCell>
-
-        <!-- AI Agent Server -->
-        <mxCell id="ai_agent" value="AI Agent Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" vertex="1" parent="grp_aws">
-          <mxGeometry x="40" y="70" width="240" height="70" as="geometry"/>
+        <mxCell id="webhook" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c6c6c;" value="Twilio phone call" vertex="1">
+          <mxGeometry height="60" width="240" x="261" y="-712" as="geometry" />
         </mxCell>
-
-        <!-- MCP Server -->
-        <mxCell id="mcp" value="MCP Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" vertex="1" parent="grp_aws">
-          <mxGeometry x="320" y="70" width="220" height="70" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-26" parent="1" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=28;fillColor=#eef7ff;strokeColor=#7aa7d9;fontStyle=1;" value="PolyDial" vertex="1">
+          <mxGeometry height="730" width="660" x="600" y="-850" as="geometry" />
         </mxCell>
-
-        <!-- Business API Server -->
-        <mxCell id="business_api" value="Business API Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" vertex="1" parent="grp_aws">
-          <mxGeometry x="580" y="70" width="240" height="70" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-33" edge="1" parent="85UHDubq4O4wpsDI-ksy-26" source="grp_aws" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="mcp">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Database -->
-        <mxCell id="db" value="Database" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#ffffff;strokeColor=#2b78c5;" vertex="1" parent="grp_aws">
-          <mxGeometry x="540" y="200" width="170" height="90" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-34" connectable="0" parent="85UHDubq4O4wpsDI-ksy-33" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Tool Calls / Response" vertex="1">
+          <mxGeometry relative="1" x="0.1077" y="4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Redis -->
-        <mxCell id="redis" value="Redis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;" vertex="1" parent="grp_aws">
-          <mxGeometry x="730" y="210" width="140" height="70" as="geometry"/>
+        <mxCell id="grp_aws" parent="85UHDubq4O4wpsDI-ksy-26" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=28;fillColor=#eef7ff;strokeColor=#7aa7d9;fontStyle=1;" value="PolyDial Agent Server" vertex="1">
+          <mxGeometry height="189" width="430" x="110" y="61" as="geometry" />
         </mxCell>
-
-        <!-- Edges -->
-        <!-- User -> Twilio -->
-        <mxCell id="e1" value="Call / SMS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_public" source="user" target="twilio">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="ai_agent" parent="grp_aws" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" value="AI Agent Server" vertex="1">
+          <mxGeometry height="70" width="240" x="40" y="70" as="geometry" />
         </mxCell>
-
-        <!-- Twilio -> Webhook -->
-        <mxCell id="e2" value="Webhook Events" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_public" source="twilio" target="webhook">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="redis" parent="grp_aws" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;" value="Redis" vertex="1">
+          <mxGeometry height="70" width="70" x="320" y="70" as="geometry" />
         </mxCell>
-
-        <!-- Webhook -> AI Agent (cross-group edge lives on root) -->
-        <mxCell id="e3" value="Voice / Call Handling" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="webhook" target="ai_agent">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="mcp" parent="85UHDubq4O4wpsDI-ksy-26" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;" value="PolyDial MCP Server" vertex="1">
+          <mxGeometry height="70" width="430" x="110" y="333" as="geometry" />
         </mxCell>
-
-        <!-- AI Agent <-> MCP -->
-        <mxCell id="e4" value="Tool Calls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="ai_agent" target="mcp">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-6" parent="85UHDubq4O4wpsDI-ksy-26" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=28;fillColor=#eef7ff;strokeColor=#7aa7d9;fontStyle=1;container=0;" value="PolyDial Backend" vertex="1">
+          <mxGeometry height="198" width="540" x="53" y="494" as="geometry" />
         </mxCell>
-
-        <mxCell id="e5" value="Results" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="mcp" target="ai_agent">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-25" connectable="0" parent="85UHDubq4O4wpsDI-ksy-6" style="group" value="" vertex="1">
+          <mxGeometry height="190" width="443" x="50" y="80" as="geometry" />
         </mxCell>
-
-        <!-- MCP -> Business API -->
-        <mxCell id="e6" value="API Requests" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="mcp" target="business_api">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="business_api" parent="85UHDubq4O4wpsDI-ksy-25" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2b78c5;fontStyle=1;container=0;" value="PolyDial API Server" vertex="1">
+          <mxGeometry height="70" width="190" x="-20" as="geometry" />
         </mxCell>
-
-        <!-- Business API <-> Database -->
-        <mxCell id="e7" value="Read/Write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="business_api" target="db">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="db" parent="85UHDubq4O4wpsDI-ksy-25" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#ffffff;strokeColor=#2b78c5;container=0;" value="Database" vertex="1">
+          <mxGeometry height="90" width="100" x="340" y="-10" as="geometry" />
         </mxCell>
-
-        <mxCell id="e8" value="Query Results" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="db" target="business_api">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="e7" edge="1" parent="85UHDubq4O4wpsDI-ksy-25" source="business_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="db" value="Read/Write">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Business API <-> Redis -->
-        <mxCell id="e9" value="Cache Read/Write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="business_api" target="redis">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="e6" edge="1" parent="85UHDubq4O4wpsDI-ksy-26" source="mcp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="85UHDubq4O4wpsDI-ksy-6" value="API Requests">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <mxCell id="e10" value="Cache Hits" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="grp_aws" source="redis" target="business_api">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="grp_llms" parent="1" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=26;fillColor=#ffffff;strokeColor=#d6a04a;fontStyle=1;" value="External LLMs" vertex="1">
+          <mxGeometry height="140" width="620" x="1430" y="-840" as="geometry" />
         </mxCell>
-
+        <mxCell id="llm_openai" parent="grp_llms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d3b;" value="OpenAI" vertex="1">
+          <mxGeometry height="60" width="180" x="220" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_gemini" parent="grp_llms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d3b;" value="Gemini" vertex="1">
+          <mxGeometry height="60" width="180" x="21" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_deepseek" parent="grp_llms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d3b;" value="DeepSeek" vertex="1">
+          <mxGeometry height="60" width="180" x="420" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="grp_speech" parent="1" style="swimlane;html=1;rounded=1;whiteSpace=wrap;startSize=26;fillColor=#ffffff;strokeColor=#d6a04a;fontStyle=1;" value="TTS / STT Providers" vertex="1">
+          <mxGeometry height="160" width="370" x="1430" y="-680" as="geometry">
+            <mxRectangle height="30" width="150" x="810" y="250" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tts_provider" parent="grp_speech" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d3b;" value="TTS Provider(s)" vertex="1">
+          <mxGeometry height="60" width="140" x="40" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="stt_provider" parent="grp_speech" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d3b;" value="STT Provider(s)" vertex="1">
+          <mxGeometry height="60" width="140" x="200" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-35" edge="1" parent="1" source="grp_aws" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" target="grp_llms">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="85UHDubq4O4wpsDI-ksy-36" edge="1" parent="1" source="grp_aws" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" target="grp_speech">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
