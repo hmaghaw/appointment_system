@@ -59,7 +59,7 @@ server {
 server {
     listen 443 ssl;
     server_name twilio.polydial.com;
-
+--
     ssl_certificate     /home/ec2-user/.certbot/config/live/polydial.com/fullchain.pem;
     ssl_certificate_key /home/ec2-user/.certbot/config/live/polydial.com/privkey.pem;
 
