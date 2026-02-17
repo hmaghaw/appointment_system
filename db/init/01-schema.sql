@@ -466,3 +466,10 @@ CREATE TABLE one_time_token (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS whatsapp_call_sid (
+    call_sid INT AUTO_INCREMENT PRIMARY KEY,
+    business_phone VARCHAR(20) NULL,
+    customer_phone VARCHAR(20) NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
