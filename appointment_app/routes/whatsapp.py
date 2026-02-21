@@ -113,10 +113,10 @@ def get_call_sid():
             """
             cursor.execute(query, (business_phone, customer_phone, twenty_minutes_ago))
             result = cursor.fetchone()
-            new_call_sid = result['call_sid']
-            call_sid = f"whatsapp_{new_call_sid:08d}"
             if result:
                 # Return existing call_sid
+                new_call_sid = result['call_sid']
+                call_sid = f"whatsapp_{new_call_sid:08d}"
                 return jsonify({
                     "status": "success",
                     "call_sid": call_sid,
