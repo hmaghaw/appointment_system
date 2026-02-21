@@ -140,10 +140,10 @@ def get_call_sid():
                 # Get the ID of the inserted record
                 cursor.execute("SELECT LAST_INSERT_ID() as call_sid")
                 new_call_sid = cursor.fetchone()['call_sid']
-                
+                call_sid = f"whatsapp_{new_call_sid:08d}"
                 return jsonify({
                     "status": "success",
-                    "call_sid": new_call_sid,
+                    "call_sid": call_sid,
                     "action": "created_new"
                 }), 200
                 
