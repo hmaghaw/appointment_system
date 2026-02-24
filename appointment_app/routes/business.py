@@ -305,6 +305,12 @@ def get_business_by_phone():
                     b.branch_phone_number,
                     b.created_at,
                     b.updated_at,
+                    bp.business_id,
+                    bp.channel,
+                    bp.waba_id,
+                    bp.phone_number_id,
+                    bp.access_token,
+                    bp.token_expires_at,
                     bp.business_phone,
                     bp.language_code,
                     l.language_name
