@@ -55,6 +55,7 @@ def create_app(config_dict=None):
     from appointment_app.routes.elevenlabs_agent import bp as elevenlabs_agent_bp
     from appointment_app.routes.car_rental import bp as car_rental_bp
     from appointment_app.routes.whatsapp import bp as whatsapp_bp
+    from appointment_app.routes.muslim_will import bp as muslim_will_bp
     # Register blueprints
     app.register_blueprint(appointments_bp)
     app.register_blueprint(availability_bp)
@@ -76,6 +77,7 @@ def create_app(config_dict=None):
     app.register_blueprint(restaurant_order_bp)
     app.register_blueprint(car_rental_bp)
     app.register_blueprint(whatsapp_bp)  # WhatsApp endpoints
+    app.register_blueprint(muslim_will_bp)  # Muslim Will endpoints
     app.register_blueprint(clover_bp)  # Clover integration endpoints
     app.register_blueprint(export_bp)
     app.register_blueprint(prompt_bp)

@@ -473,3 +473,45 @@ CREATE TABLE IF NOT EXISTS whatsapp_call_sid (
     customer_phone VARCHAR(20) NULL,
     `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+# Changes to Accomodate WhatsApp
+-- 1. Make phone_sid nullable (was NOT NULL before)
+ALTER TABLE business_phone
+    MODIFY COLUMN phone_sid VARCHAR(34) NULL COMMENT 'Twilio Phone Number SID (starts with PN)';
+
+-- 2. Add channel column
+ALTER TABLE business_phone
+    ADD COLUMN channel ENUM('twilio', 'whatsapp') NOT NULL DEFAULT 'twilio'
+    AFTER business_id;
+
+-- 3. Add WhatsApp-specific columns
+ALTER TABLE business_phone
+    ADD COLUMN waba_id          VARCHAR(100) NULL COMMENT 'WhatsApp Business Account ID'          AFTER channel,
+    ADD COLUMN phone_number_id  VARCHAR(100) NULL COMMENT 'Meta Phone Number ID, used in API calls' AFTER waba_id,
+    ADD COLUMN access_token     TEXT         NULL COMMENT 'Encrypted Meta access token'            AFTER phone_number_id,
+    ADD COLUMN token_expires_at TIMESTAMP    NULL COMMENT 'NULL if permanent system token'         AFTER access_token;
+
+-- 4. Add status column
+ALTER TABLE business_phone
+    ADD COLUMN status ENUM('active', 'disconnected', 'banned') DEFAULT 'active' NULL
+    AFTER token_expires_at;
+
+-- 5. Add unique constraint for phone_number_id
+ALTER TABLE business_phone
+    ADD CONSTRAINT unique_waba_phone_id UNIQUE (phone_number_id);
+
+-- 6. Add check constraints
+ALTER TABLE business_phone
+    ADD CONSTRAINT chk_twilio_requires_sid
+        CHECK (channel != 'twilio' OR phone_sid IS NOT NULL),
+    ADD CONSTRAINT chk_whatsapp_requires_waba
+        CHECK (channel != 'whatsapp' OR (waba_id IS NOT NULL AND phone_number_id IS NOT NULL));
+
+
+CREATE TABLE muslim_will_customer_status (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    current_status VARCHAR(100) NOT NULL,
+    next_step VARCHAR(255) NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
