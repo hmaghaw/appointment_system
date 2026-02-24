@@ -12,7 +12,7 @@ def get_customer_status():
     
     Request body should contain:
     {
-        "customer_id": 12
+        "customer_phone": "+16478724666"
     }
     
     Returns:
@@ -24,29 +24,24 @@ def get_customer_status():
 
     data = request.get_json()
     
-    if not data or 'customer_id' not in data:
-        return jsonify({"error": "Missing customer_id in request body"}), 400
+    if not data or 'customer_phone' not in data:
+        return jsonify({"error": "Missing customer_phone in request body"}), 400
         
-    try:
-        customer_id = int(data['customer_id'])
-    except (ValueError, TypeError):
-        return jsonify({"error": "customer_id must be an integer"}), 400
+    customer_phone = str(data['customer_phone']).strip()
+    if not customer_phone:
+        return jsonify({"error": "customer_phone cannot be empty"}), 400
     
     try:
         with get_db_cursor(dictionary=True) as cursor:
-            # First check if customer exists in the customer table
-            cursor.execute("SELECT customer_id FROM customer WHERE customer_id = %s", (customer_id,))
-            if not cursor.fetchone():
-                return jsonify({"error": "User is not registered"}), 404
-            
+
             # Get customer status from muslim_will_customer_status table
             cursor.execute("""
-                SELECT id, customer_id, current_status, next_step, timestamp
+                SELECT id, customer_phone, current_status, next_step, timestamp
                 FROM muslim_will_customer_status
-                WHERE customer_id = %s
+                WHERE customer_phone = %s
                 ORDER BY timestamp DESC
                 LIMIT 1
-            """, (customer_id,))
+            """, (customer_phone,))
             
             status_record = cursor.fetchone()
             
@@ -54,7 +49,7 @@ def get_customer_status():
                 return jsonify({
                     "success": True,
                     "message": "No status record found for this customer",
-                    "customer_id": customer_id,
+                    "customer_phone": customer_phone,
                     "status": None
                 }), 200
             
