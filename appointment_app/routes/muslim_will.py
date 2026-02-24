@@ -49,8 +49,6 @@ def get_customer_status():
                 return jsonify({
                     "success": True,
                     "message": "No status record found for this customer",
-                    "customer_phone": customer_phone,
-                    "status": None
                 }), 200
             
             # Convert timestamp to ISO format if it's a datetime object
@@ -61,7 +59,10 @@ def get_customer_status():
             
             return jsonify({
                 "success": True,
-                "customer_status": status_record
+                "customer_status": {
+                    "current_status":status_record['current_status'],
+                    "next_step":status_record['next_step'],
+                }
             }), 200
             
     except Error as e:
