@@ -44,3 +44,5 @@ python-socketio==5.10.0
 pandas
 
 elevenlabs>=1.0.0
+
+pytz>=2024.1
