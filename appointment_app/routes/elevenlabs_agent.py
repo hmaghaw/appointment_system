@@ -7,7 +7,7 @@ from elevenlabs.conversational_ai.conversation import Conversation, ClientTools
 import json
 from pathlib import Path
 
-from pycparser.ply.yacc import resultlimit
+#from pycparser.ply.yacc import resultlimit
 
 from appointment_app.services.restaurant_agent import RestaurantAgent
 load_dotenv()
