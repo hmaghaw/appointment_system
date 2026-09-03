@@ -114,6 +114,8 @@ server {
 ```https://api.polydial.com
 
 ```angular2html
+sudo nginx -t
+
 sudo systemctl reload nginx 
 ```
 
