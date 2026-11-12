@@ -13,6 +13,8 @@ services:
       - DB_NAME=appointment_db
       - FLASK_APP=appointment_app.app:app
       - FLASK_ENV=production
+      # TESTING ONLY: any password works for an existing user. Set to false when done.
+      - LOGIN_SKIP_PASSWORD_CHECK=true
     volumes:
       - .:/app
     command: >
