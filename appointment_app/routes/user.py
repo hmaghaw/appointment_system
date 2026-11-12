@@ -32,6 +32,14 @@ logger.info("User blueprint loaded.")
 # Create Blueprint
 bp = Blueprint('user', __name__, url_prefix='')
 
+# TESTING ONLY: when LOGIN_SKIP_PASSWORD_CHECK is true in .env, /login accepts any
+# password for an email that exists in the users table. Never enable in production.
+def login_skip_password_check():
+    return os.getenv('LOGIN_SKIP_PASSWORD_CHECK', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
+
+if login_skip_password_check():
+    logger.warning("LOGIN_SKIP_PASSWORD_CHECK is ON: /login will not verify passwords. Testing only.")
+
 # Password reset token expiration (24 hours)
 RESET_TOKEN_EXPIRATION = 24 * 60 * 60  # 24 hours in seconds
 
@@ -539,19 +547,6 @@ def login():
                 WHERE email = %s 
                 """
         user = execute_query(query, (email,), fetch='one')
-        if not user['email_verified']:
-            return jsonify({
-                'success': False,
-                'error': 'email_not_verified',
-                'message': 'Your email is not verified'
-            }), 401
-
-        if not user['active']:
-            return jsonify({
-                'success': False,
-                'error': 'inactive_user',
-                'message': 'Your user account is inactive. Please contact your administrator.'
-            }), 401
 
         if not user:
             return jsonify({
@@ -560,20 +555,39 @@ def login():
                 'message': 'Invalid email or password'
             }), 401
 
-        # Verify password for email auth
-        if user['auth_provider'] in ['email', 'email,google'] and user['password_hash']:
-            if not check_password_hash(user['password_hash'], password):
+        if login_skip_password_check():
+            # Test mode: the user exists, so treat the password as correct and skip
+            # every other credential/account check.
+            logger.warning(f"LOGIN_SKIP_PASSWORD_CHECK: password not verified for {email}")
+        else:
+            if not user['email_verified']:
                 return jsonify({
                     'success': False,
-                    'error': 'invalid_credentials',
-                    'message': 'Invalid email or password'
+                    'error': 'email_not_verified',
+                    'message': 'Your email is not verified'
                 }), 401
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'social_login_required',
-                'message': 'This account uses social login. Please use Google sign-in.'
-            }), 401
+
+            if not user['active']:
+                return jsonify({
+                    'success': False,
+                    'error': 'inactive_user',
+                    'message': 'Your user account is inactive. Please contact your administrator.'
+                }), 401
+
+            # Verify password for email auth
+            if user['auth_provider'] in ['email', 'email,google'] and user['password_hash']:
+                if not check_password_hash(user['password_hash'], password):
+                    return jsonify({
+                        'success': False,
+                        'error': 'invalid_credentials',
+                        'message': 'Invalid email or password'
+                    }), 401
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'social_login_required',
+                    'message': 'This account uses social login. Please use Google sign-in.'
+                }), 401
 
         # Update last login
         update_query = "UPDATE users SET last_login = %s WHERE id = %s"

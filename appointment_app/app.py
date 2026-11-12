@@ -75,6 +75,7 @@ def create_app(config_dict=None):
     app.register_blueprint(restaurants_bp)  # Restaurant endpoints (prefix is defined in the blueprint)
     app.register_blueprint(onboarding_bp)  # Onboarding endpoints
     app.register_blueprint(restaurant_order_bp)
+    app.register_blueprint(restaurant_combo_bp)  # Combo groups/items (was imported but never registered)
     app.register_blueprint(car_rental_bp)
     app.register_blueprint(whatsapp_bp)  # WhatsApp endpoints
     app.register_blueprint(muslim_will_bp)  # Muslim Will endpoints

@@ -78,6 +78,12 @@ POST /api/auth/login
   }
   ```
 
+#### Test login (skip password check)
+
+For testing only, set `LOGIN_SKIP_PASSWORD_CHECK=true` in the API's environment. `POST /api/auth/login` then accepts any password as long as the email exists in `users` (verification, active and auth-provider checks are skipped too). An unknown email still returns `401 invalid_credentials`. The API logs a warning at startup and on every bypassed login. Leave it `false` (the default) in production.
+
+Note: the `api` service in `docker-compose.yml` regenerates `.env` at start (`create_env_file.py`), so in Docker set the flag in the secret or under the service's `environment:`.
+
 #### Google OAuth Login
 
 ```http

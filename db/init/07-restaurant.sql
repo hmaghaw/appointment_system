@@ -153,8 +153,7 @@ CREATE TABLE restaurant_order_item_option (
     option_id INT NOT NULL,
     name varchar(100),
     price_delta DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id),
-
+    FOREIGN KEY (order_item_id) REFERENCES restaurant_order_item(order_item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE restaurant_order_item_modifier (

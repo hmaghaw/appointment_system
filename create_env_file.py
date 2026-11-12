@@ -48,6 +48,9 @@ DEFAULT_TEMPERATURE=0.7
 
 ELEVENLABS_API_KEY=
 ELEVENLABS_AGENT=NO
+
+# TESTING ONLY: true = /api/auth/login accepts any password for an existing user
+LOGIN_SKIP_PASSWORD_CHECK=false
 """
 
 DEV_TEMPLATE = """ENVIRONMENT=development
@@ -97,6 +100,9 @@ DEFAULT_TEMPERATURE=0.7
 
 ELEVENLABS_API_KEY=
 ELEVENLABS_AGENT=NO
+
+# TESTING ONLY: true = /api/auth/login accepts any password for an existing user
+LOGIN_SKIP_PASSWORD_CHECK=false
 """
 def create_env_from_template(secret_data, environment="production", output_file=".env"):
     """
